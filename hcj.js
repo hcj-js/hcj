@@ -5,6 +5,10 @@ var unit = function (unit) {
 };
 var px = unit('px');
 
+var url = function (str) {
+	return 'url("' + str + '")';
+};
+
 
 // el :: String -> Component
 // creates an html node
@@ -142,9 +146,55 @@ var justify = function (components) {
 	return $addClass('justify')(concat(components));
 };
 
-// clear floats
-var clear = $addClass('clear')(div);
 
-// link :: Component -> Component
-// assert an element is a link
+var applyColorJquery = function ($el, color, noise) {
+	if (noise) {
+		$el.css('background-image', url(color.noiseSrc));
+		$el.css('color', color.text);
+	}
+	else {
+		$el.css('background-color', color.background);
+		$el.css('color', color.text);
+	}
+};
+
+var applyColor = function (color, noise) {
+	if (noise) {
+		return all([
+			$css('background-image', url(color.noiseSrc)),
+			$css('color', color.text),
+		]);
+	}
+	else {
+		return all([
+			$css('background-color', color.background),
+			$css('color', color.text),
+		]);
+	}
+};
+
 var link = $css('cursor', 'pointer');
+var inline = $css('display', 'inline-block');
+
+var margin = function (direction) {
+	return function (amount) {
+		return $css('margin-' + direction, amount);
+	};
+};
+var marginRight = margin('right');
+var marginLeft = margin('left');
+var marginTop = margin('top');
+var marginBottom = margin('bottom');
+
+var padding = function (direction) {
+	return function (amount) {
+		return $css('padding-' + direction, amount);
+	};
+};
+var paddingRight = padding('right');
+var paddingLeft = padding('left');
+var paddingTop = padding('top');
+var paddingBottom = padding('bottom');
+
+
+var clear = $addClass('clear')(div);
