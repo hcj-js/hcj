@@ -14,7 +14,7 @@ A Component is a function.  Each time one is called, it creates an instance of i
 
 Besides appending an element to its argument, what can a Component do?  Absolutely anything.  It can sign up event handlers anywhere on the page, set up periodic server calls, you name it.  The ```unbind``` function must unhook any of that jazz, as it removes the component instance.
 
-Primitive components are functions for creating DOM nodes, that is tags and text nodes.  This library provides components ```a```, ```div```, and ```img```, for those elements.  It also provides a function ```textNode``` which takes a string and returns a componet.  E.g. ```textNode('Hello World')``` is a component.
+Primitive components are functions for creating DOM nodes, that is tags and text nodes.  This library gives you the components ```a```, ```div```, and ```img```, for those elements.  It also gives you a function ```textNode``` which takes a string and returns a componet.  E.g. ```textNode('Hello World')``` is a component.
 
 ### Simple Example ###
 
