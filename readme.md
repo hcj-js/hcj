@@ -35,7 +35,7 @@ setTimeout(function () {
 
 The meat of the library is (read: will be) found in all of the functions that transform Components.  You build complex components by composing functions around simple components.  For instance, the ```append``` function used in the example above takes two components and returns a new component.
 
-### Simple example from recent site ###
+### Simple example from recent website ###
 
 ```
 var fixedHeader = function (config, header, body) {
