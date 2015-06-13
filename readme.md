@@ -33,7 +33,7 @@ setTimeout(function () {
 
 ### How it works, Continued ###
 
-The meat of the library is found in all of the functions that transform Components.  You build complex components by composing functions around simple components.  For instance, the ```append``` function used in the example above takes two components and returns a new component.
+The meat of the library is (read: will be) found in all of the functions that transform Components.  You build complex components by composing functions around simple components.  For instance, the ```append``` function used in the example above takes two components and returns a new component.
 
 ### Simple component I used recently ###
 
