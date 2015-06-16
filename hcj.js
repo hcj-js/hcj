@@ -10,37 +10,6 @@ var url = function (str) {
 };
 
 
-// el :: String -> Component
-// creates an html node
-var el = function (name) {
-	return function ($container) {
-		var $el = $(document.createElement(name));
-		$container.append($el);
-		return {
-			$el: $el,
-			unbind: function () {
-				$el.remove();
-			},
-		};
-	};
-};
-
-
-// textNode :: String -> Component
-// creates a text node
-var textNode = function (text) {
-	return function ($container) {
-		var $text = $(document.createTextNode(text));
-		$container.append($text);
-		return {
-			$el: $text,
-			unbind: function () {
-				$text.remove();
-			},
-		};
-	};
-};
-
 // and :: (Instance -> IO ()) -> Component -> Component
 // used typically to have some side effect on the component instance
 var and = function (f) {
@@ -57,7 +26,7 @@ var and = function (f) {
 // append :: Component -> Component -> Component
 // returns a component given by a parent with a child constructed onto it
 var append = function (parent, child) {
-	return function ($c) {
+	return component(function ($c) {
 		var pI = parent($c);
 		var cI = child(pI.$el);
 		return {
@@ -67,11 +36,11 @@ var append = function (parent, child) {
 				pI.unbind();
 			},
 		};
-	};
+	});
 };
 
 
-// all :: [Component -> Component] -> Component -> Component
+// all :: [a -> a] -> a -> a
 var all = function (fs) {
 	return function (c) {
 		return fs.reduce(function (c, f) {
@@ -80,6 +49,55 @@ var all = function (fs) {
 	};
 };
 
+
+// creates a component
+// notice there's some magic sauce reflection - it's for user convenience
+// used only by the following two functions
+var component = function (c) {
+	return function (arg) {
+		if (Array.isArray(arg)) {
+			return component(all(arg)(c));
+		}
+		else if ($.isFunction(arg)) {
+			return component(arg(c));
+		}
+		else {
+			return c(arg);
+		}
+	};
+};
+
+
+// el :: String -> Component
+// creates an html node
+var el = function (name) {
+	return component(function ($container) {
+		var $el = $(document.createElement(name));
+		$container.append($el);
+		return {
+			$el: $el,
+			unbind: function () {
+				$el.remove();
+			},
+		};
+	});
+};
+
+
+// textNode :: String -> Component
+// creates a text node
+var textNode = function (text) {
+	return component(function ($container) {
+		var $text = $(document.createTextNode(text));
+		$container.append($text);
+		return {
+			$el: $text,
+			unbind: function () {
+				$text.remove();
+			},
+		};
+	});
+};
 
 // div :: Component
 var a = el('a');
@@ -118,7 +136,7 @@ var concat = function () {
 		}
 	}
 	
-	return function ($el) {
+	return component(function ($el) {
 		var iDiv = div($el);
 
 		var iCs = components.map(function (c) {
@@ -134,7 +152,7 @@ var concat = function () {
 				iDiv.unbind();
 			},
 		};
-	};
+	});
 };
 
 // returns a component that concatenates components as inline-block
@@ -196,5 +214,51 @@ var paddingLeft = padding('left');
 var paddingTop = padding('top');
 var paddingBottom = padding('bottom');
 
+var paddingAll = function (p) {
+	return all([
+		paddingRight(p),
+		paddingLeft(p),
+		paddingTop(p),
+		paddingBottom(p),
+	]);
+};
+
+var cols = function (count, color) {
+	return all([
+		$css('column-count', count),
+		$css('-webkit-column-count', count),
+		$css('-moz-column-count', count),
+		$css('column-rule', '1px solid ' + color.background),
+		$css('-webkit-column-rule', '1px solid ' + color.background),
+		$css('-moz-column-rule', '1px solid ' + color.background),
+	]);
+};
+
 
 var clear = $addClass('clear')(div);
+
+
+var on = function (name) {
+	return function (f) {
+		return and(function (i) {
+			i.$el.on(name, function ($ev) {
+				return f($ev);
+			});
+		});
+	};
+};
+var click = on('click');
+
+
+var state = function (f) {
+	return and(function (i) {
+		var st;
+		var get = function () {
+			return st;
+		};
+		var set = function (st2) {
+			st = st2;
+		};
+		return f(get, set, i);
+	});
+};
