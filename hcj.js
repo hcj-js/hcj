@@ -14,11 +14,27 @@ var url = function (str) {
 // used typically to have some side effect on the component instance
 var and = function (f) {
 	return function (c) {
-		return function ($el) {
+		return component(function ($el) {
 			var i = c($el);
 			f(i);
 			return i;
-		};
+		});
+	};
+};
+
+
+var andUnbind = function (f) {
+	return function (c) {
+		return component(function ($el) {
+			var i = c($el);
+			var unbindF = f(i);
+			var unbind = i.unbind;
+			i.unbind = function () {
+				unbindF();
+				unbind();
+			};
+			return i;
+		});
 	};
 };
 
@@ -96,6 +112,12 @@ var textNode = function (text) {
 				$text.remove();
 			},
 		};
+	});
+};
+
+var choose = function (f) {
+	return component(function ($container) {
+		return f($container)($container);
 	});
 };
 
@@ -237,17 +259,33 @@ var cols = function (count, color) {
 
 var clear = $addClass('clear')(div);
 
-
 var on = function (name) {
-	return function (f) {
-		return and(function (i) {
-			i.$el.on(name, function ($ev) {
-				return f($ev);
+	return function ($s, f) {
+		return andUnbind(function (i) {
+			var token = '.a' + (Math.random() + '').replace('.', '');
+			name = name + token;
+			$s.on(name, function ($ev) {
+				return f($ev, i);
 			});
+			return function () {
+				i.$el.off(name);
+			};
 		});
 	};
 };
 var click = on('click');
+
+
+var onThis = function (name) {
+	return function (f) {
+		return and(function (i) {
+			i.$el.on(name, function ($ev) {
+				return f($ev, i);
+			});
+		});
+	};
+};
+var clickThis = onThis('click');
 
 
 var state = function (f) {
