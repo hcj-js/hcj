@@ -39,6 +39,22 @@ var andUnbind = function (f) {
 };
 
 
+// need the above?
+var andUnbindD = function (f) {
+	return function (c) {
+		return component(function ($el) {
+			var i = c($el);
+			var unbindF = f(i);
+			var unbind = i.unbind;
+			i.unbind = function () {
+				unbindF(unbind);
+			};
+			return i;
+		});
+	};
+};
+
+
 // append :: Component -> Component -> Component
 // returns a component given by a parent with a child constructed onto it
 var append = function (parent, child) {
