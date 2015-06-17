@@ -56,6 +56,24 @@ var append = function (parent, child) {
 };
 
 
+// todo: replace append with child
+var child = function (child) {
+	return function (parent) {
+		return component(function ($c) {
+			var pI = parent($c);
+			var cI = child(pI.$el);
+			return {
+				$el: pI.$el,
+				unbind: function () {
+					cI.unbind();
+					pI.unbind();
+				},
+			};
+		});
+	};
+};
+
+
 // all :: [a -> a] -> a -> a
 var all = function (fs) {
 	return function (c) {
