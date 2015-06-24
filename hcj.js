@@ -10,69 +10,36 @@ var url = function (str) {
 };
 
 
-// and :: (Instance -> IO ()) -> Component -> Component
-// used typically to have some side effect on the component instance
+// Runs a function on each new instance of a component.  If the
+// function returns a function, the returned function is held in
+// memory, and run when the instance is destroyed.  If the destructor
+// function returns an async promise, the promise is awaited before
+// the prototype component's destroy function is executed.
 var and = function (f) {
 	return function (c) {
 		return component(function ($el) {
 			var i = c($el);
-			f(i);
+			var destroyF = f(i);
+			var destroy = i.destroy;
+			if (destroyF) {
+				i.destroy = function () {
+					var p = destroyF();
+					if (p) {
+						p.then(function () {
+							destroy();
+						});
+					}
+					else {
+						destroy();
+					}
+				};
+			}
 			return i;
 		});
 	};
 };
 
 
-var andUnbind = function (f) {
-	return function (c) {
-		return component(function ($el) {
-			var i = c($el);
-			var unbindF = f(i);
-			var unbind = i.unbind;
-			i.unbind = function () {
-				unbindF();
-				unbind();
-			};
-			return i;
-		});
-	};
-};
-
-
-// need the above?
-var andUnbindD = function (f) {
-	return function (c) {
-		return component(function ($el) {
-			var i = c($el);
-			var unbindF = f(i);
-			var unbind = i.unbind;
-			i.unbind = function () {
-				unbindF(unbind);
-			};
-			return i;
-		});
-	};
-};
-
-
-// append :: Component -> Component -> Component
-// returns a component given by a parent with a child constructed onto it
-var append = function (parent, child) {
-	return component(function ($c) {
-		var pI = parent($c);
-		var cI = child(pI.$el);
-		return {
-			$el: pI.$el,
-			unbind: function () {
-				cI.unbind();
-				pI.unbind();
-			},
-		};
-	});
-};
-
-
-// todo: replace append with child
 var child = function (child) {
 	return function (parent) {
 		return component(function ($c) {
@@ -80,9 +47,9 @@ var child = function (child) {
 			var cI = child(pI.$el);
 			return {
 				$el: pI.$el,
-				unbind: function () {
-					cI.unbind();
-					pI.unbind();
+				destroy: function () {
+					cI.destroy();
+					pI.destroy();
 				},
 			};
 		});
@@ -90,7 +57,6 @@ var child = function (child) {
 };
 
 
-// all :: [a -> a] -> a -> a
 var all = function (fs) {
 	return function (c) {
 		return fs.reduce(function (c, f) {
@@ -102,7 +68,6 @@ var all = function (fs) {
 
 // creates a component
 // notice there's some magic sauce reflection - it's for user convenience
-// used only by the following two functions
 var component = function (c) {
 	return function (arg) {
 		if (Array.isArray(arg)) {
@@ -126,7 +91,7 @@ var el = function (name) {
 		$container.append($el);
 		return {
 			$el: $el,
-			unbind: function () {
+			destroy: function () {
 				$el.remove();
 			},
 		};
@@ -142,16 +107,10 @@ var textNode = function (text) {
 		$container.append($text);
 		return {
 			$el: $text,
-			unbind: function () {
+			destroy: function () {
 				$text.remove();
 			},
 		};
-	});
-};
-
-var choose = function (f) {
-	return component(function ($container) {
-		return f($container)($container);
 	});
 };
 
@@ -201,11 +160,11 @@ var concat = function () {
 		
 		return {
 			$el: iDiv.$el,
-			unbind: function () {
+			destroy: function () {
 				iCs.map(function (iC) {
-					iC.unbind();
+					iC.destroy();
 				});
-				iDiv.unbind();
+				iDiv.destroy();
 			},
 		};
 	});
@@ -295,7 +254,7 @@ var clear = $addClass('clear')(div);
 
 var on = function (name) {
 	return function ($s, f) {
-		return andUnbind(function (i) {
+		return and(function (i) {
 			var token = '.a' + (Math.random() + '').replace('.', '');
 			name = name + token;
 			$s.on(name, function ($ev) {
@@ -352,18 +311,4 @@ var hoverCSS = function (obj) {
 		mousemoveThis(setStyles),
 		mouseoutThis(unsetStyles),
 	]);
-};
-
-
-var state = function (f) {
-	return and(function (i) {
-		var st;
-		var get = function () {
-			return st;
-		};
-		var set = function (st2) {
-			st = st2;
-		};
-		return f(get, set, i);
-	});
 };

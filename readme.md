@@ -8,11 +8,15 @@ A javascript library for web app frontend templating
 2. ???
 3. Profit!
 
+Everything is a Component.  If you have a thing, chances are it's a Component.  And if it's not, it's probably a function that takes Components and returns you a Component.
+
+Components are self-sufficient.  They may run arbitrary javascript code each time they are instanced, signing up whatever listeners they want and appending anything anywhere.  When a component instance is destroyed, it must leave the page just as it found it.  As a component author, it is your responsibility to overcome the urge to remove your neighboring DOM elements from the page.
+
 ## How it works ##
 
-A Component is a function.  Each time one is called, it creates an instance of itself.  A Component takes one argument: a JQuery object to append the new instance to.  It returns an object with two properties: ```$el```, a JQuery object that is the root of the instance, and ```unbind```, a function to completely remove the instance.
+A Component is a function that takes an element and appends something to it.  When called, a component returns an object with two properties: ```$el```, a JQuery object that is the root of the new component instance, and ```destroy```, a function to completely remove the instance from the DOM.
 
-Besides appending an element to its argument, what can a Component do?  Absolutely anything.  It can sign up event handlers anywhere on the page, set up periodic server calls, you name it.  The ```unbind``` function must unhook any of that jazz, as it removes the component instance.
+Besides appending an element to its argument, what can a Component do?  Absolutely anything.  It can sign up event handlers anywhere on the page, set up periodic server calls, you name it.  The ```destroy``` function must unhook any of that jazz, as it removes the component instance.
 
 Primitive components are functions for creating DOM nodes, that is tags and text nodes.  This library gives you the components ```a```, ```div```, and ```img```, for those elements.  It also gives you a function ```textNode``` which takes a string and returns a componet.  E.g. ```textNode('Hello World')``` is a component.
 
@@ -27,7 +31,7 @@ var hello = append(div, textNode('Hello World'));
 var instance = hello($body);
 
 setTimeout(function () {
-  instance.unbind();
+  instance.destroy();
 }, 5000);
 ```
 
