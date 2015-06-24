@@ -5,5 +5,5 @@ var white = {
 
 var black = {
 	background: '#000',
-	text: 'black',
+	text: 'white',
 };

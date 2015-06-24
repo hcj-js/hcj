@@ -252,17 +252,23 @@ var cols = function (count, color) {
 
 var clear = $addClass('clear')(div);
 
+
+var onOff = function ($s, name, f) {
+	var token = '.a' + (Math.random() + '').replace('.', '');
+	name = name + token;
+	$s.on(name, function ($ev) {
+		return f($ev, i);
+	});
+	return function () {
+		$s.off(name);
+	};
+};
+
+
 var on = function (name) {
 	return function ($s, f) {
 		return and(function (i) {
-			var token = '.a' + (Math.random() + '').replace('.', '');
-			name = name + token;
-			$s.on(name, function ($ev) {
-				return f($ev, i);
-			});
-			return function () {
-				i.$el.off(name);
-			};
+			return onOff(i.$el, name, f);
 		});
 	};
 };
@@ -312,3 +318,13 @@ var hoverCSS = function (obj) {
 		mouseoutThis(unsetStyles),
 	]);
 };
+
+
+var resizeWindow = $(window).asEventStream('resize').map(function () {
+	return {
+		width: window.innerWidth,
+		height: window.innerHeight,
+	};
+});
+
+var scrollWindow = $(window).asEventStream('scroll');
