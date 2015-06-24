@@ -308,6 +308,8 @@ var on = function (name) {
 	};
 };
 var click = on('click');
+var mousemove = on('mousemove');
+var mouseover = on('mouseover');
 
 
 var onThis = function (name) {
@@ -320,6 +322,37 @@ var onThis = function (name) {
 	};
 };
 var clickThis = onThis('click');
+var mousemoveThis = onThis('mousemove');
+var mouseoverThis = onThis('mouseover');
+var mouseoutThis = onThis('mouseout');
+
+
+var hoverCSS = function (obj) {
+	var oldStyles = null;
+
+	var setStyles = function ($ev, i) {
+		if (!oldStyles) {
+			oldStyles = {};
+			for (var key in obj) {
+				oldStyles[key] = i.$el.css(key);
+			}
+		}
+		for (var key in obj) {
+			i.$el.css(key, obj[key]);
+		}
+	};
+
+	var unsetStyles = function ($ev, i) {
+		for (var key in obj) {
+			i.$el.css(key, oldStyles[key]);
+		}
+	};
+
+	return all([
+		mousemoveThis(setStyles),
+		mouseoutThis(unsetStyles),
+	]);
+};
 
 
 var state = function (f) {
