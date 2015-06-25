@@ -118,6 +118,10 @@ var textNode = function (text) {
 var a = el('a');
 var div = el('div');
 var img = el('img');
+var input = el('input');
+var li = el('li');
+var textarea = el('textarea');
+var ul = el('ul');
 
 
 // $$ :: String -> [*] -> Component -> Component
@@ -134,6 +138,7 @@ var $addClass = $$('addClass');
 var $css = $$('css');
 var $attr = $$('attr');
 var $html = $$('html');
+var $prop = $$('prop');
 
 
 // concat :: [Component] -> Component
@@ -168,6 +173,14 @@ var concat = function () {
 			},
 		};
 	});
+};
+
+var insertBetween = function (component, components) {
+	for (var ii = components.length - 1; ii > 0; ii--) {
+		components.splice(ii, 0, component);
+	}
+	
+	return components;
 };
 
 // returns a component that concatenates components as inline-block
@@ -209,6 +222,23 @@ var applyColor = function (color, noise) {
 var link = $css('cursor', 'pointer');
 var inline = $css('display', 'inline-block');
 
+var left = $css('float', 'left');
+var right = $css('float', 'right');
+var clear = $addClass('clear')(div);
+
+var hSpace = function (width) {
+	return div([
+		$css('width', width),
+		inline,
+	]);
+};
+var vSpace = function (height) {
+	return div([
+		$css('height', height),
+	]);
+};
+
+
 var margin = function (direction) {
 	return function (amount) {
 		return $css('margin-' + direction, amount);
@@ -249,8 +279,6 @@ var cols = function (count, color) {
 	]);
 };
 
-
-var clear = $addClass('clear')(div);
 
 
 var onOff = function ($s, name, f) {
