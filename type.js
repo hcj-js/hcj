@@ -71,14 +71,58 @@ var or = function (tys) {
 var array = function (ty) {
 	return {
 		check: function (obj, typeError) {
-			var name = 'array(' + ty.name + ')';
+			var name = 'array(' + (ty ? ty.name : '') + ')';
 			
 			if ($.type(obj) !== 'array') {
 				typeError(obj, name);
+				return obj;
 			}
-			return obj.map(function (v) {
-				return type(ty, v);
+			if (ty) {
+				return obj.map(function (v) {
+					return type(ty, v);
+				});
+			}
+			else {
+				return obj;
+			}
+		},
+	};
+};
+
+
+var promise = function (ty) {
+	return {
+		check: function (obj, typeError) {
+			var error = false;
+			func().check(obj.then, function () {
+				typeError();
+				error = true;
 			});
+			if (error || !ty) {
+				return obj;
+			}
+			else {
+				return obj.then(function (result) {
+					return type(ty, result);
+				});
+			}
+		},
+	};
+};
+
+
+var stream = function (ty) {
+	return {
+		check: function (obj, typeError) {
+			instance(Bacon.EventStream, 'stream').check(obj, typeError);
+			if (ty) {
+				return obj.map(function (v) {
+					return type(ty, v);
+				});
+			}
+			else {
+				return obj;
+			}
 		},
 	};
 };
@@ -147,8 +191,57 @@ var func = function (args, o) {
 
 
 var Type = object({
-	name: String,
 	check: func(),
 });
 
 
+var poly = function () {
+
+	var instances = [];
+
+	var f = function () {
+		for (var i = 0; i < instances.length; i++) {
+			var instanceMatches = true;
+			var instance = instances[i];
+
+			for (var j = 0; j < instance.args.length; j++) {
+				var arg = instance.args[j];
+
+				arg.check(arguments[j], function () {
+					instanceMatches = false;
+				});
+			}
+
+			if (instanceMatches) {
+				return instance.impl.apply(window, arguments);
+			};
+		}
+
+		console.warn('no instance found');
+		debugger;
+	};
+
+	f.instance = type(
+		func([array(Type), func()]),
+		function (args, impl) {
+			instances.push({
+				args: args,
+				impl: impl,
+			});
+		});
+
+	return f;
+};
+
+var map = poly();
+map.instance([array()], function (arr, f) {
+	return arr.map(f);
+});
+map.instance([promise()], function (p, f) {
+	return p.then(f);
+});
+
+var reduce = poly();
+reduce.instance([array()], function (arr, f, i) {
+	return arr.reduce(f, i);
+});
