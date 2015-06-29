@@ -1,8 +1,30 @@
-var unit = function (unit) {
-	return function (number) {
-		return number + unit;
-	};
-};
+var Instance = object({
+	// root element of the instance
+	$el: JQuery,
+
+	// remove the instance from the page, clean up everything
+	destroy: func(),
+});
+
+// An instance constructor is any function that takes a jquery object
+// and returns an Instance
+var Constructor = func([JQuery], Instance);
+
+// a Component
+var Component = object({
+	build: Constructor,
+	andThen: func(array(func(Constructor, Constructor))),
+});
+
+
+var Unit = func(Number, String);
+var unit = type(
+	func(String),
+	function (unit) {
+		return type(Unit, function (number) {
+			return number + unit;
+		});
+	});
 var px = unit('px');
 
 var url = function (str) {
@@ -10,51 +32,76 @@ var url = function (str) {
 };
 
 
+var component = type(
+	func(Constructor, Component),
+	function (c) {
+		return {
+			build: c,
+		};
+		return function (arg) {
+			if (Array.isArray(arg)) {
+				return component(all(arg)(c));
+			}
+			else if ($.isFunction(arg)) {
+				return component(arg(c));
+			}
+			else {
+				return c(arg);
+			}
+		};
+	});
+
+
 // Runs a function on each new instance of a component.  If the
 // function returns a function, the returned function is held in
 // memory, and run when the instance is destroyed.  If the destructor
 // function returns an async promise, the promise is awaited before
 // the prototype component's destroy function is executed.
-var and = function (f) {
-	return function (c) {
-		return component(function ($el) {
-			var i = c($el);
-			var destroyF = f(i);
-			var destroy = i.destroy;
-			if (destroyF) {
-				i.destroy = function () {
-					var p = destroyF();
-					if (p) {
-						p.then(function () {
+var and = type(
+	func(func(Instance, or([
+		Bottom,
+	])), ConstructorFunc), function (f) {
+		return function (c) {
+			return function ($el) {
+				var i = c($el);
+				var destroyF = f(i);
+				var destroy = i.destroy;
+				if (destroyF) {
+					i.destroy = function () {
+						var p = destroyF();
+						if (p) {
+							p.then(function () {
+								destroy();
+							});
+						}
+						else {
 							destroy();
-						});
-					}
-					else {
-						destroy();
-					}
-				};
-			}
-			return i;
-		});
-	};
-};
-
-
-var child = function (child) {
-	return function (parent) {
-		return component(function ($c) {
-			var pI = parent($c);
-			var cI = child(pI.$el);
-			return {
-				$el: pI.$el,
-				destroy: function () {
-					cI.destroy();
-					pI.destroy();
-				},
+						}
+					};
+				}
+				return i;
 			};
-		});
-	};
-};
+		};
+	});
+
+
+var child = type(
+	func(Constructor, ConstructorFunc),
+	function (child) {
+		return function (parent) {
+			return function ($c) {
+				var pI = parent($c);
+				var cI = child(pI.$el);
+				return {
+					$el: pI.$el,
+					destroy: function () {
+						cI.destroy();
+						pI.destroy();
+					},
+				};
+			};
+		};
+	});
 
 
 var all = function (fs) {
@@ -62,23 +109,6 @@ var all = function (fs) {
 		return fs.reduce(function (c, f) {
 			return f(c);
 		}, c);
-	};
-};
-
-
-// creates a component
-// notice there's some magic sauce reflection - it's for user convenience
-var component = function (c) {
-	return function (arg) {
-		if (Array.isArray(arg)) {
-			return component(all(arg)(c));
-		}
-		else if ($.isFunction(arg)) {
-			return component(arg(c));
-		}
-		else {
-			return c(arg);
-		}
 	};
 };
 
@@ -134,46 +164,27 @@ var $$ = function (func) {
 		});
 	};
 };
-var $addClass = $$('addClass');
-var $css = $$('css');
-var $attr = $$('attr');
-var $html = $$('html');
-var $prop = $$('prop');
 
+var $addClass = type(
+	func(String),
+	$$('addClass'));
 
-// concat :: [Component] -> Component
-// returns a component that concatenates multiple components together
-// within a div
-var concat = function () {
-	var components = [];
-	for (var i = 0; i < arguments.length; i++) {
-		var arg = arguments[i];
-		if (Array.isArray(arg)) {
-			components = components.concat(arg);
-		}
-		else {
-			components.push(arg);
-		}
-	}
-	
-	return component(function ($el) {
-		var iDiv = div($el);
+var $css = type(
+	func([String, String]),
+	$$('css'));
 
-		var iCs = components.map(function (c) {
-			return c(iDiv.$el);
-		});
-		
-		return {
-			$el: iDiv.$el,
-			destroy: function () {
-				iCs.map(function (iC) {
-					iC.destroy();
-				});
-				iDiv.destroy();
-			},
-		};
-	});
-};
+var $attr = type(
+	func([String, String]),
+	$$('attr'));
+
+var $prop = type(
+	func([String, String]),
+	$$('prop'));
+
+var $html = type(
+	func(String),
+	$$('html'));
+
 
 var insertBetween = function (component, components) {
 	for (var ii = components.length - 1; ii > 0; ii--) {
@@ -183,41 +194,6 @@ var insertBetween = function (component, components) {
 	return components;
 };
 
-// returns a component that concatenates components as inline-block
-// divs, and justifies them
-var justify = function (components) {
-	for (var ii = components.length - 1; ii >= 0; ii--) {
-		components.splice(ii, 0, textNode(' '));
-	}
-	return $addClass('justify')(concat(components));
-};
-
-
-var applyColorJquery = function ($el, color, noise) {
-	if (noise) {
-		$el.css('background-image', url(color.noiseSrc));
-		$el.css('color', color.text);
-	}
-	else {
-		$el.css('background-color', color.background);
-		$el.css('color', color.text);
-	}
-};
-
-var applyColor = function (color, noise) {
-	if (noise) {
-		return all([
-			$css('background-image', url(color.noiseSrc)),
-			$css('color', color.text),
-		]);
-	}
-	else {
-		return all([
-			$css('background-color', color.background),
-			$css('color', color.text),
-		]);
-	}
-};
 
 var link = $css('cursor', 'pointer');
 var inline = $css('display', 'inline-block');
