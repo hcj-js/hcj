@@ -76,10 +76,10 @@ var all = type(
 // add some syntactic sugar for calling and and all
 var component = function (c) {
 	c.and = function (f) {
-		return f(this);
+		return component(f(this));
 	};
 	c.all = function () {
-		return all.apply(window, arguments)(this);
+		return component(all.apply(window, arguments)(this));
 	};
 	return c;
 };
@@ -174,3 +174,52 @@ var resizeWindow = $(window).asEventStream('resize').map(function () {
 	};
 });
 var scrollWindow = $(window).asEventStream('scroll');
+
+
+var concat = function () {
+	var components = [];
+	for (var i = 0; i < arguments.length; i++) {
+		var arg = arguments[i];
+		if (Array.isArray(arg)) {
+			components = components.concat(arg);
+		}
+		else {
+			components.push(arg);
+		}
+	}
+	
+	return component(function ($el) {
+		var iDiv = div($el);
+
+		var iCs = components.map(function (c) {
+			return c(iDiv.$el);
+		});
+		
+		return {
+			$el: iDiv.$el,
+			destroy: function () {
+				iCs.map(function (iC) {
+					iC.destroy();
+				});
+				iDiv.destroy();
+			},
+		};
+	});
+};
+
+var justify = function (components) {
+	for (var ii = components.length - 1; ii >= 0; ii--) {
+		components.splice(ii, 0, textNode(' '));
+	}
+	return concat(components).and($addClass('justify'));
+};
+
+var GridConfig = object({
+	
+});
+
+var grid = type(
+	func(GridConfig, Component),
+	function (config) {
+		return div;
+	});
