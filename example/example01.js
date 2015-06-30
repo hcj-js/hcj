@@ -14,9 +14,10 @@ debugger;
 
 
 // If there's a type error, this 'type' function logs a message to the
-// console.  Additionally, it has a 'debugger' breakpoint that's hit
-// on every type error if the console is open.  You can look at the
-// call stack to see the 'type' call where the error happened.
+// console.  Additionally, it has a 'debugger' statement, so you can
+// use the call stack to see where type errors happen.
+
+// Here's a type error now:
 debugger;
 
 var str = type(String, 3);
