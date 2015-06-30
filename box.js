@@ -10,10 +10,29 @@ var Align = enumeration([
 ]);
 
 var ExpandWidth = enumeration([
+	'none',
+	'justify',
+	'fill',
 ]);
 
 
-var BoxContents = 
+var DisplayText = object({
+	color: String,
+	text: String,
+	size: Number,
+	lineHeight: Number,
+});
+
+
+var BoxContents = oneOf({
+	image: String,
+	text: DisplayText,
+	boxes: object({
+		gutter: Number,
+		boxes: array(Box),
+		expandWidth: ExpandWidth,
+	}),
+});
 
 
 var Box = object({
@@ -21,10 +40,7 @@ var Box = object({
 	dimensions: stream(Dimensions),
 	align: Align,
 	justify: Boolean,
-	contents: or([
-		array(Box),
-		String,
-	]),
+	contents: BoxContents,
 });
 
 var box = type(

@@ -162,15 +162,24 @@ var enumeration = function (options) {
 };
 
 var oneOf = function (defs) {
+	var tagProp = '_tag';
+	
 	var ty = {
 		check: function (obj, typeError) {
-			
+			return def[obj[tagProp]].check(obj, typeError);
 		}
 	};
 
 	for (var key in defs) {
-		ty.
+		var def = defs[key];
+		
+		ty[key] = function (obj) {
+			obj = type(def, obj);
+			obj[tagProp] = key;
+		};
 	};
+
+	return ty;
 };
 
 var instance = function (klass, name) {
