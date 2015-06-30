@@ -5,21 +5,6 @@ var Instance = object({
 
 var Component = func([JQuery], Instance);
 
-var Unit = func(Number, String);
-var unit = type(
-	func(String),
-	function (unit) {
-		return type(Unit, function (number) {
-			return number + unit;
-		});
-	});
-var px = unit('px');
-
-var url = function (str) {
-	return 'url("' + str + '")';
-};
-
-
 // Runs a function on each new instance of a component.  If the
 // function returns a function, the returned function is held in
 // memory, and run when the instance is destroyed.  If the destructor

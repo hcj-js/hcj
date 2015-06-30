@@ -1,3 +1,18 @@
+var Unit = func(Number, String);
+var unit = type(
+	func(String),
+	function (unit) {
+		return type(Unit, function (number) {
+			return number + unit;
+		});
+	});
+var px = unit('px');
+
+var url = function (str) {
+	return 'url("' + str + '")';
+};
+
+
 // $$ :: String -> [*] -> Component -> Component
 // applies a jquery function to the component instance after creation
 var $$ = function (func) {
