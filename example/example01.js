@@ -100,9 +100,8 @@ debugger;
 
 
 // That looks kind of messy, though.  Purely for convenience, 'func'
-// lets you pass in two optional (and highly recommended) arguments to
-// check the value's arguments and return value each time it is
-// called.
+// lets you pass in two optional arguments to check the value's
+// arguments and return value each time it is called.
 debugger;
 
 var f = type(

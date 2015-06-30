@@ -14,7 +14,9 @@ var type = function (t, obj) {
 
 // everything is a Bottom
 var Bottom = {
-	check: function () {},
+	check: function (obj) {
+		return obj;
+	},
 };
 
 
@@ -156,6 +158,18 @@ var enumeration = function (options) {
 			}
 			return obj;
 		}
+	};
+};
+
+var oneOf = function (defs) {
+	var ty = {
+		check: function (obj, typeError) {
+			
+		}
+	};
+
+	for (var key in defs) {
+		ty.
 	};
 };
 
