@@ -1,9 +1,5 @@
-// Type signatures are a great tool for communication, and for helping
-// ensure code correctness.  To help me write this library, I've
-// written a small tool for specifying types, and verifying them at
-// runtime.
-
-
+// To help me write this library, I've written a small tool for
+// specifying types, and verifying them at runtime.
 
 
 
@@ -17,11 +13,10 @@ console.log(str);
 debugger;
 
 
-// If there's a type error, this 'type' function logs a message to
-// your console.  Additionally, it has a 'debugger' breakpoint.  If a
-// type error happens and you have your console open (like you
-// probably do now), you can look at the call stack to see the line
-// where the error happened.  Try it now.
+// If there's a type error, this 'type' function logs a message to the
+// console.  Additionally, it has a 'debugger' breakpoint that's hit
+// on every type error if the console is open.  You can look at the
+// call stack to see the 'type' call where the error happened.
 debugger;
 
 var str = type(String, 3);
@@ -31,7 +26,7 @@ debugger;
 
 
 // Currently the only built-in types are String, Number, and Boolean.
-// (I suppose I should add Date or something.)
+// (Date is coming)
 debugger;
 
 var str = type(String, 'aoeu');

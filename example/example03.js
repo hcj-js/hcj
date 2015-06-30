@@ -34,7 +34,7 @@ $(function () {
 
 	
 	debugger;
-	// Components have helper methods you may use to apply one or more
+	// Components have helper methods you can use to apply one or more
 	// of these.
 
 	// applying one

@@ -3,10 +3,22 @@ var Dimensions = object({
 	height: Number,
 });
 
+var Align = enumeration([
+	'left',
+	'right',
+	'center',
+]);
+
+var ExpandWidth = enumeration([
+]);
+
+
 var Box = object({
-	width: func(Number),
-	height: func(Number),
+	minDims: func([], Dimensions),
 	dimensions: stream(Dimensions),
+	align: Align,
+	justify: Boolean,
+	contents: array(Box),
 });
 
 var box = type(

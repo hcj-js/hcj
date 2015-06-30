@@ -142,6 +142,23 @@ var object = function (desc) {
 	};
 };
 
+var enumeration = function (options) {
+	return {
+		check: function (obj, typeError) {
+			var matchesOne = false;
+			options.map(function (o) {
+				if (o === obj) {
+					matchesOne = true;
+				}
+			});
+			if (!matchesOne) {
+				typeError();
+			}
+			return obj;
+		}
+	};
+};
+
 var instance = function (klass, name) {
 	return {
 		name: 'instance',

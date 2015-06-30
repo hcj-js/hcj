@@ -173,5 +173,4 @@ var resizeWindow = $(window).asEventStream('resize').map(function () {
 		height: window.innerHeight,
 	};
 });
-
 var scrollWindow = $(window).asEventStream('scroll');
