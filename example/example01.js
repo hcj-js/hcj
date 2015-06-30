@@ -133,7 +133,7 @@ var Structure = object({
 	})),
 });
 
-var instance = {
+var instance = type(Structure, {
 	name: 'asoeckrhaoserchk',
 	nested_structures: [{
 		name: ',.rshcaoesu',
@@ -142,6 +142,6 @@ var instance = {
 		name: 'aoerskch',
 		count: 832,
 	}],
-};
+});
 
 debugger;
