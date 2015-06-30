@@ -4,11 +4,21 @@ var type = function (t, obj) {
 	}
 	else {
 		return t.check(obj, function (o, name) {
-			message = 'type error: ' + JSON.stringify(o) + ' is not a ' + name;
+			var oName = '';
+			if ($.type(o) === 'function') {
+				oName = 'function';
+			}
+			else {
+				oName = JSON.stringify(o);
+			}
+			message = 'type error: ' + oName + ' is not a ' + name;
 			console.warn(message);
-			debugger;
 		});
 	}
+};
+
+var id = function (obj) {
+	return obj;
 };
 
 
@@ -54,17 +64,19 @@ var Boolean = {
 var or = function (tys) {
 	return {
 		check: function (obj, typeError) {
-			var tryIndex = function (i) {
+			var newObj = obj;
+			var matches = [];
+			var tryIndex = function (i, data) {
 				if (i === tys.length) {
 					return typeError(obj, 'or');
 				}
-				return tys[i].check(obj, function () {
-					return tryIndex(i + 1);
-				});
+				newObj = tys[i].check(obj, function (a, b, data) {
+					return tryIndex(i + 1, data);
+				}, data);
 			};
 			tryIndex(0);
 
-			return obj;
+			return newObj;
 		},
 	};
 };
@@ -196,34 +208,65 @@ var instance = function (klass, name) {
 var JQuery = instance(jQuery, 'JQuery');
 
 
-var func = function (args, o) {
+var func = function (types, o) {
 	return {
 		name: 'func',
-		check: function (obj, typeError) {
+		check: function (obj, typeError, oldResult) {
 			if ($.type(obj) !== 'function') {
 				typeError();
 			}
-			return function () {
-				if (args) {
-					if ($.type(args) !== 'array') {
-						args = [args];
-					}
-					for (var i = 0; i < args.length; i++) {
-						arguments[i] = type(args[i], arguments[i]);
-					}
-				}
-				var result = obj.apply(window, arguments);
+			var checkResult = function (args, result) {
 				if (o) {
 					if ($.type(o) === 'function') {
-						return type(o.apply(window, arguments), result);
+						return o.apply(window, args).check(result, function (a, b, resultResult) {
+							return typeError(obj, 'func', {
+								args: args,
+								result: result,
+								resultResult: resultResult,
+							});
+						}, oldResult.resultResult);
 					}
 					else {
-						return type(o, result);
+						return o.check(result, function (a, b, resultResult) {
+							return typeError(obj, 'func', {
+								args: args,
+								result: result,
+								resultResult: resultResult,
+							});
+						}, oldResult.resultResult);
 					}
 				}
 				else {
 					return result;
 				}
+			};
+			var checkArgs = function (args) {
+				if (types) {
+					if ($.type(types) !== 'array') {
+						types = [types];
+					}
+					for (var i = 0; i < types.length; i++) {
+						args[i] = types[i].check(args[i], function () {
+							typeError(obj, 'func', {
+								args: args,
+							});
+						});
+					}
+				}
+				if (oldResult.result) {
+					return checkResult(args, oldResult.result);
+				}
+				var result = obj.apply(window, args);
+				return checkResult(args, result);
+			};
+
+			oldResult = oldResult || {};
+			if (oldResult.args) {
+				return checkArgs(oldResult.args);
+			}
+			return function () {
+				var args = arguments;
+				return checkArgs(args);
 			};
 		},
 	};
