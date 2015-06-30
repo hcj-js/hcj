@@ -208,32 +208,34 @@ var instance = function (klass, name) {
 var JQuery = instance(jQuery, 'JQuery');
 
 
-var func = function (types, o) {
+var func = function (types, outputType) {
 	return {
 		name: 'func',
-		check: function (obj, typeError, oldResult) {
+		check: function (obj, typeError, executionData) {
+			executionData = executionData || {};
+			
 			if ($.type(obj) !== 'function') {
 				typeError();
 			}
 			var checkResult = function (args, result) {
-				if (o) {
-					if ($.type(o) === 'function') {
-						return o.apply(window, args).check(result, function (a, b, resultResult) {
+				if (outputType) {
+					if ($.type(outputType) === 'function') {
+						return outputType.apply(window, args).check(result, function (a, b, resultResult) {
 							return typeError(obj, 'func', {
 								args: args,
 								result: result,
 								resultResult: resultResult,
 							});
-						}, oldResult.resultResult);
+						}, executionData.resultResult);
 					}
 					else {
-						return o.check(result, function (a, b, resultResult) {
+						return outputType.check(result, function (a, b, resultResult) {
 							return typeError(obj, 'func', {
 								args: args,
 								result: result,
 								resultResult: resultResult,
 							});
-						}, oldResult.resultResult);
+						}, executionData.resultResult);
 					}
 				}
 				else {
@@ -253,16 +255,15 @@ var func = function (types, o) {
 						});
 					}
 				}
-				if (oldResult.result) {
-					return checkResult(args, oldResult.result);
+				if (executionData.result) {
+					return checkResult(args, executionData.result);
 				}
 				var result = obj.apply(window, args);
 				return checkResult(args, result);
 			};
 
-			oldResult = oldResult || {};
-			if (oldResult.args) {
-				return checkArgs(oldResult.args);
+			if (executionData.args) {
+				return checkArgs(executionData.args);
 			}
 			return function () {
 				var args = arguments;
