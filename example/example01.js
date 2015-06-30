@@ -1,8 +1,3 @@
-// To help me write this library, I've written a small tool for
-// specifying types, and verifying them at runtime.
-
-
-
 // The 'type' function takes a type, and a value.  It makes sure the
 // value is of the given type, and then returns the value.
 debugger;
