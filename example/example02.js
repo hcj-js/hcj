@@ -3,8 +3,6 @@
 
 // Create a polymorphic function using 'poly()'.  Instance it for
 // various types
-debugger;
-
 var map = poly();
 
 // map implementation for arrays
@@ -43,5 +41,3 @@ map(testStream, log);
 testDeferred.resolve('aoeu');
 testStream.push('pushing to bus');
 testStream.push('pushing to bus again');
-
-debugger;

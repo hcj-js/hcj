@@ -1,6 +1,3 @@
-debugger;
-
-
 var f = type(
 	or([
 		func(String, func([], String)),
@@ -28,6 +25,3 @@ var f = type(
 f('a')();
 f('b')();
 f('c')();
-
-
-debugger;
