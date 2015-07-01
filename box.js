@@ -15,6 +15,10 @@ var ExpandWidth = enumeration([
 	'fill',
 ]);
 
+var LineHeight = oneOf({
+	px: Number,
+	ratio: Number,
+});
 
 var DisplayText = object({
 	color: String,
@@ -25,26 +29,22 @@ var DisplayText = object({
 
 
 var BoxContents = oneOf({
-	image: String,
+	imageUrl: String,
 	text: DisplayText,
-	boxes: object({
-		gutter: Number,
-		boxes: array(Box),
-		expandWidth: ExpandWidth,
-	}),
+	boxes: array(Box),
 });
 
 
 var Box = object({
-	minDims: func([], Dimensions),
 	dimensions: stream(Dimensions),
 	align: Align,
 	justify: Boolean,
 	contents: BoxContents,
 });
 
-var box = type(
-	func([], Box),
-	function () {
-		
+
+var boxComponent = type(
+	func(Box, Component),
+	function (box) {
+		return div;
 	});

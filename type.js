@@ -3,7 +3,7 @@ var type = function (t, obj) {
 		return obj;
 	}
 	else {
-		return t.check(obj, function (o, name) {
+		return t.check(obj, function (o) {
 			var oName = '';
 			if ($.type(o) === 'function') {
 				oName = 'function';
@@ -11,7 +11,7 @@ var type = function (t, obj) {
 			else {
 				oName = JSON.stringify(o);
 			}
-			message = 'type error: ' + oName + ' is not a ' + name;
+			message = 'type error: ' + oName + ' is not a ' + t.name;
 			console.warn(message);
 		});
 	}
@@ -22,8 +22,25 @@ var id = function (obj) {
 };
 
 
+var Type = {
+	name: 'Type',
+	check: function (obj, typeError) {
+		if ($.type(obj) !== 'object') {
+			typeError(obj);
+		}
+		if ($.type(obj.check) !== 'function') {
+			typeError(obj);
+		}
+		if ($.type(obj.name) !== 'string') {
+			typeError(obj);
+		}
+	},
+}
+
+
 // everything is a Bottom
 var Bottom = {
+	name: 'Bottom',
 	check: function (obj) {
 		return obj;
 	},
@@ -31,9 +48,10 @@ var Bottom = {
 
 
 var String = {
+	name: 'String',
 	check: function (obj, typeError) {
 		if ($.type(obj) !== 'string') {
-			typeError(obj, 'string');
+			typeError(obj);
 		}
 		return obj;
 	},
@@ -41,10 +59,10 @@ var String = {
 
 
 var Number = {
-	name: 'number',
+	name: 'Number',
 	check: function (obj, typeError) {
 		if ($.type(obj) !== 'number') {
-			typeError(obj, 'number');
+			typeError(obj);
 		}
 		return obj;
 	},
@@ -52,9 +70,10 @@ var Number = {
 
 
 var Boolean = {
+	name: 'Boolean',
 	check: function (obj, typeError) {
 		if ($.type(obj) !== 'boolean') {
-			typeError(obj, 'boolean');
+			typeError(obj);
 		}
 		return obj;
 	},
@@ -63,14 +82,15 @@ var Boolean = {
 
 var or = function (tys) {
 	return {
+		name: 'or(' + tys.reduce(function (a, t) { return a + t.name + ',\n' }, '') + ')',
 		check: function (obj, typeError) {
 			var newObj = obj;
 			var matches = [];
 			var tryIndex = function (i, data) {
 				if (i === tys.length) {
-					return typeError(obj, 'or');
+					return typeError(obj);
 				}
-				newObj = tys[i].check(obj, function (a, b, data) {
+				newObj = tys[i].check(obj, function (a, data) {
 					return tryIndex(i + 1, data);
 				}, data);
 			};
@@ -84,11 +104,12 @@ var or = function (tys) {
 
 var array = function (ty) {
 	return {
+		name: 'array(' + (ty ? ty.name : '') + ')',
 		check: function (obj, typeError) {
 			var name = 'array(' + (ty ? ty.name : '') + ')';
 			
 			if ($.type(obj) !== 'array') {
-				typeError(obj, name);
+				typeError(obj);
 				return obj;
 			}
 			if (ty) {
@@ -106,6 +127,7 @@ var array = function (ty) {
 
 var promise = function (ty) {
 	return {
+		name: 'promise(' + (ty ? ty.name : '') + ')',
 		check: function (obj, typeError) {
 			var error = false;
 			func().check(obj.then, function () {
@@ -127,6 +149,7 @@ var promise = function (ty) {
 
 var stream = function (ty) {
 	return {
+		name: 'stream(' + (ty ? ty.name : '') + ')',
 		check: function (obj, typeError) {
 			instance(Bacon.EventStream, 'stream').check(obj, typeError);
 			if (ty) {
@@ -143,10 +166,16 @@ var stream = function (ty) {
 
 
 var object = function (desc) {
+	var name = 'object(';
+	for (var key in desc) {
+		name += desc[key].name + ', ';
+	}
+	name += ')';
 	return {
+		name: name,
 		check: function (obj, typeError) {
 			if ($.type(obj) !== 'object') {
-				typeError(obj, 'object');
+				typeError(obj);
 			}
 			for (var key in desc) {
 				obj[key] = type(desc[key], obj[key]);
@@ -158,6 +187,7 @@ var object = function (desc) {
 
 var enumeration = function (options) {
 	return {
+		name: 'enumeration(' + options.reduce(function (s, o) { return s + o + ' ';}) + ')',
 		check: function (obj, typeError) {
 			var matchesOne = false;
 			options.map(function (o) {
@@ -182,6 +212,8 @@ var oneOf = function (defs) {
 		}
 	};
 
+	var name = 'oneOf(';
+	
 	for (var key in defs) {
 		var def = defs[key];
 		
@@ -189,17 +221,26 @@ var oneOf = function (defs) {
 			obj = type(def, obj);
 			obj[tagProp] = key;
 		};
+
+		name += key + ': ' + def.name + ', ';
 	};
+	
+	name += ')';
+	ty.name = name;
 
 	return ty;
+};
+var cases = function (obj, cs) {
+	var tagProp = '_tag';
+	return cs[obj[tagProp]](obj);
 };
 
 var instance = function (klass, name) {
 	return {
-		name: 'instance',
+		name: 'instance(' + name + ')',
 		check: function (obj, typeError) {
 			if (!(obj instanceof klass)) {
-				typeError(obj, name);
+				typeError(obj);
 			}
 			return obj;
 		},
@@ -209,8 +250,11 @@ var JQuery = instance(jQuery, 'JQuery');
 
 
 var func = function (types, outputType) {
+	if (types && $.type(types) !== 'array') {
+		types = [types];
+	}
 	return {
-		name: 'func',
+		name: 'func([' + (types ? types.reduce(function (s, t) { return s + t.name + ', '; }, '') : '') + '], ' + (outputType ? outputType.name : '') + ')',
 		check: function (obj, typeError, executionData) {
 			executionData = executionData || {};
 			
@@ -220,8 +264,8 @@ var func = function (types, outputType) {
 			var checkResult = function (args, result) {
 				if (outputType) {
 					if ($.type(outputType) === 'function') {
-						return outputType.apply(window, args).check(result, function (a, b, resultResult) {
-							return typeError(obj, 'func', {
+						return outputType.apply(window, args).check(result, function (a, resultResult) {
+							return typeError(obj, {
 								args: args,
 								result: result,
 								resultResult: resultResult,
@@ -229,8 +273,8 @@ var func = function (types, outputType) {
 						}, executionData.resultResult);
 					}
 					else {
-						return outputType.check(result, function (a, b, resultResult) {
-							return typeError(obj, 'func', {
+						return outputType.check(result, function (a, resultResult) {
+							return typeError(obj, {
 								args: args,
 								result: result,
 								resultResult: resultResult,
@@ -244,12 +288,9 @@ var func = function (types, outputType) {
 			};
 			var checkArgs = function (args) {
 				if (types) {
-					if ($.type(types) !== 'array') {
-						types = [types];
-					}
 					for (var i = 0; i < types.length; i++) {
 						args[i] = types[i].check(args[i], function () {
-							typeError(obj, 'func', {
+							typeError(obj, {
 								args: args,
 							});
 						});
@@ -272,11 +313,6 @@ var func = function (types, outputType) {
 		},
 	};
 };
-
-
-var Type = object({
-	check: func(),
-});
 
 
 var poly = function () {
@@ -329,3 +365,54 @@ var reduce = poly();
 reduce.instance([array()], function (arr, f, i) {
 	return arr.reduce(f, i);
 });
+
+
+var typeclass = function () {
+
+	var instances = [];
+
+	var f = function () {
+		for (var i = 0; i < instances.length; i++) {
+			var instanceMatches = true;
+			var instance = instances[i];
+
+			for (var j = 0; j < instance.args.length; j++) {
+				var arg = instance.args[j];
+
+				arg.check(arguments[j], function () {
+					instanceMatches = false;
+				});
+			}
+
+			if (instanceMatches) {
+				return instance.impl;
+			};
+		}
+
+		console.warn('no instance found');
+		debugger;
+	};
+
+	f.instance = type(
+		func([array(Type), func()]),
+		function (args, impl) {
+			instances.push({
+				args: args,
+				impl: impl,
+			});
+		});
+
+	return f;
+};
+
+
+var monad = typeclass(function (m) {
+	return {
+		return: function (a) {
+			return m(a);
+		},
+		bind: function (a) {
+		},
+	};
+});
+// monad.instance([
