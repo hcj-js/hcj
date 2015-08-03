@@ -1,0 +1,3 @@
+[submodule "type"]
+	path = type
+	url = https://github.com/jeffersoncarpenter/type.js.git

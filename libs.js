@@ -66,29 +66,48 @@ var scrollWindow = $(window).asEventStream('scroll');
 var concat = type(
 	func([stream(Component), stream(Component)], Component),
 	function (addCs, removeCs) {
-		var cs = [];
-		var is = [];
-		
-		var minWidth = 0;
-
-		addCs.onValue(function (c) {
-			cs.push(c);
-		});
+		var states = [];
 		
 		var conc = div.all([
-			function (i) {
-				var addC = function (c) {
-					debugger;
-					is.push(c.create(i.$el, c.minWidth, Bacon.never()));
-					c.minWidth.scan(0, function (a, v) {
-						minWidth += (v - a);
-						conc.minWidth.push(minWidth);
-						return v;
-					});
-				};
+			function (i, context) {
 				
-				cs.map(addC);
-				addCs.onValue(addC);
+				addCs.onValue(function (c) {
+					var positionStream = states.reduce(function (sum, state) {
+						return sum.combine(state.instance.minHeight, function (a, b) {
+							return a + b;
+						});
+					}, Bacon.once(0)).map(function (y) {
+						return {
+							x: 0,
+							y: y,
+						};
+					});
+					
+					var cContext = {
+						$el: i.$el,
+						position: positionStream,
+						width: context.width,
+						height: Bacon.never(),
+					};
+
+					var index = states.length;
+					var state = {
+						component: c,
+						instance: c.create(cContext),
+					};
+					states.push(state);
+
+					var updateHeight = function () {
+						i.minHeight.push(states.reduce(function (a, s) {
+							return a + s.minHeight;
+						}, 0));
+					};
+
+					state.instance.minHeight.onValue(function (mh) {
+						state.minHeight = mh;
+						updateHeight();
+					});
+				});
 			},
 		]);
 		
