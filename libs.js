@@ -18,9 +18,9 @@ var url = function (str) {
 var $$ = function (func) {
 	return function () {
 		var args = arguments;
-		return and(function (i) {
+		return function (i) {
 			i.$el[func].apply(i.$el, args);
-		});
+		};
 	};
 };
 
@@ -54,56 +54,51 @@ var insertBetween = function (component, components) {
 };
 
 
-var resizeWindow = $(window).asEventStream('resize').map(function () {
-	return {
-		width: window.innerWidth,
-		height: window.innerHeight,
-	};
-});
+var windowWidth = function () {
+	return $(window).asEventStream('resize').map(function () {
+		return window.innerWidth;
+	}).merge(Bacon.once(window.innerWidth));
+};
+
 var scrollWindow = $(window).asEventStream('scroll');
 
 
-var concat = function () {
-	var components = [];
-	for (var i = 0; i < arguments.length; i++) {
-		var arg = arguments[i];
-		if (Array.isArray(arg)) {
-			components = components.concat(arg);
-		}
-		else {
-			components.push(arg);
-		}
-	}
-	
-	return component(function ($el) {
-		var iDiv = div($el);
+var concat = type(
+	func([stream(Component), stream(Component)], Component),
+	function (addCs, removeCs) {
+		var cs = [];
+		var is = [];
+		
+		var minWidth = 0;
 
-		var iCs = components.map(function (c) {
-			return c(iDiv.$el);
+		addCs.onValue(function (c) {
+			cs.push(c);
 		});
 		
-		return {
-			$el: iDiv.$el,
-			destroy: function () {
-				iCs.map(function (iC) {
-					iC.destroy();
-				});
-				iDiv.destroy();
+		var conc = div.all([
+			function (i) {
+				var addC = function (c) {
+					debugger;
+					is.push(c.create(i.$el, c.minWidth, Bacon.never()));
+					c.minWidth.scan(0, function (a, v) {
+						minWidth += (v - a);
+						conc.minWidth.push(minWidth);
+						return v;
+					});
+				};
+				
+				cs.map(addC);
+				addCs.onValue(addC);
 			},
-		};
+		]);
+		
+		return conc;
 	});
-};
 
-var justify = function (components) {
-	for (var ii = components.length - 1; ii >= 0; ii--) {
-		components.splice(ii, 0, textNode(' '));
-	}
-	return concat(components).and($addClass('justify'));
-};
 
 var GridConfig = object({
-	
 });
+
 
 var grid = type(
 	func(GridConfig, Component),
