@@ -42,85 +42,310 @@ var $prop = type(
 
 var $html = type(
 	func(String),
-	$$('html'));
+	function (string) {
+		return function (i) {
+			i.$el.html(string);
+			var mw = findMinWidth(i.$el);
+			var mh = findMinHeight(i.$el)
+			i.minWidth.push(mw);
+			i.minHeight.push(mh);
+		};
+	});
 
 
-var insertBetween = function (component, components) {
-	for (var ii = components.length - 1; ii > 0; ii--) {
-		components.splice(ii, 0, component);
-	}
-	
-	return components;
+var windowWidth = Stream.never();
+var updateWindowWidth = function () {
+	windowWidth.push($('body').width());
+}
+$(updateWindowWidth);
+$(window).on('resize', function () {
+	updateWindowWidth();
+});
+
+var windowScroll = Stream.never();
+$(window).on('scroll', function () {
+	windowScroll.push(window.scrollY);
+});
+windowScroll.push(window.scrollY);
+
+var appendToI = function (c) {
+	return function (i, ctx) {
+		var destroy = i.destroy;
+		c.create(ctx);
+	};
 };
 
-
-var windowWidth = function () {
-	return $(window).asEventStream('resize').map(function () {
-		return window.innerWidth;
-	}).merge(Bacon.once(window.innerWidth));
+var componentName = function (name) {
+	return function (i) {
+		i.$el.addClass(name);
+	};
 };
 
-var scrollWindow = $(window).asEventStream('scroll');
-
-
-var concat = type(
-	func([stream(Component), stream(Component)], Component),
-	function (addCs, removeCs) {
-		var states = [];
-		
+var stack = type(
+	func([list(Component)], Component),
+	function (cs) {
 		var conc = div.all([
-			function (i, context) {
-				
-				addCs.onValue(function (c) {
-					var positionStream = states.reduce(function (sum, state) {
-						return sum.combine(state.instance.minHeight, function (a, b) {
+			componentName('stack'),
+			children(cs),
+			wireChildren(function (instance, context, is) {
+				var totalMinHeightStream = function (is) {
+					return Stream.combine(is.map(function (i) {
+						return i.minHeight;
+					}), function () {
+						var args = Array.prototype.slice.call(arguments);
+						return args.reduce(function (a, b) {
 							return a + b;
-						});
-					}, Bacon.once(0)).map(function (y) {
-						return {
-							x: 0,
-							y: y,
-						};
+						}, 0);
+					});
+				};
+
+				var contexts = [];
+				is.reduce(function (is, i) {
+					contexts.push({
+						top: totalMinHeightStream(is),
+						width: context.width,
+						height: i.minHeight,
 					});
 					
-					var cContext = {
-						$el: i.$el,
-						position: positionStream,
-						width: context.width,
-						height: Bacon.never(),
-					};
+					is.push(i);
+					return is;
+				}, []);
 
-					var index = states.length;
-					var state = {
-						component: c,
-						instance: c.create(cContext),
-					};
-					states.push(state);
-
-					var updateHeight = function () {
-						i.minHeight.push(states.reduce(function (a, s) {
-							return a + s.minHeight;
-						}, 0));
-					};
-
-					state.instance.minHeight.onValue(function (mh) {
-						state.minHeight = mh;
-						updateHeight();
-					});
-				});
-			},
+				totalMinHeightStream(is).pushAll(instance.minHeight);
+				Stream.combine(is.map(function (i) {
+					return i.minWidth;
+				}), function () {
+					var args = Array.prototype.slice.call(arguments);
+					return args.reduce(function (a, b) {
+						return Math.max(a, b);
+					}, 0);
+				}).pushAll(instance.minWidth);
+				
+				return [contexts];
+			}),
 		]);
 		
 		return conc;
 	});
 
+var border = function (color, amount, c) {
+	var top, bottom, left, right;
+	
+	// amount may be a single number
+	if ($.isNumeric(amount)) {
+		top = bottom = left = right = amount;
+	}
+	// or an object with properties containing 'top', 'bottom', 'left', and 'right'
+	else {
+		for (var key in amount) {
+			key = key.toLower();
+			if (key.indexOf('top') !== -1) {
+				top = amount[key];
+			}
+			if (key.indexOf('bottom') !== -1) {
+				bottom = amount[key];
+			}
+			if (key.indexOf('left') !== -1) {
+				left = amount[key];
+			}
+			if (key.indexOf('right') !== -1) {
+				right = amount[key];
+			}
+		}
+	}
+	return div.all([
+		componentName('border'),
+		child(c, function (i, context) {
+			return {
+				i: {
+					minWidth: i.minWidth.map(function (mw) {
+						return mw + left + right;
+					}),
+					minHeight: i.minHeight.map(function (mh) {
+						return mh + top + bottom;
+					}),
+				},
+				context: {
+					top: context.top.map(function (t) {
+						return t + top;
+					}),
+					left: context.left.map(function (l) {
+						return l + left;
+					}),
+					width: context.width.map(function (w) {
+						return w - left - right;
+					}),
+					height: context.height.map(function (h) {
+						return h - top - bottom;
+					}),
+				},
+			};
+		}),
+	]);
+};
+
+var padding = function (amount, c) {
+	var top, bottom, left, right;
+	
+	// amount may be a single number
+	if ($.isNumeric(amount)) {
+		top = bottom = left = right = amount;
+	}
+	// or an object with properties containing 'top', 'bottom', 'left', and 'right'
+	else {
+		for (var key in amount) {
+			key = key.toLower();
+			if (key.indexOf('top') !== -1) {
+				top = amount[key];
+			}
+			if (key.indexOf('bottom') !== -1) {
+				bottom = amount[key];
+			}
+			if (key.indexOf('left') !== -1) {
+				left = amount[key];
+			}
+			if (key.indexOf('right') !== -1) {
+				right = amount[key];
+			}
+		}
+	}
+	return div.all([
+		componentName('padding'),
+		child(c),
+		wireChildren(function (instance, context, i) {
+			i.minWidth.map(function (mw) {
+				return mw + left + right;
+			}).pushAll(instance.minWidth);
+			
+			i.minHeight.map(function (mh) {
+				return mh + top + bottom;
+			}).pushAll(instance.minHeight);
+			
+			return [{
+				top: Stream.once(top),
+				left: Stream.once(left),
+				width: context.width.map(function (w) {
+					return w - left - right;
+				}),
+				height: context.height.map(function (h) {
+					return h - top - bottom;
+				}),
+			}];
+		}),
+	]);
+};
+
+var lrmHeader = function (lrm) {
+	var lHeight = Stream.never();
+	var rHeight = Stream.never();
+	var mHeight = Stream.never();
+	
+	return div.all([
+		componentName('lrmHeader'),
+		child(lrm.middle || div),
+		child(lrm.left || div),
+		child(lrm.right || div),
+		wireChildren(function (instance, context, mI, lI, rI) {
+			var minHeight = Stream.combine([mI, lI, rI].map(function (i) {
+				return i.minHeight;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				var height = args.reduce(function (h, mh) {
+					return Math.max(h, mh);
+				}, 0);
+				return height;
+			});
+
+			minHeight.pushAll(instance.minHeight);
+
+			return [{
+				left: Stream.combine([context.width, mI.minWidth], function (width, mw) {
+					return (width - mw) / 2;
+				}),
+				width: mI.minWidth,
+			}, {
+				width: lI.minWidth,
+			}, {
+				left: Stream.combine([context.width, rI.minWidth], function (width, rMW) {
+					return width - rMW;
+				}),
+				width: rI.minWidth,
+			}];
+		}),
+	]);
+};
+
+
+var fixedHeaderBody = function (header, body) {
+	return div.all([
+		componentName('fixedHeaderBody'),
+		child(body),
+		child(header.all([
+			$css('position', 'fixed'),
+		])),
+		wireChildren(function (instance, ctx, bodyI, headerI) {
+			Stream.combine([bodyI, headerI].map(function (i) {
+				return i.minHeight;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				return args.reduce(function (a, i) {
+					return a + i;
+				}, 0);
+			}).pushAll(instance.minHeight);
+			
+			return [{
+				width: ctx.width,
+				top: headerI.minHeight,
+			}, {
+				width: ctx.width,
+			}];
+		}),
+	]);
+};
+
+
+var stickyHeaderBody = function (body1, header, body2) {
+	return div.all([
+		componentName('stickyHeaderBody'),
+		child(body1),
+		child(body2),
+		child(header),
+		wireChildren(function (instance, context, body1I, body2I, headerI) {
+			Stream.combine([body1I, body2I, headerI].map(function (i) {
+				return i.minHeight;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				return args.reduce(function (a, i) {
+					return a + i;
+				}, 0);
+			}).pushAll(instance.minHeight);
+			
+			return [{
+				width: context.width,
+			}, {
+				width: context.width,
+				top: Stream.combine([body1I.minHeight, headerI.minHeight], function (a, b) {
+					return a + b;
+				}),
+			}, {
+				width: context.width,
+				top: Stream.combine([body1I.minHeight, context.scroll], function (mh, scroll) {
+					return Math.max(mh, scroll);
+				}),
+			}];
+		}),
+	]);
+};
+
 
 var GridConfig = object({
+	gutterSize: number,
+	minColumnWidth: number,
 });
 
 
 var grid = type(
-	func(GridConfig, Component),
-	function (config) {
+	func(GridConfig, list(Component)),
+	function (config, cs) {
 		return div;
 	});
