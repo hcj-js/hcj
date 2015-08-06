@@ -299,7 +299,7 @@ var el = type(
 				destroy: function () {
 					minWidth.push(0);
 					minHeight.push(0);
-
+					
 					for (var i = 0; i < allInstances.length; i++) {
 						this.allContexts.map(function (child) {
 							if (child.instances) {

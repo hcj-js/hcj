@@ -17,7 +17,7 @@ var url = function (str) {
 // applies a jquery function to the component instance after creation
 var $$ = function (func) {
 	return function () {
-		var args = arguments;
+		var args = Array.prototype.slice.call(arguments);
 		return function (i) {
 			i.$el[func].apply(i.$el, args);
 		};
@@ -128,64 +128,8 @@ var stack = type(
 		return conc;
 	});
 
-var border = function (color, amount, c) {
-	var top, bottom, left, right;
-	
-	// amount may be a single number
-	if ($.isNumeric(amount)) {
-		top = bottom = left = right = amount;
-	}
-	// or an object with properties containing 'top', 'bottom', 'left', and 'right'
-	else {
-		for (var key in amount) {
-			key = key.toLower();
-			if (key.indexOf('top') !== -1) {
-				top = amount[key];
-			}
-			if (key.indexOf('bottom') !== -1) {
-				bottom = amount[key];
-			}
-			if (key.indexOf('left') !== -1) {
-				left = amount[key];
-			}
-			if (key.indexOf('right') !== -1) {
-				right = amount[key];
-			}
-		}
-	}
-	return div.all([
-		componentName('border'),
-		child(c, function (i, context) {
-			return {
-				i: {
-					minWidth: i.minWidth.map(function (mw) {
-						return mw + left + right;
-					}),
-					minHeight: i.minHeight.map(function (mh) {
-						return mh + top + bottom;
-					}),
-				},
-				context: {
-					top: context.top.map(function (t) {
-						return t + top;
-					}),
-					left: context.left.map(function (l) {
-						return l + left;
-					}),
-					width: context.width.map(function (w) {
-						return w - left - right;
-					}),
-					height: context.height.map(function (h) {
-						return h - top - bottom;
-					}),
-				},
-			};
-		}),
-	]);
-};
-
 var padding = function (amount, c) {
-	var top, bottom, left, right;
+	var top = 0, bottom = 0, left = 0, right = 0;
 	
 	// amount may be a single number
 	if ($.isNumeric(amount)) {
@@ -194,17 +138,17 @@ var padding = function (amount, c) {
 	// or an object with properties containing 'top', 'bottom', 'left', and 'right'
 	else {
 		for (var key in amount) {
-			key = key.toLower();
-			if (key.indexOf('top') !== -1) {
+			lcKey = key.toLowerCase();
+			if (lcKey.indexOf('top') !== -1) {
 				top = amount[key];
 			}
-			if (key.indexOf('bottom') !== -1) {
+			if (lcKey.indexOf('bottom') !== -1) {
 				bottom = amount[key];
 			}
-			if (key.indexOf('left') !== -1) {
+			if (lcKey.indexOf('left') !== -1) {
 				left = amount[key];
 			}
-			if (key.indexOf('right') !== -1) {
+			if (lcKey.indexOf('right') !== -1) {
 				right = amount[key];
 			}
 		}
@@ -275,6 +219,21 @@ var lrmHeader = function (lrm) {
 	]);
 };
 
+var border = function (color, amount, c) {
+	return padding(amount, c).all([
+		$css('background-color', color),
+	]);
+};
+var withMinWidth = function (mw) {
+	return function (i) {
+		i.minWidth.push(mw);
+	};
+};
+var withMinHeight = function (mh) {
+	return function (i) {
+		i.minHeight.push(mh);
+	};
+};
 
 var fixedHeaderBody = function (header, body) {
 	return div.all([
@@ -340,6 +299,7 @@ var stickyHeaderBody = function (body1, header, body2) {
 
 var GridConfig = object({
 	gutterSize: number,
+	outerGutter: bool,
 	minColumnWidth: number,
 });
 
@@ -347,5 +307,109 @@ var GridConfig = object({
 var grid = type(
 	func(GridConfig, list(Component)),
 	function (config, cs) {
-		return div;
+		return padding(config.outerGutter ? config.gutterSize : 0, div.all([
+			children(cs.map(function (c) {
+				return c.all([
+					$css('transition', 'top 0.5s, left 0.5s, width 0.5s'),
+				]);
+			})),
+			wireChildren(function (instance, context, is) {
+				var gridCellCount = context.width.map(function (width) {
+					return Math.floor(width / config.minColumnWidth);
+				});
+
+				var minWidths = Stream.combine(is.map(function (i) {
+					return i.minWidth;
+				}), function () {
+					return Array.prototype.slice.call(arguments);
+				});
+				var minHeights = Stream.combine(is.map(function (i) {
+					return i.minHeight;
+				}), function () {
+					return Array.prototype.slice.call(arguments);
+				});
+
+				var contexts = [];
+				for (var i = 0; i < is.length; i++) {
+					contexts[i] = {
+						top: Stream.never(),
+						left: Stream.never(),
+						width: Stream.never(),
+						height: Stream.never(),
+					};
+				}
+
+				Stream.combine([gridCellCount, context.width, minWidths, minHeights], function (cellCount, width, mws, mhs) {
+					var cellWidth = (width - config.gutterSize * (cellCount - 1)) / cellCount;
+					// var cellWidth = width / cellCount;
+					
+					var currentTop = 0;
+					var colsUsed = 0;
+					var maxHeight = 0;
+					var thisRow = [];
+					
+					var nextRow = function (lastRow) {
+						var colsTaken = 0;
+						var surplusCols = cellCount - colsUsed;
+						var thisRowCellWidth = cellWidth;
+						var extraLeft = 0;
+
+						if (lastRow) {
+							var surplusWidth = surplusCols * (cellWidth + config.gutterSize);
+							extraLeft = surplusWidth / 2;
+						}
+						else if (config.splitSurplus) {
+							thisRowCellWidth = (width - config.gutterSize * (colsUsed - 1)) / colsUsed;
+						}
+						else {
+							thisRow[0].cols += surplusCols;
+						}
+						
+						thisRow.map(function (item) {
+							item.context.top.push(currentTop);
+							item.context.left.push(extraLeft + colsTaken * (thisRowCellWidth + config.gutterSize));
+							item.context.width.push(thisRowCellWidth * item.cols + config.gutterSize * (item.cols - 1));
+							
+							colsTaken += item.cols;
+						});
+						
+						currentTop += maxHeight + config.gutterSize;
+						colsUsed = 0;
+						maxHeight = 0;
+						thisRow = [];
+					};
+					var pushOntoRow = function (item) {
+						if (colsUsed + item.cols > cellCount) {
+							nextRow();
+						}
+
+						colsUsed += item.cols;
+						maxHeight = Math.max(maxHeight, item.mh);
+						thisRow.push(item);
+					};
+
+					for (var j = 0; j < is.length; j++) {
+						var i = is[j];
+						var mw = mws[j];
+						var mh = mhs[j];
+						var colsTaken = 1;
+						var widthAvailable = cellWidth;
+						while (widthAvailable < mw) {
+							colsTaken += 1;
+							widthAvailable += cellWidth + config.gutterSize;
+						}
+						pushOntoRow({
+							cols: colsTaken,
+							context: contexts[j],
+							mh: mh,
+						});
+					}
+					
+					nextRow(true);
+					instance.minHeight.push(currentTop);
+				});
+
+				return [contexts];
+			}),
+		]));
 	});
