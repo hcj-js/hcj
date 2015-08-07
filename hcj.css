@@ -1,0 +1,10 @@
+html {
+	font-family: 'Open Sans', sans-serif;
+}
+body {
+	line-height: 1.2;
+}
+div {
+	position: absolute;
+	overflow: hidden;
+}

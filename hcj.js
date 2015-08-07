@@ -127,7 +127,7 @@ var wireChildren = function (f) {
 };
 
 // add some syntactic sugar for calling and and all
-var component = type(
+var component = hasType(
 	func([func([Context], Instance)], Component),
 	function (build) {
 		var comp = {
@@ -135,37 +135,55 @@ var component = type(
 				var instance = this.build(context);
 
 				instance.wireChildren = instance.wireChildren || function () {};
-				var resultContexts = instance.wireChildren.apply(null, [instance, context].concat(instance.childInstances)) || [];
-				
-				for (var i = 0; i < instance.childInstances.length; i++) {
-					var resultContext = resultContexts[i] || {};
+
+				Q.all(instance.childComponentPs).then(function (childComponents) {
+					var childContexts = [];
+					var childInstances = childComponents.map(function (childComponent) {
+						if ($.isArray(childComponent)) {
+							var ctxs = [];
+							var is = childComponent.map(function (c) {
+								var ctx = instance.newCtx();
+								ctxs.push(ctx);
+								return c.create(ctx);
+							});
+							childContexts.push(ctxs);
+							return is;
+						}
+						else {
+							var ctx = instance.newCtx();
+							childContexts.push(ctx);
+							return childComponent.create(ctx);
+						}
+					});
 					
-					var childInstance = instance.childInstances[i];
-					var childContext = instance.childContexts[i];
+					var resultContexts = instance.wireChildren.apply(null, [instance, context].concat(childInstances)) || [];
+					
+					for (var i = 0; i < childInstances.length; i++) {
+						var resultContext = resultContexts[i] || {};
+						
+						var childInstance = childInstances[i];
+						var childContext = childContexts[i];
+						
+						var applyResult = function (resultContext, childInstance, childContext) {
+							resultContext = resultContext || {};
+							(resultContext.top || Stream.once(0)).pushAll(childContext.top);
+							(resultContext.left || Stream.once(0)).pushAll(childContext.left);
+							(resultContext.width || childInstance.minWidth).pushAll(childContext.width);
+							(resultContext.height || childInstance.minHeight).pushAll(childContext.height);
+							(resultContext.backgroundColor || Stream.never()).pushAll(childContext.backgroundColor);
+							(resultContext.fontColor || Stream.never()).pushAll(childContext.fontColor);
+						};
 
-					var applyResult = function (resultContext, childInstance, childContext) {
-						resultContext = resultContext || {};
-						(resultContext.top || Stream.once(0)).pushAll(childContext.top);
-						(resultContext.left || Stream.once(0)).pushAll(childContext.left);
-						(resultContext.width || childInstance.minWidth).pushAll(childContext.width);
-						(resultContext.height || childInstance.minHeight).pushAll(childContext.height);
-					};
-
-					if ($.isArray(childInstance)) {
-						var resultContexts = resultContext;
-						var childInstances = childInstance;
-						var childContexts = childContext;
-						for (var j = 0; j < childInstances.length; j++) {
-							var resultContext = resultContexts[j];
-							var childInstance = childInstances[j];
-							var childContext = childContexts[j];
+						if ($.isArray(childInstance)) {
+							for (var j = 0; j < childInstance.length; j++) {
+								applyResult(resultContext[j], childInstance[j], childContext[j]);
+							}
+						}
+						else {
 							applyResult(resultContext, childInstance, childContext);
 						}
 					}
-					else {
-						applyResult(resultContext, childInstance, childContext);
-					}
-				}
+				});
 				
 				return instance;
 			},
@@ -207,10 +225,10 @@ var findMinWidth = function ($el) {
 	var $sandbox = $('.sandbox');
 	var $clone = $el.clone();
 	$clone.css('width', '')
+		.css('height', '')
 		.appendTo($sandbox);
-	
+
 	var width = parseInt($clone.css('width'));
-	
 	$clone.remove();
 
 	return width;
@@ -219,7 +237,8 @@ var findMinWidth = function ($el) {
 var findMinHeight = function ($el) {
 	var $sandbox = $('.sandbox');
 	var $clone = $el.clone();
-	$clone.css('height', '')
+	$clone.css('width', '')
+		.css('height', '')
 		.appendTo($sandbox);
 	
 	var height = parseInt($clone.css('height'));
@@ -229,7 +248,7 @@ var findMinHeight = function ($el) {
 	return height;
 };
 
-var el = type(
+var el = hasType(
 	func(string, Component),
 	function (name) {
 		return component(function (context) {
@@ -250,13 +269,18 @@ var el = type(
 				updateWindowWidth();
 				$el.css('height', px(h));
 			});
+			context.backgroundColor.map(function (bgcolor) {
+				$el.css('background-color', bgcolor);
+			});
+			context.fontColor.map(function (bgcolor) {
+				$el.css('color', bgcolor);
+			});
 
 			var minWidth = Stream.once(0);
 			var minHeight = Stream.once(0);
 
-			var allContexts = [];
-			var allInstances = [];
-
+			var childComponentPs = [];
+			
 			var scrollStream = Stream.combine([context.scroll, context.top], function (scroll, top) {
 				return scroll - top;
 			});
@@ -268,6 +292,8 @@ var el = type(
 					left: Stream.once(0),
 					width: Stream.never(),
 					height: Stream.never(),
+					backgroundColor: Stream.never(),
+					fontColor: Stream.never(),
 				};
 			};
 			
@@ -276,44 +302,34 @@ var el = type(
 				optimalWidth: 0,
 				minWidth: minWidth,
 				minHeight: minHeight,
-				childContexts: allContexts,
-				childInstances: allInstances,
+				newCtx: newCtx,
+				childComponentPs: childComponentPs,
 				child: function (component) {
-					var ctx = newCtx();
-					allContexts.push(ctx);
-					allInstances.push(component.create(ctx));
+					childComponentPs.push(component);
 				},
 				children: function (components) {
-					var contexts = [];
-					var instances = [];
-					
-					components.map(function (c) {
-						var ctx = newCtx();
-						contexts.push(ctx);
-						instances.push(c.create(ctx));
-					});
-					
-					allContexts.push(contexts);
-					allInstances.push(instances);
+					childComponentPs.push(components);
 				},
 				destroy: function () {
 					minWidth.push(0);
 					minHeight.push(0);
-					
-					for (var i = 0; i < allInstances.length; i++) {
-						this.allContexts.map(function (child) {
-							if (child.instances) {
-								child.instances.map(function (i) {
+
+					Q.all(allInstancePs).then(function (allInstances) {
+						for (var i = 0; i < allInstances.length; i++) {
+							var instance = allInstances[i];
+							if ($.isArray(instance)) {
+								var instances = instance;
+								instances.map(function (i) {
 									i.destroy();
 								});
 							}
 							else {
-								child.instance.destroy();
+								instance.destroy();
 							}
-						});
-					}
-					
-					$el.remove();
+						}
+						
+						$el.remove();
+					});
 				},
 			};
 		});
@@ -330,13 +346,15 @@ var textarea = el('textarea');
 var ul = el('ul');
 
 var rootContext = function () {
-	return type(Context, {
+	return hasType(Context, {
 		$el: $('body'),
 		top: Stream.once(0),
 		left: Stream.once(0),
 		scroll: windowScroll,
 		width: windowWidth,
 		height: Stream.never(),
+		backgroundColor: Stream.never(),
+		fontColor: Stream.never(),
 	});
 };
 
