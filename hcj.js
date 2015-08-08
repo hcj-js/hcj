@@ -41,11 +41,13 @@ var Component = object({
 
 var Stream = {
 	create: function (onValue) {
+		var ended = false;
+		
 		var lastValue;
 		var listeners = [];
 
 		var pushValue = function (v) {
-			if (lastValue !== v) {
+			if (!ended && lastValue !== v) {
 				lastValue = v;
 				listeners.map(function (f) {
 					return f(v);
@@ -70,6 +72,9 @@ var Stream = {
 						cb(f(v));
 					});
 				});
+			},
+			end: function () {
+				ended = true;
 			},
 			push: pushValue,
 			pushAll: function (s) {
@@ -219,6 +224,18 @@ var component = function (build) {
 	return comp;
 };
 
+var findOptimalHeight = function ($el) {
+	var $sandbox = $('.sandbox');
+	var $clone = $el.clone();
+	$clone.css('height', '')
+		.appendTo($sandbox);
+
+	var height = parseInt($clone.css('height'));
+	$clone.remove();
+
+	return height;
+};
+
 var findMinWidth = function ($el) {
 	var $sandbox = $('.sandbox');
 	var $clone = $el.clone();
@@ -248,6 +265,15 @@ var findMinHeight = function ($el) {
 
 var el = function (name) {
 	return component(function (context) {
+		var minWidth = Stream.once(0);
+		var minHeight = Stream.once(0);
+
+		var updateMinHeight = function () {
+			var mh = findMinHeight(i.$el);
+			i.minWidth.push(mw);
+			i.minHeight.push(mh);
+		};
+
 		var $el = $(document.createElement(name));
 		context.$el.append($el);
 
@@ -260,6 +286,11 @@ var el = function (name) {
 		});
 		context.width.map(function (w) {
 			$el.css('width', px(w));
+			var optimalHeight = findOptimalHeight($el);
+			if (optimalHeight !== 0) {
+				debugger;
+				minHeight.push(optimalHeight);
+			}
 		});
 		context.height.map(function (h) {
 			updateWindowWidth();

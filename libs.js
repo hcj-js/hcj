@@ -19,27 +19,19 @@ var $$ = function (func) {
 		var args = Array.prototype.slice.call(arguments);
 		return function (i) {
 			i.$el[func].apply(i.$el, args);
+			var mw = findMinWidth(i.$el);
+			var mh = findMinHeight(i.$el);
+			i.minWidth.push(mw);
+			i.minHeight.push(mh);
 		};
 	};
 };
 
 var $addClass = $$('addClass');
-
 var $css = $$('css');
-
 var $attr = $$('attr');
-
 var $prop = $$('prop');
-
-var $html = function (string) {
-	return function (i) {
-		i.$el.html(string);
-		var mw = findMinWidth(i.$el);
-		var mh = findMinHeight(i.$el);
-		i.minWidth.push(mw);
-		i.minHeight.push(mh);
-	};
-};
+var $html = $$('html');
 
 
 var windowWidth = Stream.never();
@@ -57,14 +49,20 @@ $(window).on('scroll', function () {
 });
 windowScroll.push(window.scrollY);
 
-var withMinWidth = function (mw) {
+var withMinWidth = function (mw, end) {
 	return function (i) {
 		i.minWidth.push(mw);
+		if (end) {
+			i.minWidth.end();
+		}
 	};
 };
-var withMinHeight = function (mh) {
+var withMinHeight = function (mh, end) {
 	return function (i) {
 		i.minHeight.push(mh);
+		if (end) {
+			i.minHeight.end();
+		}
 	};
 };
 var withBackgroundColor = function (bc) {
@@ -179,7 +177,9 @@ var sideBySide = function (cs) {
 var stack = function (cs) {
 	return div.all([
 		componentName('stack'),
-		children(cs),
+		children(cs.map(function (c) {
+			return c.and($css('transition', 'inherit'));
+		})),
 		wireChildren(function (instance, context, is) {
 			var totalMinHeightStream = function (is) {
 				return Stream.combine(is.map(function (i) {
@@ -271,13 +271,13 @@ var padding = function (amount, c) {
 	]);
 };
 
-var lrmHeader = function (lrm) {
+var alignLRM = function (lrm) {
 	var lHeight = Stream.never();
 	var rHeight = Stream.never();
 	var mHeight = Stream.never();
 	
 	return div.all([
-		componentName('lrmHeader'),
+		componentName('alignLRM'),
 		child(lrm.middle || div),
 		child(lrm.left || div),
 		child(lrm.right || div),
@@ -327,12 +327,16 @@ var alignTBM = function (tbm) {
 	var tWidth = Stream.never();
 	var bWidth = Stream.never();
 	var mWidth = Stream.never();
+
+	tbm.middle = tbm.middle || div;
+	tbm.bottom = tbm.bottom || div;
+	tbm.top = tbm.top || div;
 	
 	return div.all([
 		componentName('alignTBM'),
-		child(tbm.middle || div),
-		child(tbm.bottom || div),
-		child(tbm.top || div),
+		child(tbm.middle.and($css('transition', 'inherit'))),
+		child(tbm.bottom.and($css('transition', 'inherit'))),
+		child(tbm.top.and($css('transition', 'inherit'))),
 		wireChildren(function (instance, context, mI, bI, tI) {
 			var minWidth = Stream.combine([mI, bI, tI].map(function (i) {
 				return i.minWidth;
@@ -359,16 +363,16 @@ var alignTBM = function (tbm) {
 				top: Stream.combine([context.height, mI.minHeight], function (height, mh) {
 					return (height - mh) / 2;
 				}),
-				width: minWidth,
+				width: context.width,
 				height: mI.minHeight,
-			}, {
-				width: minWidth,
-				height: bI.minHeight,
 			}, {
 				top: Stream.combine([context.height, tI.minHeight], function (height, mh) {
 					return height - mh;
 				}),
-				width: minWidth,
+				width: context.width,
+				height: bI.minHeight,
+			}, {
+				width: context.width,
 				height: tI.minHeight,
 			}];
 		}),
@@ -564,7 +568,7 @@ var grid = function (config, cs) {
 					thisRow = [];
 				};
 				var pushOntoRow = function (item) {
-					if (colsUsed + item.cols > cellCount) {
+					if (colsUsed + item.cols > cellCount && colsUsed > 0) {
 						nextRow();
 					}
 
@@ -613,6 +617,7 @@ var withBackgroundImage = function (config, c) {
 	return div.all([
 		child(img.all([
 			$prop('src', config.src),
+			$css('transition', 'inherit'),
 			function (i, context) {
 				i.$el.on('load', function () {
 					var nativeWidth = findMinWidth(i.$el);
@@ -635,7 +640,7 @@ var withBackgroundImage = function (config, c) {
 				});
 			},
 		])),
-		child(c),
+		child(c.and($css('transition', 'inherit'))),
 		wireChildren(function (instance, context, imgI, cI) {
 			cI.minWidth.pushAll(instance.minWidth);
 			cI.minHeight.pushAll(instance.minHeight);
