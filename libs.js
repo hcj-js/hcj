@@ -174,7 +174,7 @@ var sideBySide = function (cs) {
 	]);
 };
 
-var stack = function (cs) {
+var stack = function (cs, options) {
 	return div.all([
 		componentName('stack'),
 		children(cs.map(function (c) {
@@ -182,7 +182,18 @@ var stack = function (cs) {
 		})),
 		wireChildren(function (instance, context, is) {
 			var totalMinHeightStream = function (is) {
-				return Stream.combine(is.map(function (i) {
+				return Stream.combine(is.map(function (i, index) {
+					var iMinHeight;
+					
+					if (options && options.mhs && options.mhs[index]) {
+						var optionMinHeight = options.mhs[index](context);
+						return Stream.combine([i.minHeight, optionMinHeight], function (a, b) {
+							return Math.max(a, b);
+						});
+					}
+					else {
+						return i.minHeight;
+					}
 					return i.minHeight;
 				}), function () {
 					var args = Array.prototype.slice.call(arguments);
@@ -195,10 +206,22 @@ var stack = function (cs) {
 			var contexts = [];
 			is.reduce(function (is, i) {
 				var tops = totalMinHeightStream(is);
+				var iMinHeight;
+				
+				if (options && options.mhs && options.mhs[is.length]) {
+					var optionMinHeight = options.mhs[is.length](context);
+					iMinHeight = Stream.combine([i.minHeight, optionMinHeight], function (a, b) {
+						return Math.max(a, b);
+					});
+				}
+				else {
+					iMinHeight = i.minHeight;
+				}
+				
 				contexts.push({
 					top: tops,
 					width: context.width,
-					height: i.minHeight,
+					height: iMinHeight,
 				});
 
 				is.push(i);
