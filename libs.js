@@ -135,6 +135,11 @@ var sideBySide = function (cs) {
 		componentName('sideBySide'),
 		children(cs),
 		wireChildren(function (instance, context, is) {
+
+			var allMinWidths = is.map(function (i) {
+				return i.minWidth;
+			});
+			
 			var totalMinWidthStream = function (is) {
 				return Stream.combine(is.map(function (i) {
 					return i.minWidth;
@@ -421,7 +426,7 @@ var invertOnHover = function (c) {
 	
 	
 	return div.all([
-		child(c.and($css('transition', 'background-color 0.2s linear, color 0.2s linear'))),
+		child(c.and($css('transition', 'background-color 0.2s linear, color 0.1s linear'))),
 		wireChildren(function (instance, context, i) {
 			i.minHeight.pushAll(instance.minHeight);
 			i.minWidth.pushAll(instance.minWidth);
@@ -529,16 +534,13 @@ var grid = function (config, cs) {
 	config.gutterSize = config.gutterSize || 0;
 	config.minColumnWidth = config.minColumnWidth || 100;
 	return padding(config.outerGutter ? config.gutterSize : 0, div.all([
+		componentName('grid'),
 		children(cs.map(function (c) {
 			return c.all([
 				$css('transition', 'top 0.5s, left 0.5s, width 0.5s'),
 			]);
 		})),
 		wireChildren(function (instance, context, is) {
-			var gridCellCount = context.width.map(function (width) {
-				return Math.floor(width / config.minColumnWidth / 2) * 2;
-			});
-
 			var minWidths = Stream.combine(is.map(function (i) {
 				return i.minWidth;
 			}), function () {
@@ -560,21 +562,22 @@ var grid = function (config, cs) {
 				};
 			}
 
-			Stream.combine([gridCellCount, context.width, minWidths, minHeights], function (cellCount, width, mws, mhs) {
+			Stream.combine([context.width, minWidths, minHeights], function (width, mws, mhs) {
+				var cellCount = Math.floor(width / config.minColumnWidth / 2) * 2;
 				var cellWidth = (width - config.gutterSize * (cellCount - 1)) / cellCount;
 				
 				var currentTop = 0;
 				var colsUsed = 0;
 				var maxHeight = 0;
 				var thisRow = [];
-				
+
 				var nextRow = function (lastRow) {
 					var colsTaken = 0;
 					var surplusCols = cellCount - colsUsed;
 					var thisRowCellWidth = cellWidth;
 					var extraLeft = 0;
 					
-					if (lastRow) {
+					if (lastRow && currentTop > 0) {
 						var surplusWidth = surplusCols * (cellWidth + config.gutterSize);
 						extraLeft = surplusWidth / 2;
 					}
