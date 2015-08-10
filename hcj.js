@@ -232,8 +232,8 @@ var findOptimalHeight = function ($el, w) {
 		.appendTo($sandbox);
 
 	var height = parseInt($clone.css('height'));
-	$clone.remove();
 
+	$clone.remove();
 	return height;
 };
 

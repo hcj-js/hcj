@@ -563,7 +563,6 @@ var grid = function (config, cs) {
 					}
 
 					thisRow.map(function (item) {
-						console.log('here');
 						item.context.top.push(currentTop);
 						item.context.left.push(extraLeft + colsTaken * (thisRowCellWidth + config.gutterSize));
 						item.context.width.push(thisRowCellWidth * item.cols + config.gutterSize * (item.cols - 1));
