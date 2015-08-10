@@ -36,7 +36,7 @@ var $html = $$('html');
 
 var windowWidth = Stream.never();
 var updateWindowWidth = function () {
-	windowWidth.push($('body').width());
+	windowWidth.push(document.body.clientWidth);
 }
 $(updateWindowWidth);
 $(window).on('resize', function () {
@@ -303,20 +303,29 @@ var alignLRM = function (lrm) {
 				return height;
 			}).pushAll(instance.minWidth);
 
+			var minAvailableRequested = function (available, requested) {
+				return Stream.combine([available, requested], function (a, r) {
+					return Math.min(a, r);
+				});
+			};
+			var mWidth = minAvailableRequested(context.width, mI.minWidth);
+			var lWidth = minAvailableRequested(context.width, lI.minWidth);
+			var rWidth = minAvailableRequested(context.width, rI.minWidth);
+
 			return [{
-				left: Stream.combine([context.width, mI.minWidth], function (width, mw) {
+				left: Stream.combine([context.width, mWidth], function (width, mw) {
 					return (width - mw) / 2;
 				}),
-				width: mI.minWidth,
+				width: mWidth,
 				height: headerHeight,
 			}, {
-				width: lI.minWidth,
+				width: lWidth,
 				height: headerHeight,
 			}, {
-				left: Stream.combine([context.width, rI.minWidth], function (width, rMW) {
+				left: Stream.combine([context.width, rWidth], function (width, rMW) {
 					return width - rMW;
 				}),
-				width: rI.minWidth,
+				width: rWidth,
 				height: headerHeight,
 			}];
 		}),
@@ -541,7 +550,7 @@ var grid = function (config, cs) {
 					var surplusCols = cellCount - colsUsed;
 					var thisRowCellWidth = cellWidth;
 					var extraLeft = 0;
-
+					
 					if (lastRow) {
 						var surplusWidth = surplusCols * (cellWidth + config.gutterSize);
 						extraLeft = surplusWidth / 2;
@@ -552,8 +561,9 @@ var grid = function (config, cs) {
 					else {
 						thisRow[0].cols += surplusCols;
 					}
-					
+
 					thisRow.map(function (item) {
+						console.log('here');
 						item.context.top.push(currentTop);
 						item.context.left.push(extraLeft + colsTaken * (thisRowCellWidth + config.gutterSize));
 						item.context.width.push(thisRowCellWidth * item.cols + config.gutterSize * (item.cols - 1));

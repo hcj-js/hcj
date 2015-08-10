@@ -89,8 +89,8 @@ var Stream = {
 			cb(v);
 		});
 	},
-	never: function () {
-		return Stream.create(function () {});
+	never: function (debounce) {
+		return Stream.create(function () {}, debounce);
 	},
 	combine: function (streams, f) {
 		var arr = [];
@@ -224,10 +224,11 @@ var component = function (build) {
 	return comp;
 };
 
-var findOptimalHeight = function ($el) {
+var findOptimalHeight = function ($el, w) {
 	var $sandbox = $('.sandbox');
 	var $clone = $el.clone();
 	$clone.css('height', '')
+		.css('width', w)
 		.appendTo($sandbox);
 
 	var height = parseInt($clone.css('height'));
@@ -263,6 +264,13 @@ var findMinHeight = function ($el) {
 	return height;
 };
 
+var updateDomFuncs = [];
+setInterval(function () {
+	updateDomFuncs.map(function (f) {
+		f();
+	});
+	updateDomFuncs = [];
+}, 100);
 var el = function (name) {
 	return component(function (context) {
 		var minWidth = Stream.once(0);
@@ -278,23 +286,28 @@ var el = function (name) {
 		context.$el.append($el);
 
 		context.top.map(function (t) {
-			updateWindowWidth();
-			$el.css('top', px(t));
+			updateDomFuncs.push(function () {
+				$el.css('top', px(t));
+			});
 		});
 		context.left.map(function (l) {
-			$el.css('left', px(l));
+			updateDomFuncs.push(function () {
+				$el.css('left', px(l));
+			});
 		});
 		context.width.map(function (w) {
-			$el.css('width', px(w));
-			var optimalHeight = findOptimalHeight($el);
+			var optimalHeight = findOptimalHeight($el, w);
 			if (optimalHeight !== 0) {
-				debugger;
 				minHeight.push(optimalHeight);
 			}
+			updateDomFuncs.push(function () {
+				$el.css('width', px(w));
+			});
 		});
 		context.height.map(function (h) {
-			updateWindowWidth();
-			$el.css('height', px(h));
+			updateDomFuncs.push(function () {
+				$el.css('height', px(h));
+			});
 		});
 		context.backgroundColor.map(function (bgcolor) {
 			$el.css('background-color', bgcolor);
@@ -389,5 +402,8 @@ var rootComponent = function (component) {
 	var context = rootContext();
 	var instance = component.create(context);
 	instance.minHeight.pushAll(context.height);
+	instance.minHeight.map(function () {
+		updateWindowWidth();
+	});
 	return instance;
 };
