@@ -40,13 +40,15 @@ var Component = object({
 });
 
 var Stream = {
-	create: function (onValue) {
+	create: function (name) {
+		name = name || '';
 		var ended = false;
 		
 		var lastValue;
 		var listeners = [];
 
 		var pushValue = function (v) {
+			name;
 			if (!ended && lastValue !== v) {
 				lastValue = v;
 				listeners.map(function (f) {
@@ -55,23 +57,21 @@ var Stream = {
 			}
 		};
 
-		onValue(pushValue);
-
 		return {
-			map: function (f) {
-				if (lastValue !== undefined) {
-					f(lastValue);
+			name: name,
+			map: function (f, mapName) {
+				mapName = mapName || '';
+				if (mapName === '') {
+					debugger;
 				}
-				listeners.push(f);
-				
-				return Stream.create(function (cb) {
-					if (lastValue !== undefined) {
-						cb(f(lastValue));
-					}
-					listeners.push(function (v) {
-						cb(f(v));
-					});
+				var stream = Stream.create(name + ' with map ' + mapName);
+				if (lastValue !== undefined) {
+					stream.push(f(lastValue));
+				}
+				listeners.push(function (v) {
+					stream.push(f(v));
 				});
+				return stream;
 			},
 			end: function () {
 				ended = true;
@@ -80,38 +80,47 @@ var Stream = {
 			pushAll: function (s) {
 				this.map(function (v) {
 					s.push(v);
-				});
+				}, 'pushing all');
 			},
 		};
 	},
-	once: function (v) {
-		return Stream.create(function (cb) {
-			cb(v);
-		});
+	once: function (v, name) {
+		var stream = Stream.create(name);
+		stream.push(v);
+		return stream;
 	},
-	never: function (debounce) {
-		return Stream.create(function () {}, debounce);
+	never: function (name) {
+		return Stream.create(name);
 	},
-	combine: function (streams, f) {
+	combine: function (streams, f, combineName) {
 		var arr = [];
-		return Stream.create(function (cb) {
-			var tryRunF = function () {
-				for (var i = 0; i < streams.length; i++) {
-					if (arr[i] === undefined) {
-						return;
-					}
-				}
-				cb(f.apply(null, arr));
-			};
+		var stream = Stream.create(combineName);
 
-			streams.reduce(function (i, stream) {
-				stream.map(function (v) {
-					arr[i] = v;
-					tryRunF();
+		var running = false;
+		var tryRunF = function () {
+			if (!running) {
+				running = true;
+				setTimeout(function () {
+					running = false;
+					for (var i = 0; i < streams.length; i++) {
+						if (arr[i] === undefined) {
+							return;
+						}
+					}
+					stream.push(f.apply(null, arr));
 				});
-				return i + 1;
-			}, 0);
-		});
+			}
+		};
+		
+		streams.reduce(function (i, stream) {
+			stream.map(function (v) {
+				arr[i] = v;
+				tryRunF();
+			}, 'combining');
+			return i + 1;
+		}, 0);
+
+		return stream;
 	},
 };
 
@@ -169,12 +178,12 @@ var component = function (build) {
 					
 					var applyResult = function (resultContext, childInstance, childContext) {
 						resultContext = resultContext || {};
-						(resultContext.top || Stream.once(0)).pushAll(childContext.top);
-						(resultContext.left || Stream.once(0)).pushAll(childContext.left);
+						(resultContext.top || Stream.once(0, 'default top')).pushAll(childContext.top);
+						(resultContext.left || Stream.once(0, 'default left')).pushAll(childContext.left);
 						(resultContext.width || childInstance.minWidth).pushAll(childContext.width);
 						(resultContext.height || childInstance.minHeight).pushAll(childContext.height);
-						(resultContext.backgroundColor || Stream.never()).pushAll(childContext.backgroundColor);
-						(resultContext.fontColor || Stream.never()).pushAll(childContext.fontColor);
+						(resultContext.backgroundColor || Stream.never('default background color')).pushAll(childContext.backgroundColor);
+						(resultContext.fontColor || Stream.never('default font color')).pushAll(childContext.fontColor);
 					};
 
 					if ($.isArray(childInstance)) {
@@ -270,11 +279,12 @@ setInterval(function () {
 		f();
 	});
 	updateDomFuncs = [];
+	updateWindowWidth();
 }, 100);
 var el = function (name) {
 	return component(function (context) {
-		var minWidth = Stream.once(0);
-		var minHeight = Stream.once(0);
+		var minWidth = Stream.once(0, 'el min width');
+		var minHeight = Stream.once(0, 'el min height');
 
 		var updateMinHeight = function () {
 			var mh = findMinHeight(i.$el);
@@ -289,12 +299,12 @@ var el = function (name) {
 			updateDomFuncs.push(function () {
 				$el.css('top', px(t));
 			});
-		});
+		}, 'set top css');
 		context.left.map(function (l) {
 			updateDomFuncs.push(function () {
 				$el.css('left', px(l));
 			});
-		});
+		}, 'set left css');
 		context.width.map(function (w) {
 			var optimalHeight = findOptimalHeight($el, w);
 			if (optimalHeight !== 0) {
@@ -303,37 +313,34 @@ var el = function (name) {
 			updateDomFuncs.push(function () {
 				$el.css('width', px(w));
 			});
-		});
+		}, 'set width css');
 		context.height.map(function (h) {
 			updateDomFuncs.push(function () {
 				$el.css('height', px(h));
 			});
-		});
+		}, 'set height css');
 		context.backgroundColor.map(function (bgcolor) {
 			$el.css('background-color', bgcolor);
-		});
+		}, 'set background color css');
 		context.fontColor.map(function (bgcolor) {
 			$el.css('color', bgcolor);
-		});
-
-		var minWidth = Stream.once(0);
-		var minHeight = Stream.once(0);
+		}, 'set font color css');
 
 		var childComponentPs = [];
 		
 		var scrollStream = Stream.combine([context.scroll, context.top], function (scroll, top) {
 			return scroll - top;
-		});
+		}, 'scroll');
 		var newCtx = function () {
 			return {
 				$el: $el,
 				scroll: scrollStream,
-				top: Stream.once(0),
-				left: Stream.once(0),
-				width: Stream.never(),
-				height: Stream.never(),
-				backgroundColor: Stream.never(),
-				fontColor: Stream.never(),
+				top: Stream.once(0, 'context top'),
+				left: Stream.once(0, 'context left'),
+				width: Stream.never('context width'),
+				height: Stream.never('context height'),
+				backgroundColor: Stream.never('context background color'),
+				fontColor: Stream.never('context font color'),
 			};
 		};
 		
@@ -388,13 +395,13 @@ var ul = el('ul');
 var rootContext = function () {
 	return {
 		$el: $('body'),
-		top: Stream.once(0),
-		left: Stream.once(0),
+		top: Stream.once(0, 'root top'),
+		left: Stream.once(0, 'root left'),
 		scroll: windowScroll,
 		width: windowWidth,
-		height: Stream.never(),
-		backgroundColor: Stream.never(),
-		fontColor: Stream.never(),
+		height: Stream.never('root height'),
+		backgroundColor: Stream.never('root background color'),
+		fontColor: Stream.never('root font color'),
 	};
 };
 
@@ -402,8 +409,5 @@ var rootComponent = function (component) {
 	var context = rootContext();
 	var instance = component.create(context);
 	instance.minHeight.pushAll(context.height);
-	instance.minHeight.map(function () {
-		updateWindowWidth();
-	});
 	return instance;
 };
