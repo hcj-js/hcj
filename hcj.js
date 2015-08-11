@@ -274,6 +274,9 @@ var findMinHeight = function ($el) {
 };
 
 var updateDomFuncs = [];
+var updateDomFunc = function (func) {
+	updateDomFuncs.push(func);
+};
 setInterval(function () {
 	updateDomFuncs.map(function (f) {
 		f();
@@ -296,12 +299,12 @@ var el = function (name) {
 		context.$el.append($el);
 
 		context.top.map(function (t) {
-			updateDomFuncs.push(function () {
+			updateDomFunc(function () {
 				$el.css('top', px(t));
 			});
 		}, 'set top css');
 		context.left.map(function (l) {
-			updateDomFuncs.push(function () {
+			updateDomFunc(function () {
 				$el.css('left', px(l));
 			});
 		}, 'set left css');
@@ -310,12 +313,12 @@ var el = function (name) {
 			if (optimalHeight !== 0) {
 				minHeight.push(optimalHeight);
 			}
-			updateDomFuncs.push(function () {
+			updateDomFunc(function () {
 				$el.css('width', px(w));
 			});
 		}, 'set width css');
 		context.height.map(function (h) {
-			updateDomFuncs.push(function () {
+			updateDomFunc(function () {
 				$el.css('height', px(h));
 			});
 		}, 'set height css');
