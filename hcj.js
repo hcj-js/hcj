@@ -275,15 +275,17 @@ var findMinHeight = function ($el) {
 
 var updateDomFuncs = [];
 var updateDomFunc = function (func) {
+	if (updateDomFuncs.length === 0) {
+		setTimeout(function () {
+			updateDomFuncs.map(function (f) {
+				f();
+			});
+			updateDomFuncs = [];
+			updateWindowWidth();
+		});
+	}
 	updateDomFuncs.push(func);
 };
-setInterval(function () {
-	updateDomFuncs.map(function (f) {
-		f();
-	});
-	updateDomFuncs = [];
-	updateWindowWidth();
-}, 100);
 var el = function (name) {
 	return component(function (context) {
 		var minWidth = Stream.once(0, 'el min width');
