@@ -40,15 +40,13 @@ var Component = object({
 });
 
 var Stream = {
-	create: function (name) {
-		name = name || '';
+	create: function () {
 		var ended = false;
 		
 		var lastValue;
 		var listeners = [];
 
 		var pushValue = function (v) {
-			name;
 			if (!ended && lastValue !== v) {
 				lastValue = v;
 				listeners.map(function (f) {
@@ -58,13 +56,8 @@ var Stream = {
 		};
 
 		return {
-			name: name,
-			map: function (f, mapName) {
-				mapName = mapName || '';
-				if (mapName === '') {
-					debugger;
-				}
-				var stream = Stream.create(name + ' with map ' + mapName);
+			map: function (f) {
+				var stream = Stream.create();
 				if (lastValue !== undefined) {
 					stream.push(f(lastValue));
 				}
@@ -84,17 +77,17 @@ var Stream = {
 			},
 		};
 	},
-	once: function (v, name) {
-		var stream = Stream.create(name);
+	once: function (v) {
+		var stream = Stream.create();
 		stream.push(v);
 		return stream;
 	},
-	never: function (name) {
-		return Stream.create(name);
+	never: function () {
+		return Stream.create();
 	},
-	combine: function (streams, f, combineName) {
+	combine: function (streams, f) {
 		var arr = [];
-		var stream = Stream.create(combineName);
+		var stream = Stream.create();
 
 		var running = false;
 		var tryRunF = function () {
@@ -167,6 +160,8 @@ var component = function (build) {
 						return childComponent.create(ctx);
 					}
 				});
+				
+				instance.childInstances = childInstances;
 				
 				var resultContexts = instance.wireChildren.apply(null, [instance, context].concat(childInstances)) || [];
 				
@@ -366,22 +361,21 @@ var el = function (name) {
 				minWidth.push(0);
 				minHeight.push(0);
 
-				Q.all(allInstancePs).then(function (allInstances) {
-					for (var i = 0; i < allInstances.length; i++) {
-						var instance = allInstances[i];
-						if ($.isArray(instance)) {
-							var instances = instance;
-							instances.map(function (i) {
-								i.destroy();
-							});
-						}
-						else {
-							instance.destroy();
-						}
+				var allInstances = this.childInstances;
+				for (var i = 0; i < allInstances.length; i++) {
+					var instance = allInstances[i];
+					if ($.isArray(instance)) {
+						var instances = instance;
+						instances.map(function (i) {
+							i.destroy();
+						});
 					}
+					else {
+						instance.destroy();
+					}
+				}
 					
-					$el.remove();
-				});
+				this.$el.remove();
 			},
 		};
 	});

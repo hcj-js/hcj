@@ -34,7 +34,7 @@ var $prop = $$('prop');
 var $html = $$('html');
 
 
-var windowWidth = Stream.never('windowWidth');
+var windowWidth = Stream.never();
 var updateWindowWidth = function () {
 	windowWidth.push(document.body.clientWidth);
 }
@@ -43,11 +43,18 @@ $(window).on('resize', function () {
 	updateWindowWidth();
 });
 
-var windowScroll = Stream.never('windowScroll');
+var windowScroll = Stream.never();
 $(window).on('scroll', function () {
 	windowScroll.push(window.scrollY);
 });
 windowScroll.push(window.scrollY);
+
+var windowHash = Stream.never();
+$(window).on('hashchange', function () {
+	windowHash.push(location.hash);
+});
+windowHash.push(location.hash);
+
 
 var withMinWidth = function (mw, end) {
 	return function (i) {
@@ -422,7 +429,7 @@ var invertOnHover = function (c) {
 		return Stream.combine([invert, stream1, stream2], function (i, v1, v2) {
 			return i ? v2 : v1;
 		}, 'choose stream');
-	}
+	};
 	
 	
 	return div.all([
@@ -710,3 +717,53 @@ var withBackgroundImage = function (config, c) {
 	]);
 };
 
+
+
+
+var matchStrings = function (stringsAndRouters) {
+	return function (str) {
+		for (var i = 0; i < stringsAndRouters.length; i++ ) {
+			var stringAndRouter = stringsAndRouters[i];
+			if (str.indexOf(stringAndRouter.string) === 0) {
+				return stringAndRouter.router(str.substring(stringAndRouter.string.length));
+			}
+		}
+	};
+};
+
+var routeToComponent = function (component) {
+	return function () {
+		return component;
+	};
+};
+
+var routeToFirst = function (routers) {
+	return function (str) {
+		for (var i = 0; i < routers.length; i++) {
+			var result = routers[i](str);
+			if (result) {
+				return result;
+			}
+		}
+	};
+};
+
+var route = function (router) {
+	var instance;
+	return div.and(function (i, context) {
+		windowHash.map(function (hash) {
+			hash = hash.substring(1);
+			
+			if (instance) {
+				instance.destroy();
+			}
+
+			Q.all([router(hash)]).then(function (cs) {
+				var c = cs[0];
+				instance = c.create(context);
+				instance.minWidth.pushAll(i.minWidth);
+				instance.minHeight.pushAll(i.minHeight);
+			});
+		});
+	});
+};
