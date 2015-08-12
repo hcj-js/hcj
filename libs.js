@@ -760,6 +760,9 @@ var route = function (router) {
 
 			Q.all([router(hash)]).then(function (cs) {
 				var c = cs[0];
+				context.$el = i.$el;
+				context.top = Stream.once(0);
+				context.left = Stream.once(0);
 				instance = c.create(context);
 				instance.minWidth.pushAll(i.minWidth);
 				instance.minHeight.pushAll(i.minHeight);
