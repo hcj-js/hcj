@@ -8,6 +8,6 @@ div {
 	position: absolute;
 	overflow: hidden;
 }
-img {
+img, input {
 	position: absolute;
 }

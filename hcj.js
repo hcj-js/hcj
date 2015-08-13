@@ -115,6 +115,37 @@ var Stream = {
 
 		return stream;
 	},
+	combineObject: function (streamsObject) {
+		var keys = Object.keys(streamsObject);
+		var obj = {};
+		var stream = Stream.create();
+		
+		var running = false;
+		var tryRunF = function () {
+			if (!running) {
+				running = true;
+				setTimeout(function () {
+					running = false;
+					for (var i = 0; i < keys.length; i++) {
+						var key = keys[i];
+						if (obj[key] === undefined) {
+							return;
+						}
+					}
+					stream.push($.extend({}, obj));
+				});
+			}
+		};
+
+		keys.map(function (key, i) {
+			streamsObject[key].map(function (v) {
+				obj[key] = v;
+				tryRunF();
+			});
+		});
+
+		return stream;
+	},
 };
 
 var child = function (component) {
@@ -330,11 +361,15 @@ var el = function (name) {
 		
 		var scrollStream = Stream.combine([context.scroll, context.top], function (scroll, top) {
 			return scroll - top;
-		}, 'scroll');
+		});
+		var topAccumStream = Stream.combine([context.topAccum, context.top], function (a, b) {
+			return a + b;
+		});
 		var newCtx = function () {
 			return {
 				$el: $el,
 				scroll: scrollStream,
+				topAccum: topAccumStream,
 				top: Stream.once(0, 'context top'),
 				left: Stream.once(0, 'context left'),
 				width: Stream.never('context width'),
@@ -359,7 +394,9 @@ var el = function (name) {
 			},
 			destroy: function () {
 				minWidth.push(0);
+				minWidth.end();
 				minHeight.push(0);
+				minHeight.end();
 
 				var allInstances = this.childInstances;
 				for (var i = 0; i < allInstances.length; i++) {
@@ -377,6 +414,12 @@ var el = function (name) {
 					
 				this.$el.remove();
 			},
+			updateDimensions: function () {
+				var mw = findMinWidth(this.$el);
+				var mh = findMinHeight(this.$el);
+				this.minWidth.push(mw);
+				this.minHeight.push(mh);
+			},
 		};
 	});
 };
@@ -385,6 +428,7 @@ var el = function (name) {
 // div :: Component
 var a = el('a');
 var div = el('div');
+var form = el('form');
 var img = el('img');
 var input = el('input');
 var li = el('li');
@@ -395,6 +439,7 @@ var rootContext = function () {
 	return {
 		$el: $('body'),
 		top: Stream.once(0, 'root top'),
+		topAccum: Stream.once(0),
 		left: Stream.once(0, 'root left'),
 		scroll: windowScroll,
 		width: windowWidth,
