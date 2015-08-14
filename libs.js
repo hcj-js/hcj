@@ -114,6 +114,7 @@ var onThis = function (event) {
 };
 var changeThis = onThis('change');
 var clickThis = onThis('click');
+var inputPropertychangeThis = onThis('input propertychange');
 var keydownThis = onThis('keydown');
 var keyupThis = onThis('keyup');
 var mouseoverThis = onThis('mouseover');
@@ -144,6 +145,28 @@ var image = function (config) {
 			});
 		},
 	]);
+};
+
+var linkTo = function (href, c) {
+	return a.all([
+		$prop('href', href),
+		child(c),
+		wireChildren(function (instance, context, i) {
+			i.minHeight.pushAll(instance.minHeight);
+			i.minWidth.pushAll(instance.minWidth);
+			return [context];
+		}),
+	]);
+};
+
+var htmlStream = function (htmlStream) {
+	return function (instance, context) {
+		htmlStream.map(function (html) {
+			instance.$el.html(html);
+			instance.$el.find('div').css('position', 'initial');
+			instance.updateDimensions();
+		});
+	};
 };
 
 
@@ -199,8 +222,10 @@ var sideBySide = function (cs) {
 var stack = function (cs, options) {
 	return div.all([
 		componentName('stack'),
-		children(cs.map(function (c) {
-			return c.and($css('transition', 'inherit'));
+		children(Q.all(cs).then(function (cs) {
+			return cs.map(function (c) {
+				return c.and($css('transition', 'inherit'));
+			});
 		})),
 		wireChildren(function (instance, context, is) {
 			var totalMinHeightStream = function (is) {
@@ -292,8 +317,10 @@ var padding = function (amount, c) {
 	}
 	return div.all([
 		componentName('padding'),
-		child(c.and($css('transition', 'inherit'))),
+		child(c),
 		wireChildren(function (instance, context, i) {
+			i.$el.css('transition', 'inherit');
+			
 			i.minWidth.map(function (mw) {
 				return mw + left + right;
 			}, 'padding min width').pushAll(instance.minWidth);
@@ -464,8 +491,47 @@ var invertOnHover = function (c) {
 };
 
 var border = function (color, amount, c) {
-	return padding(amount, c).all([
-		$css('background-color', color),
+	var left = amount.left || 0;
+	var right = amount.right || 0;
+	var top = amount.top || 0;
+	var bottom = amount.bottom || 0;
+	var radius = amount.radius || 0;
+	
+	return div.all([
+		child(div.all([
+			$css('border-left', px(amount.left) + ' solid ' + color),
+			$css('border-right', px(amount.right) + ' solid ' + color),
+			$css('border-top', px(amount.top) + ' solid ' + color),
+			$css('border-bottom', px(amount.bottom) + ' solid ' + color),
+			$css('border-radius', px(radius)),
+			child(c),
+			wireChildren(function (instance, context, i) {
+				i.minHeight.pushAll(instance.minHeight);
+				i.minWidth.pushAll(instance.minWidth);
+				return [{
+					width: context.width,
+					height: context.height,
+				}];
+			}),
+		])),
+		wireChildren(function (instance, context, i) {
+			i.minWidth.map(function (mw) {
+				return mw + left + right;
+			}).pushAll(instance.minWidth);
+			
+			i.minHeight.map(function (mh) {
+				return mh + top + bottom;
+			}).pushAll(instance.minHeight);
+			
+			return [{
+				width: context.width.map(function (w) {
+					return w - left - right;
+				}),
+				height: context.height.map(function (h) {
+					return h - top - bottom;
+				}),
+			}];
+		}),
 	]);
 };
 var fixedHeaderBody = function (header, body) {
@@ -701,20 +767,26 @@ var withMinHeightStream = function (getMinHeightStream, c) {
 var extendToWindowBottom = function (c, distance) {
 	distance = distance || 0;
 	return withMinHeightStream(function (instance, context) {
-		return Stream.combine([instance.minHeight, context.topAccum, windowResize], function (mh, ta) {
-			return Math.max(mh, window.innerHeight - ta - distance);
+		return Stream.combine([instance.minHeight, context.top, context.topAccum, windowResize], function (mh, t, ta) {
+			return Math.max(mh, window.innerHeight - t - ta - distance);
 		});
 	}, c);
 };
 
 var withBackgroundImage = function (config, c) {
 	var imgAspectRatio = Stream.never();
+	if (!config.src.map) {
+		config.src = Stream.once(config.src);
+	}
 	return div.all([
 		child(img.all([
-			$prop('src', config.src),
 			$css('transition', 'inherit'),
 			$css('visibility', 'hidden'),
 			function (i, context) {
+				config.src.map(function (src) {
+					i.$el.prop('src', src);
+				});
+				
 				i.$el.on('load', function () {
 					var nativeWidth = findMinWidth(i.$el);
 					var nativeHeight = findMinHeight(i.$el);
@@ -757,6 +829,26 @@ var withBackgroundImage = function (config, c) {
 };
 
 
+var useComponentStream = function (cStream) {
+	var i;
+	return div.and(function (instance, context) {
+		cStream.map(function (c) {
+			Q.all([c]).then(function (cs) {
+				if (i) {
+					i.destroy();
+				}
+
+				var c = cs[0];
+				var ctx = instance.newCtx();
+				context.width.pushAll(ctx.width);
+				context.height.pushAll(ctx.height);
+				i = c.create(ctx);
+				i.minWidth.pushAll(instance.minWidth);
+				i.minHeight.pushAll(instance.minHeight);
+			});
+		});
+	});
+};
 
 
 var matchStrings = function (stringsAndRouters) {

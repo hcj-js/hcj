@@ -43,10 +43,13 @@ var Stream = {
 	create: function () {
 		var ended = false;
 		
+		var valueD = Q.defer();
+
 		var lastValue;
 		var listeners = [];
 
 		var pushValue = function (v) {
+			valueD.resolve(v);
 			if (!ended && lastValue !== v) {
 				lastValue = v;
 				listeners.map(function (f) {
@@ -65,6 +68,12 @@ var Stream = {
 					stream.push(f(v));
 				});
 				return stream;
+			},
+			promise: valueD.promise,
+			prop: function (str) {
+				return this.map(function (v) {
+					return v[str];
+				});
 			},
 			end: function () {
 				ended = true;
@@ -145,6 +154,14 @@ var Stream = {
 		});
 
 		return stream;
+	},
+	splitObject: function (obj) {
+		var keys = Object.keys(obj);
+		var streams = {};
+		keys.map(function (key) {
+			streams[key] = Stream.once(obj[key]);
+		});
+		return streams;
 	},
 };
 

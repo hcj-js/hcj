@@ -8,6 +8,11 @@ div {
 	position: absolute;
 	overflow: hidden;
 }
-img, input {
+img, input, textarea {
 	position: absolute;
+}
+
+.pre div {
+	position: initial;
+	overflow: initial;
 }
