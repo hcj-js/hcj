@@ -31,7 +31,21 @@ var $addClass = $$('addClass');
 var $css = $$('css');
 var $attr = $$('attr');
 var $prop = $$('prop');
-var $html = $$('html');
+
+var chooseWidthFromHeight = function (instance, context) {
+	context.width.map(function (w) {
+		var optimalHeight = findOptimalHeight(instance.$el, w);
+		if (optimalHeight !== 0) {
+			instance.minHeight.push(optimalHeight);
+		}
+	});
+};
+var $html = function (html) {
+	return function (instance, context) {
+		instance.$el.html(html);
+		chooseWidthFromHeight(instance, context);
+	};
+};
 
 
 var windowWidth = Stream.never();
@@ -135,13 +149,27 @@ var image = function (config) {
 				if (config.minWidth) {
 					minWidth = config.minWidth;
 					minHeight = minWidth / aspectRatio;
+					i.minWidth.push(minWidth);
+					i.minHeight.push(minHeight);
 				}
 				else if (config.minHeight) {
 					minHeight = config.minHeight;
 					minWidth = minHeight * aspectRatio;
+					i.minWidth.push(minWidth);
+					i.minHeight.push(minHeight);
 				}
-				i.minWidth.push(minWidth);
-				i.minHeight.push(minHeight);
+				
+				if (config.chooseWidth) {
+					context.height.map(function (height) {
+						return Math.max(config.chooseWidth, height * aspectRatio);
+					}).pushAll(i.minWidth);
+				}
+				
+				if (config.chooseHeight) {
+					context.width.map(function (width) {
+						return Math.max(config.chooseHeight, width / aspectRatio);
+					}).pushAll(i.minHeight);
+				}
 			});
 		},
 	]);
@@ -170,41 +198,52 @@ var htmlStream = function (htmlStream) {
 };
 
 
-var sideBySide = function (cs) {
+var sideBySide = function (config, cs) {
+	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
 	return div.all([
 		componentName('sideBySide'),
 		children(cs),
 		wireChildren(function (instance, context, is) {
-
-			var allMinWidths = is.map(function (i) {
+			var allMinWidths = Stream.combine(is.map(function (i) {
 				return i.minWidth;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				return args;
 			});
 			
-			var totalMinWidthStream = function (is) {
-				return Stream.combine(is.map(function (i) {
-					return i.minWidth;
-				}), function () {
-					var args = Array.prototype.slice.call(arguments);
-					return args.reduce(function (a, b) {
-						return a + b;
-					}, 0);
-				}, 'side by side total min width');
-			};
-
-			var contexts = [];
-			is.reduce(function (is, i) {
-				contexts.push({
-					left: totalMinWidthStream(is),
-					width: i.minWidth,
-					height: context.height,
-				});
-				
-				is.push(i);
-				return is;
-			}, []);
-
-			totalMinWidthStream(is).pushAll(instance.minWidth);
+			allMinWidths.map(function (mws) {
+				instance.minWidth.push(mws.reduce(function (a, mw) {
+					return a + mw;
+				}, 0));
+			});
 			
+			var contexts = is.map(function () {
+				return {
+					left: Stream.never(),
+					width: Stream.never(),
+					height: context.height,
+				};
+			});
+
+			Stream.combine([context.width, allMinWidths], function (width, mws) {
+				var left = 0;
+				var positions = mws.map(function (mw) {
+					var position = {
+						left: left,
+						width: mw,
+					};
+					left += mw;
+					return position;
+				});
+				positions = config.handleSurplusWidth(width, positions);
+
+				positions.map(function (position, index) {
+					var ctx = contexts[index];
+					ctx.left.push(position.left);
+					ctx.width.push(position.width);
+				});
+			});
+
 			Stream.combine(is.map(function (i) {
 				return i.minHeight;
 			}), function () {
@@ -219,6 +258,16 @@ var sideBySide = function (cs) {
 	]);
 };
 
+var intersperse = function (arr, v) {
+	var result = [];
+	arr.map(function (el) {
+		result.push(el);
+		result.push(v);
+	});
+	result.pop();
+	return result;
+};
+
 var stack = function (cs, options) {
 	return div.all([
 		componentName('stack'),
@@ -228,6 +277,7 @@ var stack = function (cs, options) {
 			});
 		})),
 		wireChildren(function (instance, context, is) {
+			var separatorSize = (options && options.separatorSize) || 0;
 			var totalMinHeightStream = function (is) {
 				return Stream.combine(is.map(function (i, index) {
 					var iMinHeight;
@@ -245,8 +295,8 @@ var stack = function (cs, options) {
 				}), function () {
 					var args = Array.prototype.slice.call(arguments);
 					return args.reduce(function (a, b) {
-						return a + b;
-					}, 0);
+						return a + b + separatorSize;
+					}, -separatorSize);
 				}, 'stack total min height');
 			};
 
@@ -389,16 +439,16 @@ var alignLRM = function (lrm) {
 					return (width - mw) / 2;
 				}, 'alignLRM middle.left'),
 				width: mWidth,
-				height: headerHeight,
+				height: context.height,
 			}, {
 				width: lWidth,
-				height: headerHeight,
+				height: context.height,
 			}, {
 				left: Stream.combine([context.width, rWidth], function (width, rMW) {
 					return width - rMW;
 				}, 'alignLRM right.left'),
 				width: rWidth,
-				height: headerHeight,
+				height: context.height,
 			}];
 		}),
 	]);
@@ -619,6 +669,35 @@ var ignoreSurplusWidth = function (_, cols) {
 var ignoreSurplusHeight = function (_, rows) {
 	return rows;
 };
+var evenSplitSurplusWidth = function (gridWidth, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+	var widthPerCol = surplusWidth / positions.length;
+	positions.map(function (position, i) {
+		position.width += widthPerCol;
+		position.left += i * widthPerCol;
+	});
+	return positions;
+};
+var giveToNth = function (n) {
+	return function (gridWidth, positions) {
+		var lastPosition = positions[positions.length - 1];
+		var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+		positions.map(function (position, i) {
+			if (i === n || (i === positions.length - 1 && n >= positions.length)) {
+				position.width += surplusWidth;
+			}
+			else if (i > n) {
+				position.left += surplusWidth;
+			}
+		});
+		return positions;
+	};
+};
+var giveToFirst = giveToNth(0);
+var giveToSecond = giveToNth(1);
+var evenSplitSurplusHeight = function (gridHeight, rows, config) {
+};
 
 
 var grid = function (config, cs) {
@@ -639,12 +718,18 @@ var grid = function (config, cs) {
 				return i.minWidth;
 			}), function () {
 				return Array.prototype.slice.call(arguments);
-			}, 'grid component min widths');
+			});
 			var minHeights = Stream.combine(is.map(function (i) {
 				return i.minHeight;
 			}), function () {
 				return Array.prototype.slice.call(arguments);
-			}, 'grid component min heights');
+			});
+
+			minWidths.map(function (mws) {
+				return mws.reduce(function (a, mw) {
+					return Math.max(a, mw);
+				}, 0);
+			}).pushAll(instance.minWidth);
 
 			var contexts = is.map(function (i) {
 				return {
@@ -681,7 +766,9 @@ var grid = function (config, cs) {
 						var gridCellsUsed = currentRow.cells.reduce(function (a, b) {
 							return a + b;
 						}, 0);
-						var gridCellsNeeded = 1 + Math.ceil((mw - cellWidth) / (cellWidth + config.gutterSize));
+						var gridCellsNeeded = Math.min(
+							1 + Math.ceil((mw - cellWidth) / (cellWidth + config.gutterSize)),
+							cellsPerRow);
 						
 						if (gridCellsUsed > 0 &&
 							gridCellsUsed + gridCellsNeeded > cellsPerRow) {
@@ -707,7 +794,7 @@ var grid = function (config, cs) {
 					instance.minHeight.push(rows.map(function (r) {
 						return r.height;
 					}).reduce(function (a, b) { return a + b + config.gutterSize; }, -config.gutterSize));
-					rows = config.handleSurplusHeight(gridHeight, rows);
+					rows = config.handleSurplusHeight(gridHeight, rows, config);
 
 					var top = 0;
 					rows.map(function (row, i) {
@@ -723,7 +810,7 @@ var grid = function (config, cs) {
 							cellsUsed += cells;
 							return position;
 						});
-						positions = config.handleSurplusWidth(gridWidth, positions, i);
+						positions = config.handleSurplusWidth(gridWidth, positions, config, i);
 						positions.map(function (position, index) {
 							var ctx = row.contexts[index];
 							ctx.top.push(position.top);
@@ -771,6 +858,25 @@ var extendToWindowBottom = function (c, distance) {
 			return Math.max(mh, window.innerHeight - t - ta - distance);
 		});
 	}, c);
+};
+
+var withBackground = function (background, c) {
+	return div.all([
+		child(background),
+		child(c),
+		wireChildren(function (instance, context, bI, cI) {
+			cI.minWidth.pushAll(instance.minWidth);
+			cI.minHeight.pushAll(instance.minHeight);
+
+			var ctx = instance.newCtx();
+			context.width.pushAll(ctx.width);
+			context.height.pushAll(ctx.height);
+			return [
+				ctx,
+				ctx,
+			];
+		}),
+	]);
 };
 
 var withBackgroundImage = function (config, c) {

@@ -225,8 +225,8 @@ var component = function (build) {
 						(resultContext.left || Stream.once(0, 'default left')).pushAll(childContext.left);
 						(resultContext.width || childInstance.minWidth).pushAll(childContext.width);
 						(resultContext.height || childInstance.minHeight).pushAll(childContext.height);
-						(resultContext.backgroundColor || Stream.never('default background color')).pushAll(childContext.backgroundColor);
-						(resultContext.fontColor || Stream.never('default font color')).pushAll(childContext.fontColor);
+						(resultContext.backgroundColor || Stream.never()).pushAll(childContext.backgroundColor);
+						(resultContext.fontColor || Stream.never()).pushAll(childContext.fontColor);
 					};
 
 					if ($.isArray(childInstance)) {
@@ -354,10 +354,6 @@ var el = function (name) {
 			});
 		}, 'set left css');
 		context.width.map(function (w) {
-			var optimalHeight = findOptimalHeight($el, w);
-			if (optimalHeight !== 0) {
-				minHeight.push(optimalHeight);
-			}
 			updateDomFunc(function () {
 				$el.css('width', px(w));
 			});
