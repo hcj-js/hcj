@@ -40,10 +40,13 @@ var chooseWidthFromHeight = function (instance, context) {
 		}
 	});
 };
-var $html = function (html) {
+var $html = function (html, setWidth) {
 	return function (instance, context) {
 		instance.$el.html(html);
 		chooseWidthFromHeight(instance, context);
+		if (setWidth) {
+			instance.updateDimensions();
+		}
 	};
 };
 
@@ -137,9 +140,13 @@ var submitThis = onThis('click');
 
 
 var image = function (config) {
+	var srcStream = (config.src && config.src.map) ? config.src : Stream.once(config.src);
 	return img.all([
-		$prop('src', config.src),
 		function (i, context) {
+			srcStream.map(function (src) {
+				i.$el.prop('src', src);
+			});
+			
 			i.$el.on('load', function () {
 				var nativeWidth = findMinWidth(i.$el);
 				var nativeHeight = findMinHeight(i.$el);
@@ -184,6 +191,12 @@ var linkTo = function (href, c) {
 			i.minWidth.pushAll(instance.minWidth);
 			return [context];
 		}),
+	]);
+};
+
+var text = function (text) {
+	return div.all([
+		$html(text),
 	]);
 };
 
@@ -541,18 +554,18 @@ var invertOnHover = function (c) {
 };
 
 var border = function (color, amount, c) {
-	var left = amount.left || 0;
-	var right = amount.right || 0;
-	var top = amount.top || 0;
-	var bottom = amount.bottom || 0;
+	var left = amount.left || amount.all || 0;
+	var right = amount.right || amount.all || 0;
+	var top = amount.top || amount.all || 0;
+	var bottom = amount.bottom || amount.all || 0;
 	var radius = amount.radius || 0;
 	
 	return div.all([
 		child(div.all([
-			$css('border-left', px(amount.left) + ' solid ' + color),
-			$css('border-right', px(amount.right) + ' solid ' + color),
-			$css('border-top', px(amount.top) + ' solid ' + color),
-			$css('border-bottom', px(amount.bottom) + ' solid ' + color),
+			$css('border-left', px(left) + ' solid ' + color),
+			$css('border-right', px(right) + ' solid ' + color),
+			$css('border-top', px(top) + ' solid ' + color),
+			$css('border-bottom', px(bottom) + ' solid ' + color),
 			$css('border-radius', px(radius)),
 			child(c),
 			wireChildren(function (instance, context, i) {
@@ -584,14 +597,39 @@ var border = function (color, amount, c) {
 		}),
 	]);
 };
-var fixedHeaderBody = function (header, body) {
+
+var toggleHeight = function (stream) {
+	return function (c) {
+		return div.all([
+			child(c),
+			wireChildren(function (instance, context, i) {
+				i.minWidth.pushAll(instance.minWidth);
+				Stream.combine([i.minHeight, stream], function (mh, onOff) {
+					return onOff ? mh : 0;
+				}).pushAll(instance.minHeight);
+				return [{
+					width: context.width,
+					height: context.height,
+				}];
+			}),
+		]);
+	};
+};
+
+var fixedHeaderBody = function (config, header, body) {
+	config.transition = config.transition || "0.5s";
 	return div.all([
 		componentName('fixedHeaderBody'),
 		child(body),
 		child(header),
 		wireChildren(function (instance, ctx, bodyI, headerI) {
 			headerI.$el.css('position', 'fixed');
-			
+
+			setTimeout(function () {
+				headerI.$el.css('transition', 'height ' + config.transition);
+				bodyI.$el.css('transition', 'top ' + config.transition);
+			});
+
 			Stream.combine([bodyI, headerI].map(function (i) {
 				return i.minHeight;
 			}), function () {
@@ -637,6 +675,8 @@ var stickyHeaderBody = function (body1, header, body2) {
 				}, 0);
 			}).pushAll(instance.minHeight);
 			
+			var fixedNow = false;
+			
 			return [{
 				width: context.width,
 			}, {
@@ -646,8 +686,29 @@ var stickyHeaderBody = function (body1, header, body2) {
 				}),
 			}, {
 				width: context.width,
-				top: Stream.combine([body1I.minHeight, context.scroll], function (mh, scroll) {
-					return Math.max(mh, scroll);
+				top: Stream.combine([body1I.minHeight, context.scroll, context.topAccum], function (mh, scroll, topAccum) {
+					var $header = headerI.$el;
+					mh = Math.floor(mh);
+					if (mh > scroll + topAccum) {
+						$header.css('position', 'absolute');
+						$header.css('transition', '');
+						if (fixedNow) {
+							window.scrollTo(0, mh + topAccum);
+						}
+						fixedNow = false;
+						return mh;
+					}
+					else if (mh < scroll + topAccum) {
+						$header.css('position', 'fixed');
+						setTimeout(function () {
+							$header.css('transition', 'inherit');
+						}, 20);
+						if (!fixedNow) {
+							window.scrollTo(0, mh + topAccum);
+						}
+						fixedNow = true;
+						return topAccum;
+					}
 				}),
 			}];
 		}),
@@ -851,10 +912,10 @@ var withMinHeightStream = function (getMinHeightStream, c) {
 	]);
 };
 
-var extendToWindowBottom = function (c, distance) {
-	distance = distance || 0;
+var extendToWindowBottom = function (c, distanceStream) {
+	distanceStream = distanceStream || Stream.once(0);
 	return withMinHeightStream(function (instance, context) {
-		return Stream.combine([instance.minHeight, context.top, context.topAccum, windowResize], function (mh, t, ta) {
+		return Stream.combine([instance.minHeight, context.top, context.topAccum, distanceStream, windowResize], function (mh, t, ta, distance) {
 			return Math.max(mh, window.innerHeight - t - ta - distance);
 		});
 	}, c);
@@ -1007,6 +1068,7 @@ var route = function (router) {
 				context.width.pushAll(ctx.width);
 				context.height.pushAll(ctx.height);
 				i = c.create(ctx);
+				i.$el.css('transition', 'inherit');
 				i.minWidth.pushAll(instance.minWidth);
 				i.minHeight.pushAll(instance.minHeight);
 			});
