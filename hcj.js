@@ -69,6 +69,12 @@ var Stream = {
 				});
 				return stream;
 			},
+			onValue: function (f) {
+				return this.map(function (v) {
+					f(v);
+					return true;
+				});
+			},
 			promise: valueD.promise,
 			prop: function (str) {
 				return this.map(function (v) {
@@ -80,9 +86,21 @@ var Stream = {
 			},
 			push: pushValue,
 			pushAll: function (s) {
-				this.map(function (v) {
+				this.onValue(function (v) {
 					s.push(v);
-				}, 'pushing all');
+				});
+			},
+			test: function () {
+				var args = arguments;
+				var err = new Error();
+				setTimeout(function () {
+					if (lastValue === undefined) {
+						args;
+						err;
+						debugger;
+					}
+				}, 5000);
+				return this;
 			},
 		};
 	},
@@ -115,14 +133,20 @@ var Stream = {
 		};
 		
 		streams.reduce(function (i, stream) {
-			stream.map(function (v) {
+			stream.onValue(function (v) {
 				arr[i] = v;
 				tryRunF();
-			}, 'combining');
+			});
 			return i + 1;
 		}, 0);
 
 		return stream;
+	},
+	all: function (streams, f) {
+		return this.combine(streams, function () {
+			f.apply(null, arguments);
+			return true;
+		});
 	},
 	combineObject: function (streamsObject) {
 		var keys = Object.keys(streamsObject);
@@ -147,7 +171,7 @@ var Stream = {
 		};
 
 		keys.map(function (key, i) {
-			streamsObject[key].map(function (v) {
+			streamsObject[key].onValue(function (v) {
 				obj[key] = v;
 				tryRunF();
 			});
@@ -221,12 +245,24 @@ var component = function (build) {
 					
 					var applyResult = function (resultContext, childInstance, childContext) {
 						resultContext = resultContext || {};
-						(resultContext.top || Stream.once(0, 'default top')).pushAll(childContext.top);
-						(resultContext.left || Stream.once(0, 'default left')).pushAll(childContext.left);
-						(resultContext.width || childInstance.minWidth).pushAll(childContext.width);
-						(resultContext.height || childInstance.minHeight).pushAll(childContext.height);
-						(resultContext.backgroundColor || Stream.never()).pushAll(childContext.backgroundColor);
-						(resultContext.fontColor || Stream.never()).pushAll(childContext.fontColor);
+						if (resultContext.top) {
+							resultContext.top.pushAll(childContext.top);
+						}
+						if (resultContext.left) {
+							resultContext.left.pushAll(childContext.left);
+						}
+						if (resultContext.width) {
+							resultContext.width.pushAll(childContext.width);
+						}
+						if (resultContext.height) {
+							resultContext.height.pushAll(childContext.height);
+						}
+						if (resultContext.backgroundColor) {
+							resultContext.backgroundColor.pushAll(childContext.backgroundColor);
+						}
+						if (resultContext.fontColor) {
+							resultContext.fontColor.pushAll(childContext.fontColor);
+						}
 					};
 
 					if ($.isArray(childInstance)) {
@@ -239,7 +275,8 @@ var component = function (build) {
 					}
 				}
 			});
-			
+
+			instance.updateDimensions();
 			return instance;
 		},
 		build: build,
@@ -331,9 +368,8 @@ var updateDomFunc = function (func) {
 };
 var el = function (name) {
 	return component(function (context) {
-		var minWidth = Stream.once(0, 'el min width');
-		var minHeight = Stream.once(0, 'el min height');
-
+		var minWidth = Stream.never();
+		var minHeight = Stream.never();
 		var updateMinHeight = function () {
 			var mh = findMinHeight(i.$el);
 			i.minWidth.push(mw);
@@ -343,32 +379,32 @@ var el = function (name) {
 		var $el = $(document.createElement(name));
 		context.$el.append($el);
 
-		context.top.map(function (t) {
+		context.top.onValue(function (t) {
 			updateDomFunc(function () {
 				$el.css('top', px(t));
 			});
-		}, 'set top css');
-		context.left.map(function (l) {
+		});
+		context.left.onValue(function (l) {
 			updateDomFunc(function () {
 				$el.css('left', px(l));
 			});
-		}, 'set left css');
-		context.width.map(function (w) {
+		});
+		context.width.onValue(function (w) {
 			updateDomFunc(function () {
 				$el.css('width', px(w));
 			});
-		}, 'set width css');
-		context.height.map(function (h) {
+		});
+		context.height.onValue(function (h) {
 			updateDomFunc(function () {
 				$el.css('height', px(h));
 			});
-		}, 'set height css');
-		context.backgroundColor.map(function (bgcolor) {
+		});
+		context.backgroundColor.onValue(function (bgcolor) {
 			$el.css('background-color', bgcolor);
-		}, 'set background color css');
-		context.fontColor.map(function (bgcolor) {
+		});
+		context.fontColor.onValue(function (bgcolor) {
 			$el.css('color', bgcolor);
-		}, 'set font color css');
+		});
 
 		var childComponentPs = [];
 		
@@ -378,20 +414,23 @@ var el = function (name) {
 		var topAccumStream = Stream.combine([context.topAccum, context.top], function (a, b) {
 			return a + b;
 		});
-		var newCtx = function () {
+		var newCtx = function (ctx) {
 			return {
 				$el: $el,
 				scroll: scrollStream,
 				topAccum: topAccumStream,
-				top: Stream.once(0, 'context top'),
-				left: Stream.once(0, 'context left'),
-				width: Stream.never('context width'),
-				height: Stream.never('context height'),
-				backgroundColor: Stream.never('context background color'),
-				fontColor: Stream.never('context font color'),
+				top: Stream.never(),
+				left: Stream.never(),
+				width: Stream.never(),
+				height: Stream.never(),
+				backgroundColor: Stream.once('rgba(0,0,0,0)'),
+				fontColor: Stream.once('inherit'),
 			};
 		};
 		
+		// minWidth.test($el);
+		// minHeight.test($el);
+
 		return {
 			$el: $el,
 			optimalWidth: 0,
@@ -430,8 +469,12 @@ var el = function (name) {
 			updateDimensions: function () {
 				var mw = findMinWidth(this.$el);
 				var mh = findMinHeight(this.$el);
-				this.minWidth.push(mw);
-				this.minHeight.push(mh);
+				if (mw !== 0) {
+					this.minWidth.push(mw);
+				}
+				if (mh !== 0) {
+					this.minHeight.push(mh);
+				}
 			},
 		};
 	});
@@ -451,14 +494,14 @@ var ul = el('ul');
 var rootContext = function () {
 	return {
 		$el: $('body'),
-		top: Stream.once(0, 'root top'),
+		top: Stream.once(0),
 		topAccum: Stream.once(0),
-		left: Stream.once(0, 'root left'),
+		left: Stream.once(0),
 		scroll: windowScroll,
 		width: windowWidth,
-		height: Stream.never('root height'),
-		backgroundColor: Stream.never('root background color'),
-		fontColor: Stream.never('root font color'),
+		height: Stream.never(),
+		backgroundColor: Stream.once('white'),
+		fontColor: Stream.once('black'),
 	};
 };
 

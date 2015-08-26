@@ -19,10 +19,7 @@ var $$ = function (func) {
 		var args = Array.prototype.slice.call(arguments);
 		return function (i) {
 			i.$el[func].apply(i.$el, args);
-			var mw = findMinWidth(i.$el);
-			var mh = findMinHeight(i.$el);
-			i.minWidth.push(mw);
-			i.minHeight.push(mh);
+			i.updateDimensions();
 		};
 	};
 };
@@ -33,7 +30,7 @@ var $attr = $$('attr');
 var $prop = $$('prop');
 
 var chooseWidthFromHeight = function (instance, context) {
-	context.width.map(function (w) {
+	context.width.onValue(function (w) {
 		var optimalHeight = findOptimalHeight(instance.$el, w);
 		if (optimalHeight !== 0) {
 			instance.minHeight.push(optimalHeight);
@@ -196,7 +193,13 @@ var linkTo = function (href, c) {
 
 var text = function (text) {
 	return div.all([
+		$html(text, true),
+	]);
+};
+var paragraph = function (text, minWidth) {
+	return div.all([
 		$html(text),
+		withMinWidth(minWidth || 0, true),
 	]);
 };
 
@@ -224,7 +227,7 @@ var sideBySide = function (config, cs) {
 				return args;
 			});
 			
-			allMinWidths.map(function (mws) {
+			allMinWidths.onValue(function (mws) {
 				instance.minWidth.push(mws.reduce(function (a, mw) {
 					return a + mw;
 				}, 0));
@@ -238,7 +241,7 @@ var sideBySide = function (config, cs) {
 				};
 			});
 
-			Stream.combine([context.width, allMinWidths], function (width, mws) {
+			Stream.all([context.width, allMinWidths], function (width, mws) {
 				var left = 0;
 				var positions = mws.map(function (mw) {
 					var position = {
@@ -257,6 +260,10 @@ var sideBySide = function (config, cs) {
 				});
 			});
 
+			is.map(function (i) {
+				i.minHeight;
+			});
+
 			Stream.combine(is.map(function (i) {
 				return i.minHeight;
 			}), function () {
@@ -264,7 +271,7 @@ var sideBySide = function (config, cs) {
 				return args.reduce(function (a, b) {
 					return Math.max(a, b);
 				}, 0);
-			}, 'side by side min height').pushAll(instance.minHeight);
+			}).pushAll(instance.minHeight);
 			
 			return [contexts];
 		}),
@@ -292,6 +299,9 @@ var stack = function (cs, options) {
 		wireChildren(function (instance, context, is) {
 			var separatorSize = (options && options.separatorSize) || 0;
 			var totalMinHeightStream = function (is) {
+				if (is.length === 0) {
+					return Stream.once(0);
+				}
 				return Stream.combine(is.map(function (i, index) {
 					var iMinHeight;
 					
@@ -322,7 +332,7 @@ var stack = function (cs, options) {
 					var optionMinHeight = options.mhs[is.length](context);
 					iMinHeight = Stream.combine([i.minHeight, optionMinHeight], function (a, b) {
 						return Math.max(a, b);
-					}, 'stack option min height');
+					});
 				}
 				else {
 					iMinHeight = i.minHeight;
@@ -346,7 +356,7 @@ var stack = function (cs, options) {
 				return args.reduce(function (a, b) {
 					return Math.max(a, b);
 				}, 0);
-			}, 'stack min width').pushAll(instance.minWidth);
+			}).pushAll(instance.minWidth);
 			
 			return [contexts];
 		}),
@@ -407,15 +417,15 @@ var padding = function (amount, c) {
 };
 
 var alignLRM = function (lrm) {
-	var lHeight = Stream.never('alignLRM left height');
-	var rHeight = Stream.never('alignLRM right height');
-	var mHeight = Stream.never('alignLRM middle height');
-	
+	var nothing = div.all([
+		withMinHeight(0, true),
+		withMinWidth(0, true),
+	]);
 	return div.all([
 		componentName('alignLRM'),
-		child(lrm.middle || div),
-		child(lrm.left || div),
-		child(lrm.right || div),
+		child(lrm.middle || nothing),
+		child(lrm.left || nothing),
+		child(lrm.right || nothing),
 		wireChildren(function (instance, context, mI, lI, rI) {
 			var headerHeight = Stream.combine([mI, lI, rI].map(function (i) {
 				return i.minHeight;
@@ -425,7 +435,7 @@ var alignLRM = function (lrm) {
 					return Math.max(h, mh);
 				}, 0);
 				return height;
-			}, 'alignLRM height');
+			});
 			headerHeight.pushAll(instance.minHeight);
 			
 			Stream.combine([mI, lI, rI].map(function (i) {
@@ -436,12 +446,12 @@ var alignLRM = function (lrm) {
 					return w + mw;
 				}, 0);
 				return height;
-			}, 'alignLRM width').pushAll(instance.minWidth);
+			}).pushAll(instance.minWidth);
 
 			var minAvailableRequested = function (available, requested) {
 				return Stream.combine([available, requested], function (a, r) {
 					return Math.min(a, r);
-				}, 'minAvailableRequested');
+				});
 			};
 			var mWidth = minAvailableRequested(context.width, mI.minWidth);
 			var lWidth = minAvailableRequested(context.width, lI.minWidth);
@@ -450,7 +460,7 @@ var alignLRM = function (lrm) {
 			return [{
 				left: Stream.combine([context.width, mWidth], function (width, mw) {
 					return (width - mw) / 2;
-				}, 'alignLRM middle.left'),
+				}),
 				width: mWidth,
 				height: context.height,
 			}, {
@@ -459,7 +469,7 @@ var alignLRM = function (lrm) {
 			}, {
 				left: Stream.combine([context.width, rWidth], function (width, rMW) {
 					return width - rMW;
-				}, 'alignLRM right.left'),
+				}),
 				width: rWidth,
 				height: context.height,
 			}];
@@ -468,13 +478,13 @@ var alignLRM = function (lrm) {
 };
 
 var alignTBM = function (tbm) {
-	var tWidth = Stream.never('alignTBM top');
-	var bWidth = Stream.never('alignTBM bottom');
-	var mWidth = Stream.never('alignTBM middle');
-
-	tbm.middle = tbm.middle || div;
-	tbm.bottom = tbm.bottom || div;
-	tbm.top = tbm.top || div;
+	var nothing = div.all([
+		withMinHeight(0, true),
+		withMinWidth(0, true),
+	]);
+	tbm.middle = tbm.middle || nothing;
+	tbm.bottom = tbm.bottom || nothing;
+	tbm.top = tbm.top || nothing;
 	
 	return div.all([
 		componentName('alignTBM'),
@@ -486,10 +496,10 @@ var alignTBM = function (tbm) {
 				return i.minWidth;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				var height = args.reduce(function (h, mh) {
-					return Math.max(h, mh);
+				var width = args.reduce(function (w, mw) {
+					return Math.max(w, mw);
 				}, 0);
-				return height;
+					return width;
 			}, 'alignTBM min width');
 			minWidth.pushAll(instance.minWidth);
 			
@@ -500,7 +510,7 @@ var alignTBM = function (tbm) {
 				var height = args.reduce(function (h, mh) {
 					return h + mh;
 				}, 0);
-				return height;
+					return height;
 			}, 'alignTBM min height').pushAll(instance.minHeight);
 
 			return [{
@@ -599,12 +609,14 @@ var border = function (color, amount, c) {
 };
 
 var toggleHeight = function (stream) {
+	var open = Stream.once(false);
+	stream.pushAll(open);
 	return function (c) {
 		return div.all([
 			child(c),
 			wireChildren(function (instance, context, i) {
 				i.minWidth.pushAll(instance.minWidth);
-				Stream.combine([i.minHeight, stream], function (mh, onOff) {
+				Stream.combine([i.minHeight, open], function (mh, onOff) {
 					return onOff ? mh : 0;
 				}).pushAll(instance.minHeight);
 				return [{
@@ -637,7 +649,7 @@ var fixedHeaderBody = function (config, header, body) {
 				return args.reduce(function (a, i) {
 					return a + i;
 				}, 0);
-			}, 'fixed header min height').pushAll(instance.minHeight);
+			}).pushAll(instance.minHeight);
 			
 			Stream.combine([bodyI, headerI].map(function (i) {
 				return i.minWidth;
@@ -646,13 +658,15 @@ var fixedHeaderBody = function (config, header, body) {
 				return args.reduce(function (a, i) {
 					return Math.max(a, i);
 				}, 0);
-			}, 'fixed header min width').pushAll(instance.minWidth);
-			
+			}).pushAll(instance.minWidth);
+
 			return [{
 				width: ctx.width,
+				height: bodyI.minHeight,
 				top: headerI.minHeight,
 			}, {
 				width: ctx.width,
+				height: headerI.minHeight,
 			}];
 		}),
 	]);
@@ -794,18 +808,17 @@ var grid = function (config, cs) {
 
 			var contexts = is.map(function (i) {
 				return {
-					top: Stream.never('grid child top'),
-					left: Stream.never('grid child left'),
-					width: Stream.never('grid child width'),
-					height: Stream.never('grid child height'),
+					top: Stream.never(),
+					left: Stream.never(),
+					width: Stream.never(),
+					height: Stream.never(),
 				};
 			});
-			
-			Stream.combine([
+
+			var rowsStream = Stream.combine([
 				context.width,
-				context.height,
 				minWidths,
-				minHeights], function (gridWidth, gridHeight, mws, mhs) {
+				minHeights], function (gridWidth, mws, mhs) {
 					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth / 2) * 2;
 					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
 
@@ -849,12 +862,23 @@ var grid = function (config, cs) {
 						rows: [],
 						currentRow: blankRow(),
 					});
-					var rows = rowsAndCurrentRow.rows;
+					rows = rowsAndCurrentRow.rows;
 					rows.push(rowsAndCurrentRow.currentRow);
 
 					instance.minHeight.push(rows.map(function (r) {
 						return r.height;
 					}).reduce(function (a, b) { return a + b + config.gutterSize; }, -config.gutterSize));
+					
+					return rows;
+				});
+			
+			Stream.all([
+				context.width,
+				context.height,
+				rowsStream], function (gridWidth, gridHeight, rows) {
+					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth / 2) * 2;
+					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
+
 					rows = config.handleSurplusHeight(gridHeight, rows, config);
 
 					var top = 0;
@@ -881,7 +905,7 @@ var grid = function (config, cs) {
 						});
 						top += row.height + config.gutterSize;
 					});
-				}, 'grid super stream');
+				});
 
 			return [contexts];
 		}),
@@ -915,9 +939,18 @@ var withMinHeightStream = function (getMinHeightStream, c) {
 var extendToWindowBottom = function (c, distanceStream) {
 	distanceStream = distanceStream || Stream.once(0);
 	return withMinHeightStream(function (instance, context) {
-		return Stream.combine([instance.minHeight, context.top, context.topAccum, distanceStream, windowResize], function (mh, t, ta, distance) {
-			return Math.max(mh, window.innerHeight - t - ta - distance);
-		});
+		// instance.minHeight.test();
+		// context.top.test();
+		// context.topAccum.test();
+		// distanceStream.test();
+		// windowResize.test();
+		return Stream.combine([instance.minHeight,
+							   context.top,
+							   context.topAccum,
+							   distanceStream,
+							   windowResize], function (mh, t, ta, distance) {
+								   return Math.max(mh, window.innerHeight - t - ta - distance);
+							   });
 	}, c);
 };
 
@@ -929,9 +962,10 @@ var withBackground = function (background, c) {
 			cI.minWidth.pushAll(instance.minWidth);
 			cI.minHeight.pushAll(instance.minHeight);
 
-			var ctx = instance.newCtx();
-			context.width.pushAll(ctx.width);
-			context.height.pushAll(ctx.height);
+			var ctx = {
+				width: context.width,
+				height: context.height,
+			};
 			return [
 				ctx,
 				ctx,
@@ -941,7 +975,7 @@ var withBackground = function (background, c) {
 };
 
 var withBackgroundImage = function (config, c) {
-	var imgAspectRatio = Stream.never();
+	var imgAspectRatio = Stream.once(config.aspectRatio || 1);
 	if (!config.src.map) {
 		config.src = Stream.once(config.src);
 	}
@@ -960,7 +994,7 @@ var withBackgroundImage = function (config, c) {
 					var aspectRatio = nativeWidth / nativeHeight;
 					imgAspectRatio.push(aspectRatio);
 				});
-				Stream.combine([context.width, context.height], function () {
+				Stream.all([context.width, context.height], function () {
 					i.$el.css('visibility', '');
 				});
 			},
@@ -975,7 +1009,7 @@ var withBackgroundImage = function (config, c) {
 			context.height.pushAll(ctx.height);
 
 			var imgCtx = instance.newCtx();
-			Stream.combine([imgAspectRatio, context.width, context.height], function (aspectRatio, ctxWidth, ctxHeight) {
+			Stream.all([imgAspectRatio, context.width, context.height], function (aspectRatio, ctxWidth, ctxHeight) {
 				var ctxAspectRatio = ctxWidth / ctxHeight;
 				if (aspectRatio < ctxAspectRatio) {
 					imgCtx.width.push(ctxWidth);
@@ -1006,7 +1040,9 @@ var useComponentStream = function (cStream) {
 				}
 
 				var c = cs[0];
-				var ctx = instance.newCtx();
+
+				ctx.top.push(0);
+				ctx.left.push(0);
 				context.width.pushAll(ctx.width);
 				context.height.pushAll(ctx.height);
 				i = c.create(ctx);
@@ -1054,24 +1090,26 @@ var routeMatchRest = function (f) {
 
 var route = function (router) {
 	var i;
-	return div.and(function (instance, context) {
-		windowHash.map(function (hash) {
-			hash = hash.substring(1);
-			
-			if (i) {
-				i.destroy();
-			}
+	return div.all([
+		function (instance, context) {
+			windowHash.onValue(function (hash) {
+				hash = hash.substring(1);
+				
+				if (i) {
+					i.destroy();
+				}
 
-			Q.all([router(hash)]).then(function (cs) {
-				var c = cs[0];
-				var ctx = instance.newCtx();
-				context.width.pushAll(ctx.width);
-				context.height.pushAll(ctx.height);
-				i = c.create(ctx);
-				i.$el.css('transition', 'inherit');
-				i.minWidth.pushAll(instance.minWidth);
-				i.minHeight.pushAll(instance.minHeight);
+				Q.all([router(hash)]).then(function (cs) {
+					var c = cs[0];
+					i = c.create(context);
+					i.$el.css('transition', 'inherit');
+					i.minWidth.pushAll(instance.minWidth);
+					i.minHeight.pushAll(instance.minHeight);
+				});
 			});
-		});
-	});
+		},
+		function (i) {
+			i.minHeight;
+		},
+	]);
 };
