@@ -11,7 +11,6 @@ var url = function (str) {
 };
 
 
-
 // $$ :: String -> [*] -> Component -> Component
 // applies a jquery function to the component instance after creation
 var $$ = function (func) {
@@ -191,13 +190,24 @@ var linkTo = function (href, c) {
 	]);
 };
 
+var nothing = div.all([
+	componentName('nothing'),
+	withMinHeight(0, true),
+	withMinWidth(0, true),
+]);
+
 var text = function (text) {
 	return div.all([
+		componentName('text'),
 		$html(text, true),
 	]);
 };
+var faIcon = function (str) {
+	return text('<i class="fa fa-' + str + '"></i>');
+};
 var paragraph = function (text, minWidth) {
 	return div.all([
+		componentName('paragraph'),
 		$html(text),
 		withMinWidth(minWidth || 0, true),
 	]);
@@ -417,10 +427,6 @@ var padding = function (amount, c) {
 };
 
 var alignLRM = function (lrm) {
-	var nothing = div.all([
-		withMinHeight(0, true),
-		withMinWidth(0, true),
-	]);
 	return div.all([
 		componentName('alignLRM'),
 		child(lrm.middle || nothing),
@@ -478,10 +484,6 @@ var alignLRM = function (lrm) {
 };
 
 var alignTBM = function (tbm) {
-	var nothing = div.all([
-		withMinHeight(0, true),
-		withMinWidth(0, true),
-	]);
 	tbm.middle = tbm.middle || nothing;
 	tbm.bottom = tbm.bottom || nothing;
 	tbm.top = tbm.top || nothing;
@@ -543,6 +545,7 @@ var invertOnHover = function (c) {
 	
 	
 	return div.all([
+		componentName('invert-on-hover'),
 		child(c.and($css('transition', 'background-color 0.2s linear, color 0.1s linear'))),
 		wireChildren(function (instance, context, i) {
 			i.minHeight.pushAll(instance.minHeight);
@@ -571,7 +574,9 @@ var border = function (color, amount, c) {
 	var radius = amount.radius || 0;
 	
 	return div.all([
+		componentName('border'),
 		child(div.all([
+			componentName('border-child'),
 			$css('border-left', px(left) + ' solid ' + color),
 			$css('border-right', px(right) + ' solid ' + color),
 			$css('border-top', px(top) + ' solid ' + color),
@@ -613,6 +618,7 @@ var toggleHeight = function (stream) {
 	stream.pushAll(open);
 	return function (c) {
 		return div.all([
+			componentName('toggle-height'),
 			child(c),
 			wireChildren(function (instance, context, i) {
 				i.minWidth.pushAll(instance.minWidth);
@@ -924,6 +930,7 @@ var BackgroundImageConfig = object({
 
 var withMinHeightStream = function (getMinHeightStream, c) {
 	return div.all([
+		componentName('with-min-height-stream'),
 		child(c),
 		wireChildren(function (instance, context, i) {
 			getMinHeightStream(i, context).pushAll(instance.minHeight);
@@ -939,11 +946,6 @@ var withMinHeightStream = function (getMinHeightStream, c) {
 var extendToWindowBottom = function (c, distanceStream) {
 	distanceStream = distanceStream || Stream.once(0);
 	return withMinHeightStream(function (instance, context) {
-		// instance.minHeight.test();
-		// context.top.test();
-		// context.topAccum.test();
-		// distanceStream.test();
-		// windowResize.test();
 		return Stream.combine([instance.minHeight,
 							   context.top,
 							   context.topAccum,
@@ -956,6 +958,7 @@ var extendToWindowBottom = function (c, distanceStream) {
 
 var withBackground = function (background, c) {
 	return div.all([
+		componentName('with-background'),
 		child(background),
 		child(c),
 		wireChildren(function (instance, context, bI, cI) {
@@ -980,10 +983,13 @@ var withBackgroundImage = function (config, c) {
 		config.src = Stream.once(config.src);
 	}
 	return div.all([
+		componentName('with-background-image'),
 		child(img.all([
 			$css('transition', 'inherit'),
 			$css('visibility', 'hidden'),
 			function (i, context) {
+				i.minWidth.push(0);
+				i.minHeight.push(0);
 				config.src.map(function (src) {
 					i.$el.prop('src', src);
 				});
@@ -1003,11 +1009,11 @@ var withBackgroundImage = function (config, c) {
 		wireChildren(function (instance, context, imgI, cI) {
 			cI.minWidth.pushAll(instance.minWidth);
 			cI.minHeight.pushAll(instance.minHeight);
-
+			
 			var ctx = instance.newCtx();
 			context.width.pushAll(ctx.width);
 			context.height.pushAll(ctx.height);
-
+			
 			var imgCtx = instance.newCtx();
 			Stream.all([imgAspectRatio, context.width, context.height], function (aspectRatio, ctxWidth, ctxHeight) {
 				var ctxAspectRatio = ctxWidth / ctxHeight;
@@ -1032,25 +1038,28 @@ var withBackgroundImage = function (config, c) {
 
 var useComponentStream = function (cStream) {
 	var i;
-	return div.and(function (instance, context) {
-		cStream.map(function (c) {
-			Q.all([c]).then(function (cs) {
-				if (i) {
-					i.destroy();
-				}
+	return div.all([
+		componentName('use-component-stream'),
+		function (instance, context) {
+			cStream.map(function (c) {
+				Q.all([c]).then(function (cs) {
+					if (i) {
+						i.destroy();
+					}
 
-				var c = cs[0];
+					var c = cs[0];
 
-				ctx.top.push(0);
-				ctx.left.push(0);
-				context.width.pushAll(ctx.width);
-				context.height.pushAll(ctx.height);
-				i = c.create(ctx);
-				i.minWidth.pushAll(instance.minWidth);
-				i.minHeight.pushAll(instance.minHeight);
+					ctx.top.push(0);
+					ctx.left.push(0);
+					context.width.pushAll(ctx.width);
+					context.height.pushAll(ctx.height);
+					i = c.create(ctx);
+					i.minWidth.pushAll(instance.minWidth);
+					i.minHeight.pushAll(instance.minHeight);
+				});
 			});
-		});
-	});
+		},
+	]);
 };
 
 
@@ -1091,6 +1100,7 @@ var routeMatchRest = function (f) {
 var route = function (router) {
 	var i;
 	return div.all([
+		componentName('route'),
 		function (instance, context) {
 			windowHash.onValue(function (hash) {
 				hash = hash.substring(1);
