@@ -4,15 +4,3 @@ html {
 body {
 	line-height: 1.2;
 }
-div {
-	position: absolute;
-	overflow: hidden;
-}
-img, input, textarea {
-	position: absolute;
-}
-
-.pre div {
-	position: initial;
-	overflow: initial;
-}

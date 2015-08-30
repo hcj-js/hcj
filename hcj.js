@@ -117,10 +117,12 @@ var Stream = {
 		var stream = Stream.create();
 
 		var running = false;
+		var err = new Error();
 		var tryRunF = function () {
 			if (!running) {
 				running = true;
 				setTimeout(function () {
+					err;
 					running = false;
 					for (var i = 0; i < streams.length; i++) {
 						if (arr[i] === undefined) {
@@ -276,7 +278,6 @@ var component = function (build) {
 				}
 			});
 
-			instance.updateDimensions();
 			return instance;
 		},
 		build: build,
@@ -377,7 +378,10 @@ var el = function (name) {
 		};
 
 		var $el = $(document.createElement(name));
+		$el.css('position', 'absolute');
+		$el.css('visibility', 'hidden');
 		context.$el.append($el);
+		
 
 		context.top.onValue(function (t) {
 			updateDomFunc(function () {
@@ -397,6 +401,7 @@ var el = function (name) {
 		context.height.onValue(function (h) {
 			updateDomFunc(function () {
 				$el.css('height', px(h));
+				$el.css('visibility', '');
 			});
 		});
 		context.backgroundColor.onValue(function (bgcolor) {
@@ -466,13 +471,13 @@ var el = function (name) {
 					
 				this.$el.remove();
 			},
-			updateDimensions: function () {
+			updateDimensions: function (onlyNonzero) {
 				var mw = findMinWidth(this.$el);
 				var mh = findMinHeight(this.$el);
-				if (mw !== 0) {
+				if (!onlyNonzero || mw !== 0) {
 					this.minWidth.push(mw);
 				}
-				if (mh !== 0) {
+				if (!onlyNonzero || mh !== 0) {
 					this.minHeight.push(mh);
 				}
 			},

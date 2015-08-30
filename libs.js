@@ -11,6 +11,56 @@ var url = function (str) {
 };
 
 
+var color = function (c) {
+	return $.extend({
+		r: 0,
+		g: 0,
+		b: 0,
+		a: 1,
+	}, c);
+};
+var multiplyColor = function (amount) {
+	return function (c) {
+		return {
+			r: Math.min(255, c.r * amount),
+			g: Math.min(255, c.g * amount),
+			b: Math.min(255, c.b * amount),
+			a: c.a,
+		};
+	};
+};
+var desaturate = function (amount) {
+	return function (c) {
+		var average = (c.r + c.g + c.b) / 3;
+		var coAmount = 1 - amount;
+		return {
+			r: coAmount * c.r + amount * average,
+			g: coAmount * c.g + amount * average,
+			b: coAmount * c.b + amount * average,
+			a: c.a,
+		};
+	};
+};
+var colorString = function (c) {
+	return 'rgba(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ',' + c.a + ')';
+};
+var transparent = color({
+	a: 0,
+})
+var black = color({
+	r: 0,
+	g: 0,
+	b: 0,
+});
+var white = color({
+	r: 255,
+	g: 255,
+	b: 255,
+});
+
+
+
+
 // $$ :: String -> [*] -> Component -> Component
 // applies a jquery function to the component instance after creation
 var $$ = function (func) {
@@ -18,7 +68,7 @@ var $$ = function (func) {
 		var args = Array.prototype.slice.call(arguments);
 		return function (i) {
 			i.$el[func].apply(i.$el, args);
-			i.updateDimensions();
+			i.updateDimensions(true);
 		};
 	};
 };
@@ -31,9 +81,7 @@ var $prop = $$('prop');
 var chooseWidthFromHeight = function (instance, context) {
 	context.width.onValue(function (w) {
 		var optimalHeight = findOptimalHeight(instance.$el, w);
-		if (optimalHeight !== 0) {
-			instance.minHeight.push(optimalHeight);
-		}
+		instance.minHeight.push(optimalHeight);
 	});
 };
 var $html = function (html, setWidth) {
@@ -92,12 +140,12 @@ var withMinHeight = function (mh, end) {
 };
 var withBackgroundColor = function (bc) {
 	return function (i, context) {
-		context.backgroundColor.push(bc);
+		context.backgroundColor.push(colorString(bc));
 	};
 };
 var withFontColor = function (fc) {
 	return function (i, context) {
-		context.fontColor.push(fc);
+		context.fontColor.push(colorString(fc));
 	};
 };
 
@@ -147,7 +195,7 @@ var image = function (config) {
 				var nativeWidth = findMinWidth(i.$el);
 				var nativeHeight = findMinHeight(i.$el);
 				var aspectRatio = nativeWidth / nativeHeight;
-				
+
 				var minWidth, minHeight;
 				if (config.minWidth) {
 					minWidth = config.minWidth;
@@ -327,10 +375,11 @@ var stack = function (cs, options) {
 					return i.minHeight;
 				}), function () {
 					var args = Array.prototype.slice.call(arguments);
-					return args.reduce(function (a, b) {
+					var mh = args.reduce(function (a, b) {
 						return a + b + separatorSize;
 					}, -separatorSize);
-				}, 'stack total min height');
+					return mh;
+				});
 			};
 
 			var contexts = [];
@@ -572,15 +621,17 @@ var border = function (color, amount, c) {
 	var top = amount.top || amount.all || 0;
 	var bottom = amount.bottom || amount.all || 0;
 	var radius = amount.radius || 0;
+
+	var colorstring = colorString(color);
 	
 	return div.all([
 		componentName('border'),
 		child(div.all([
 			componentName('border-child'),
-			$css('border-left', px(left) + ' solid ' + color),
-			$css('border-right', px(right) + ' solid ' + color),
-			$css('border-top', px(top) + ' solid ' + color),
-			$css('border-bottom', px(bottom) + ' solid ' + color),
+			$css('border-left', px(left) + ' solid ' + colorstring),
+			$css('border-right', px(right) + ' solid ' + colorstring),
+			$css('border-top', px(top) + ' solid ' + colorstring),
+			$css('border-bottom', px(bottom) + ' solid ' + colorstring),
 			$css('border-radius', px(radius)),
 			child(c),
 			wireChildren(function (instance, context, i) {
@@ -618,6 +669,7 @@ var toggleHeight = function (stream) {
 	stream.pushAll(open);
 	return function (c) {
 		return div.all([
+			$css('overflow', 'hidden'),
 			componentName('toggle-height'),
 			child(c),
 			wireChildren(function (instance, context, i) {
@@ -633,6 +685,31 @@ var toggleHeight = function (stream) {
 		]);
 	};
 };
+
+var dropdownPanel = function (source, panel, onOff, config) {
+	config = config || {};
+	config.transition = config.transition || "0.5s";
+	return div.all([
+		componentName('dropdown-panel'),
+		child(panel),
+		child(source),
+		wireChildren(function (instance, context, iPanel, iSource) {
+			iSource.minWidth.pushAll(instance.minWidth);
+			iSource.minHeight.pushAll(instance.minHeight);
+			iPanel.$el.css('transition', 'top ' + config.transition);
+			return [{
+				width: context.width,
+				height: iPanel.minHeight,
+				top: Stream.combine([onOff, iPanel.minHeight, context.height], function (on, mh, h) {
+					return on ? h : h - mh;
+				}),
+			}, {
+				width: context.width,
+				height: context.height,
+			}];
+		}),
+	]);
+}
 
 var fixedHeaderBody = function (config, header, body) {
 	config.transition = config.transition || "0.5s";
@@ -777,6 +854,7 @@ var giveToNth = function (n) {
 };
 var giveToFirst = giveToNth(0);
 var giveToSecond = giveToNth(1);
+var giveToThird = giveToNth(2);
 var evenSplitSurplusHeight = function (gridHeight, rows, config) {
 };
 
@@ -823,8 +901,7 @@ var grid = function (config, cs) {
 
 			var rowsStream = Stream.combine([
 				context.width,
-				minWidths,
-				minHeights], function (gridWidth, mws, mhs) {
+				minWidths], function (gridWidth, mws) {
 					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth / 2) * 2;
 					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
 
@@ -841,7 +918,6 @@ var grid = function (config, cs) {
 						var currentRow = a.currentRow;
 						
 						var mw = mws[index];
-						var mh = mhs[index];
 
 						var gridCellsUsed = currentRow.cells.reduce(function (a, b) {
 							return a + b;
@@ -858,7 +934,6 @@ var grid = function (config, cs) {
 
 						currentRow.cells.push(gridCellsNeeded);
 						currentRow.contexts.push(contexts[index]);
-						currentRow.height = Math.max(currentRow.height, mh);
 						
 						return {
 							rows: rows,
@@ -871,23 +946,57 @@ var grid = function (config, cs) {
 					rows = rowsAndCurrentRow.rows;
 					rows.push(rowsAndCurrentRow.currentRow);
 
-					instance.minHeight.push(rows.map(function (r) {
-						return r.height;
-					}).reduce(function (a, b) { return a + b + config.gutterSize; }, -config.gutterSize));
+					rows.map(function (row, i) {
+						var cellsUsed = 0;
+						var positions = row.cells.map(function (cells) {
+							var cellGutterWidth = cellWidth + config.gutterSize;
+							var position = {
+								top: top,
+								left: cellGutterWidth * (cellsUsed),
+								width: cellWidth + cellGutterWidth * (cells - 1),
+							};
+							cellsUsed += cells;
+							return position;
+						});
+						positions = config.handleSurplusWidth(gridWidth, positions, config, i);
+						positions.map(function (position, index) {
+							var ctx = row.contexts[index];
+							ctx.width.push(position.width);
+						});
+					});
 					
 					return rows;
 				});
+
+			var rowsWithHeights = Stream.combine([
+				minHeights,
+				rowsStream,
+			], function (mhs, rows) {
+				var index = 0;
+				rows.map(function (row) {
+					row.height = 0;
+					row.cells.map(function (cell, i) {
+						row.height = Math.max(row.height, mhs[index + i]);
+					});
+					index += row.cells.length;
+				});
+
+				instance.minHeight.push(rows.map(function (r) {
+					return r.height;
+				}).reduce(function (a, b) { return a + b + config.gutterSize; }, -config.gutterSize));
+				return rows;
+			});
+
 			
 			Stream.all([
 				context.width,
 				context.height,
-				rowsStream], function (gridWidth, gridHeight, rows) {
+				rowsWithHeights], function (gridWidth, gridHeight, rows) {
 					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth / 2) * 2;
 					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
 
-					rows = config.handleSurplusHeight(gridHeight, rows, config);
-
 					var top = 0;
+					rows = config.handleSurplusHeight(gridHeight, rows, config);
 					rows.map(function (row, i) {
 						var cellsUsed = 0;
 						var positions = row.cells.map(function (cells) {
@@ -984,6 +1093,7 @@ var withBackgroundImage = function (config, c) {
 	}
 	return div.all([
 		componentName('with-background-image'),
+		$css('overflow', 'hidden'),
 		child(img.all([
 			$css('transition', 'inherit'),
 			$css('visibility', 'hidden'),
