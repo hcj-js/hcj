@@ -189,6 +189,16 @@ var Stream = {
 		});
 		return streams;
 	},
+	fromPromise: function (p, initialValue) {
+		var stream = Stream.never();
+		if (initialValue) {
+			stream.push(initialValue);
+		}
+		p.then(function (v) {
+			stream.push(v);
+		});
+		return stream;
+	},
 };
 
 var child = function (component) {

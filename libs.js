@@ -1,3 +1,12 @@
+var passThroughToFirst = function (instance, context, i) {
+	i.minHeight.pushAll(instance.minHeight);
+	i.minWidth.pushAll(instance.minWidth);
+	return [{
+		width: context.width,
+		height: context.height,
+	}];
+};
+
 var Unit = func(Number, String);
 var unit = function (unit) {
 	return function (number) {
@@ -233,7 +242,10 @@ var linkTo = function (href, c) {
 		wireChildren(function (instance, context, i) {
 			i.minHeight.pushAll(instance.minHeight);
 			i.minWidth.pushAll(instance.minWidth);
-			return [context];
+			return [{
+				width: context.width,
+				height: context.height,
+			}];
 		}),
 	]);
 };
@@ -660,6 +672,43 @@ var border = function (color, amount, c) {
 					return h - top - bottom;
 				}),
 			}];
+		}),
+	]);
+};
+
+var toggleComponent = function (cs, indexStream) {
+	return div.all([
+		componentName('toggle-component'),
+		children(cs),
+		wireChildren(function (instance, context, is) {
+			var combineStreams = function (streams) {
+				return Stream.combine([indexStream, Stream.combine(streams, function () {
+					return Array.prototype.slice.call(arguments);
+				})], function (index, values) {
+					return values[index];
+				});
+			};
+
+			indexStream.onValue(function (index) {
+				is.map(function (i) {
+					i.$el.css('display', 'none');
+				});
+				is[index].$el.css('display', '');
+			});
+			
+			combineStreams(is.map(function (i) {
+				return i.minWidth;
+			})).pushAll(instance.minWidth);
+			combineStreams(is.map(function (i) {
+				return i.minHeight;
+			})).pushAll(instance.minHeight);
+
+			return [cs.map(function () {
+				return {
+					width: context.width,
+					height: context.height,
+				};
+			})];
 		}),
 	]);
 };
