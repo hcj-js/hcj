@@ -1295,8 +1295,6 @@ var route = function (router) {
 		componentName('route'),
 		function (instance, context) {
 			windowHash.onValue(function (hash) {
-				hash = hash.substring(1);
-				
 				if (i) {
 					i.destroy();
 				}
