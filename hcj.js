@@ -59,6 +59,9 @@ var Stream = {
 		};
 
 		return {
+			lastValue: function () {
+				return lastValue;
+			},
 			map: function (f) {
 				var stream = Stream.create();
 				if (lastValue !== undefined) {
@@ -171,7 +174,7 @@ var Stream = {
 				});
 			}
 		};
-
+		
 		keys.map(function (key, i) {
 			streamsObject[key].onValue(function (v) {
 				obj[key] = v;

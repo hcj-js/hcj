@@ -187,8 +187,10 @@ var clickThis = onThis('click');
 var inputPropertychangeThis = onThis('input propertychange');
 var keydownThis = onThis('keydown');
 var keyupThis = onThis('keyup');
+var mousedownThis = onThis('mousedown');
 var mouseoverThis = onThis('mouseover');
 var mouseoutThis = onThis('mouseout');
+var mouseupThis = onThis('mouseup');
 var submitThis = onThis('click');
 
 
@@ -252,8 +254,8 @@ var linkTo = function (href, c) {
 
 var nothing = div.all([
 	componentName('nothing'),
-	withMinHeight(0, true),
-	withMinWidth(0, true),
+	withMinHeight(0),
+	withMinWidth(0),
 ]);
 
 var text = function (text) {
@@ -1112,6 +1114,37 @@ var extendToWindowBottom = function (c, distanceStream) {
 								   return Math.max(mh, window.innerHeight - t - ta - distance);
 							   });
 	}, c);
+};
+
+var overlays = function (cs) {
+	return div.all([
+		children(cs),
+		wireChildren(function (instance, context, is) {
+			var chooseLargest = function (streams) {
+				return Stream.combine(streams, function () {
+					var args = Array.prototype.slice.call(arguments);
+					return args.reduce(function (a, v) {
+						return Math.max(a, v);
+					}, 0);
+				});
+			};
+
+			chooseLargest(is.map(function (i) {
+				return i.minHeight;
+			})).test().pushAll(instance.minHeight);
+			chooseLargest(is.map(function (i) {
+				return i.minWidth;
+			})).test().pushAll(instance.minWidth);
+			return [
+				is.map(function (i) {
+					return {
+						width: context.width,
+						height: context.height,
+					};
+				}),
+			];
+		}),
+	]);
 };
 
 var withBackground = function (background, c) {
