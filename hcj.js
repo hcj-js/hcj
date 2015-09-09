@@ -501,6 +501,7 @@ var el = function (name) {
 
 // div :: Component
 var a = el('a');
+var button = el('button');
 var div = el('div');
 var form = el('form');
 var img = el('img');

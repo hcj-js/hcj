@@ -4,6 +4,8 @@ var passThroughToFirst = function (instance, context, i) {
 	return [{
 		width: context.width,
 		height: context.height,
+		top: Stream.once(0),
+		left: Stream.once(0),
 	}];
 };
 
