@@ -453,7 +453,10 @@ var stack = function (cs, options) {
 };
 
 var padding = function (amount, c) {
-	var top = 0, bottom = 0, left = 0, right = 0;
+	var top = amount.all || 0,
+		bottom = amount.all || 0,
+		left = amount.all || 0,
+		right = amount.all || 0;
 	
 	// amount may be a single number
 	if ($.isNumeric(amount)) {
