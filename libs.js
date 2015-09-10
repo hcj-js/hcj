@@ -89,7 +89,7 @@ var $css = $$('css');
 var $attr = $$('attr');
 var $prop = $$('prop');
 
-var chooseWidthFromHeight = function (instance, context) {
+var chooseHeightFromWidth = function (instance, context) {
 	context.width.onValue(function (w) {
 		var optimalHeight = findOptimalHeight(instance.$el, w);
 		instance.minHeight.push(optimalHeight);
@@ -98,7 +98,7 @@ var chooseWidthFromHeight = function (instance, context) {
 var $html = function (html, setWidth) {
 	return function (instance, context) {
 		instance.$el.html(html);
-		chooseWidthFromHeight(instance, context);
+		chooseHeightFromWidth(instance, context);
 		if (setWidth) {
 			instance.updateDimensions();
 		}
@@ -107,12 +107,18 @@ var $html = function (html, setWidth) {
 
 
 var windowWidth = Stream.never();
+var windowHeight = Stream.never();
 var updateWindowWidth = function () {
 	windowWidth.push(document.body.clientWidth);
 }
+var updateWindowHeight = function () {
+	windowHeight.push(window.innerHeight);
+}
 $(updateWindowWidth);
+$(updateWindowHeight);
 $(window).on('resize', function () {
 	updateWindowWidth();
+	updateWindowHeight();
 });
 
 var windowResize = Stream.once(null);
@@ -261,32 +267,44 @@ var nothing = div.all([
 ]);
 
 var text = function (text) {
+	if (!(text.map && text.push)) {
+		text = Stream.once(text);
+	}
+	
 	return div.all([
 		componentName('text'),
-		$html(text, true),
+		function (instance, context) {
+			chooseHeightFromWidth(instance, context);
+			text.onValue(function (t) {
+				instance.$el.html(t);
+				instance.updateDimensions();
+			});
+		},
 	]);
 };
 var faIcon = function (str) {
 	return text('<i class="fa fa-' + str + '"></i>');
 };
 var paragraph = function (text, minWidth) {
+	if (!(text.map && text.push)) {
+		text = Stream.once(text);
+	}
+
+	minWidth = minWidth || 0;
+	
 	return div.all([
 		componentName('paragraph'),
-		$html(text),
-		withMinWidth(minWidth || 0, true),
+		function (instance, context) {
+			chooseHeightFromWidth(instance, context);
+			text.onValue(function (t) {
+				instance.$el.html(t);
+				var optimalHeight = findOptimalHeight(instance.$el, minWidth);
+				instance.minHeight.push(optimalHeight);
+			});
+		},
+		withMinWidth(minWidth, true),
 	]);
 };
-
-var htmlStream = function (htmlStream) {
-	return function (instance, context) {
-		htmlStream.map(function (html) {
-			instance.$el.html(html);
-			instance.$el.find('div').css('position', 'initial');
-			instance.updateDimensions();
-		});
-	};
-};
-
 
 var sideBySide = function (config, cs) {
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
@@ -365,11 +383,7 @@ var intersperse = function (arr, v) {
 var stack = function (cs, options) {
 	return div.all([
 		componentName('stack'),
-		children(Q.all(cs).then(function (cs) {
-			return cs.map(function (c) {
-				return c.and($css('transition', 'inherit'));
-			});
-		})),
+		children(Q.all(cs)),
 		wireChildren(function (instance, context, is) {
 			var separatorSize = (options && options.separatorSize) || 0;
 			var totalMinHeightStream = function (is) {
@@ -467,8 +481,6 @@ var padding = function (amount, c) {
 		componentName('padding'),
 		child(c),
 		wireChildren(function (instance, context, i) {
-			i.$el.css('transition', 'inherit');
-			
 			i.minWidth.map(function (mw) {
 				return mw + left + right;
 			}, 'padding min width').pushAll(instance.minWidth);
@@ -555,9 +567,9 @@ var alignTBM = function (tbm) {
 	
 	return div.all([
 		componentName('alignTBM'),
-		child(tbm.middle.and($css('transition', 'inherit'))),
-		child(tbm.bottom.and($css('transition', 'inherit'))),
-		child(tbm.top.and($css('transition', 'inherit'))),
+		child(tbm.middle),
+		child(tbm.bottom),
+		child(tbm.top),
 		wireChildren(function (instance, context, mI, bI, tI) {
 			var minWidth = Stream.combine([mI, bI, tI].map(function (i) {
 				return i.minWidth;
@@ -715,6 +727,61 @@ var toggleComponent = function (cs, indexStream) {
 			})];
 		}),
 	]);
+};
+
+var modalDialog = function (stream, transition) {
+	var open = Stream.once(false);
+	stream.pushAll(open);
+	
+	transition = transition || 0;
+	
+	return function (c) {
+		return div.all([
+			$css('z-index', 100),
+			componentName('toggle-height'),
+			child(c),
+			wireChildren(function (instance, context, i) {
+				instance.minWidth.push(0);
+				instance.minHeight.push(0);
+				
+				var $el = i.$el;
+				$el.css('position', 'fixed');
+				$el.css('transition', 'opacity ' + transition + 's');
+				
+				open.onValue(function (on) {
+					if (on) {
+						$el.css('display', '');
+						setTimeout(function () {
+							$el.css('opacity', 1);
+						}, 100);
+					}
+					else {
+						$el.css('opacity', 0);
+						setTimeout(function () {
+							$el.css('display', 'none');
+						}, transition * 1000);
+					}
+				});
+				
+				return [{
+					width: i.minWidth,
+					height: i.minHeight,
+					left: Stream.combine([
+						windowWidth,
+						i.minWidth,
+					], function (windowWidth, minWidth) {
+						return (windowWidth - minWidth) / 2;
+					}),
+					top: Stream.combine([
+						windowHeight,
+						i.minHeight,
+					], function (windowHeight, minHeight) {
+						return Math.max(0, (windowHeight - minHeight) / 2);
+					}),
+				}];
+			}),
+		]);
+	};
 };
 
 var toggleHeight = function (stream) {
@@ -922,7 +989,7 @@ var grid = function (config, cs) {
 		componentName('grid'),
 		children(cs.map(function (c) {
 			return c.all([
-				$css('transition', 'top 0.5s, left 0.5s, width 0.5s'),
+				$css('transition', 'top 0.5s, left 0.5s, width 0.5s, height 0.5s'),
 			]);
 		})),
 		wireChildren(function (instance, context, is) {
@@ -955,7 +1022,7 @@ var grid = function (config, cs) {
 			var rowsStream = Stream.combine([
 				context.width,
 				minWidths], function (gridWidth, mws) {
-					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth / 2) * 2;
+					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth);
 					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
 
 					var blankRow = function () {
@@ -1045,7 +1112,7 @@ var grid = function (config, cs) {
 				context.width,
 				context.height,
 				rowsWithHeights], function (gridWidth, gridHeight, rows) {
-					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth / 2) * 2;
+					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth);
 					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
 
 					var top = 0;
@@ -1179,7 +1246,6 @@ var withBackgroundImage = function (config, c) {
 		componentName('with-background-image'),
 		$css('overflow', 'hidden'),
 		child(img.all([
-			$css('transition', 'inherit'),
 			$css('visibility', 'hidden'),
 			function (i, context) {
 				i.minWidth.push(0);
@@ -1199,7 +1265,7 @@ var withBackgroundImage = function (config, c) {
 				});
 			},
 		])),
-		child(c.and($css('transition', 'inherit'))),
+		child(c),
 		wireChildren(function (instance, context, imgI, cI) {
 			cI.minWidth.pushAll(instance.minWidth);
 			cI.minHeight.pushAll(instance.minHeight);
