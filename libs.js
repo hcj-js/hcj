@@ -216,6 +216,11 @@ var image = function (config) {
 				var aspectRatio = nativeWidth / nativeHeight;
 
 				var minWidth, minHeight;
+				if (config.useNativeSize !== undefined) {
+					i.minWidth.push(nativeWidth);
+					i.minHeight.push(nativeHeight);
+				}
+				
 				if (config.minWidth !== undefined) {
 					minWidth = config.minWidth;
 					minHeight = minWidth / aspectRatio;
@@ -228,7 +233,7 @@ var image = function (config) {
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
-				
+
 				if (config.chooseWidth !== undefined) {
 					context.height.map(function (height) {
 						return Math.max(config.chooseWidth, height * aspectRatio);
@@ -750,6 +755,7 @@ var modalDialog = function (stream, transition) {
 				var $el = i.$el;
 				$el.css('position', 'fixed');
 				$el.css('transition', 'opacity ' + transition + 's');
+				$el.css('display', 'none');
 				
 				open.onValue(function (on) {
 					if (on) {
@@ -992,7 +998,7 @@ var grid = function (config, cs) {
 		componentName('grid'),
 		children(cs.map(function (c) {
 			return c.all([
-				$css('transition', 'top 0.5s, left 0.5s, width 0.5s, height 0.5s'),
+				// $css('transition', 'top 0.5s, left 0.5s, width 0.5s, height 0.5s'),
 			]);
 		})),
 		wireChildren(function (instance, context, is) {
