@@ -312,6 +312,7 @@ var paragraph = function (text, minWidth) {
 };
 
 var sideBySide = function (config, cs) {
+	config.gutterSize = config.gutterSize || 0;
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
 	return div.all([
 		componentName('sideBySide'),
@@ -327,7 +328,7 @@ var sideBySide = function (config, cs) {
 			allMinWidths.onValue(function (mws) {
 				instance.minWidth.push(mws.reduce(function (a, mw) {
 					return a + mw;
-				}, 0));
+				}, config.gutterSize * (is.length - 1)));
 			});
 			
 			var contexts = is.map(function () {
@@ -340,9 +341,9 @@ var sideBySide = function (config, cs) {
 
 			Stream.all([context.width, allMinWidths], function (width, mws) {
 				var left = 0;
-				var positions = mws.map(function (mw) {
+				var positions = mws.map(function (mw, index) {
 					var position = {
-						left: left,
+						left: left + config.gutterSize * index,
 						width: mw,
 					};
 					left += mw;
@@ -385,12 +386,13 @@ var intersperse = function (arr, v) {
 	return result;
 };
 
-var stack = function (cs, options) {
+var stack = function (options, cs) {
+	options.gutterSize = options.gutterSize || 0;
 	return div.all([
 		componentName('stack'),
 		children(Q.all(cs)),
 		wireChildren(function (instance, context, is) {
-			var separatorSize = (options && options.separatorSize) || 0;
+			var gutterSize = (options && options.gutterSize) || 0;
 			var totalMinHeightStream = function (is) {
 				if (is.length === 0) {
 					return Stream.once(0);
@@ -411,8 +413,8 @@ var stack = function (cs, options) {
 				}), function () {
 					var args = Array.prototype.slice.call(arguments);
 					var mh = args.reduce(function (a, b) {
-						return a + b + separatorSize;
-					}, -separatorSize);
+						return a + b + gutterSize;
+					}, -gutterSize);
 					return mh;
 				});
 			};
