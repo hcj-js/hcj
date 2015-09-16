@@ -79,7 +79,9 @@ var $$ = function (func) {
 		var args = Array.prototype.slice.call(arguments);
 		return function (i) {
 			i.$el[func].apply(i.$el, args);
-			i.updateDimensions(true);
+			setTimeout(function () {
+				i.updateDimensions(true);
+			});
 		};
 	};
 };
@@ -388,6 +390,7 @@ var intersperse = function (arr, v) {
 
 var stack = function (options, cs) {
 	options.gutterSize = options.gutterSize || 0;
+	options.align = options.align || 'left';
 	return div.all([
 		componentName('stack'),
 		children(Q.all(cs)),
@@ -421,7 +424,9 @@ var stack = function (options, cs) {
 
 			var contexts = [];
 			is.reduce(function (is, i) {
-				var tops = totalMinHeightStream(is);
+				var top = totalMinHeightStream(is).map(function (t) {
+					return t === 0 ? t : t + gutterSize;
+				});
 				var iMinHeight;
 				
 				if (options && options.mhs && options.mhs[is.length]) {
@@ -433,9 +438,10 @@ var stack = function (options, cs) {
 				else {
 					iMinHeight = i.minHeight;
 				}
-				
+
 				contexts.push({
-					top: tops,
+					top: top,
+					left: Stream.once(0),
 					width: context.width,
 					height: iMinHeight,
 				});

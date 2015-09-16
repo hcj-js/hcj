@@ -449,9 +449,6 @@ var el = function (name) {
 			};
 		};
 		
-		// minWidth.test($el);
-		// minHeight.test($el);
-
 		return {
 			$el: $el,
 			optimalWidth: 0,
