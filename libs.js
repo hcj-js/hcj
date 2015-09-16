@@ -1327,6 +1327,9 @@ var useComponentStream = function (cStream) {
 					i = c.create(ctx);
 					i.minWidth.pushAll(instance.minWidth);
 					i.minHeight.pushAll(instance.minHeight);
+				}, function (error) {
+					console.error('child components failed to load');
+					console.log(error);
 				});
 			});
 		},
@@ -1364,7 +1367,8 @@ var routeToFirst = function (routers) {
 
 var routeMatchRest = function (f) {
 	return function (str) {
-		return f(str);
+		// wrapping in a promise catches any exceptions that f throws
+		return Q(str).then(f);
 	};
 };
 
@@ -1384,6 +1388,9 @@ var route = function (router) {
 					i.$el.css('transition', 'inherit');
 					i.minWidth.pushAll(instance.minWidth);
 					i.minHeight.pushAll(instance.minHeight);
+				}, function (error) {
+					console.error('child components failed to load');
+					console.log(error);
 				});
 			});
 		},

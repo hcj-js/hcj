@@ -289,6 +289,9 @@ var component = function (build) {
 						applyResult(resultContext, childInstance, childContext);
 					}
 				}
+			}, function (error) {
+				console.error('child components failed to load');
+				console.log(error);
 			});
 
 			return instance;
