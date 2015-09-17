@@ -335,6 +335,7 @@ var sideBySide = function (config, cs) {
 			
 			var contexts = is.map(function () {
 				return {
+					top: Stream.once(0),
 					left: Stream.never(),
 					width: Stream.never(),
 					height: context.height,
@@ -615,7 +616,7 @@ var alignTBM = function (tbm) {
 				width: context.width,
 				height: mI.minHeight,
 			}, {
-				top: Stream.combine([context.height, tI.minHeight], function (height, mh) {
+				top: Stream.combine([context.height, bI.minHeight], function (height, mh) {
 					return height - mh;
 				}, 'alignTBM bottom.top'),
 				width: context.width,
@@ -1313,7 +1314,7 @@ var withBackgroundImage = function (config, c) {
 };
 
 
-var useComponentStream = function (cStream) {
+var componentStream = function (cStream) {
 	var i;
 	return div.all([
 		componentName('use-component-stream'),
@@ -1325,12 +1326,8 @@ var useComponentStream = function (cStream) {
 					}
 
 					var c = cs[0];
-
-					ctx.top.push(0);
-					ctx.left.push(0);
-					context.width.pushAll(ctx.width);
-					context.height.pushAll(ctx.height);
-					i = c.create(ctx);
+					i = c.create(context);
+					i.$el.css('transition', 'inherit');
 					i.minWidth.pushAll(instance.minWidth);
 					i.minHeight.pushAll(instance.minHeight);
 				}, function (error) {
@@ -1339,6 +1336,38 @@ var useComponentStream = function (cStream) {
 				});
 			});
 		},
+	]);
+};
+
+
+var tabs = function (list) {
+	var whichTab = Stream.once(0);
+	return stack({}, [
+		sideBySide({}, list.map(function (item, index) {
+			return alignTBM({
+				bottom: toggleComponent([
+					item.tab.left,
+					item.tab.right,
+					item.tab.selected,
+				], whichTab.map(function (i) {
+					if (index < i) {
+						return 0;
+					}
+					if (index > i) {
+						return 1;
+					}
+					return 2;
+				})).all([
+					link,
+					clickThis(function () {
+						whichTab.push(index);
+					}),
+				]),
+			});
+		})),
+		componentStream(whichTab.map(function (i) {
+			return list[i].content;
+		})),
 	]);
 };
 

@@ -309,11 +309,11 @@ var component = function (build) {
 						var p = destroyF();
 						if (p) {
 							p.then(function () {
-								destroy();
+								destroy.apply(i);
 							});
 						}
 						else {
-							destroy();
+							destroy.apply(i);
 						}
 					};
 				}
@@ -463,12 +463,10 @@ var el = function (name) {
 				childComponentPs.push(components);
 			},
 			destroy: function () {
-				minWidth.push(0);
 				minWidth.end();
-				minHeight.push(0);
 				minHeight.end();
 
-				var allInstances = this.childInstances;
+				var allInstances = this.childInstances || [];
 				for (var i = 0; i < allInstances.length; i++) {
 					var instance = allInstances[i];
 					if ($.isArray(instance)) {
@@ -481,7 +479,7 @@ var el = function (name) {
 						instance.destroy();
 					}
 				}
-					
+
 				this.$el.remove();
 			},
 			updateDimensions: function (onlyNonzero) {
@@ -507,6 +505,8 @@ var form = el('form');
 var img = el('img');
 var input = el('input');
 var li = el('li');
+var option = el('option');
+var select = el('select');
 var textarea = el('textarea');
 var ul = el('ul');
 
