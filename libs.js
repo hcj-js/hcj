@@ -1335,6 +1335,10 @@ var componentStream = function (cStream) {
 					console.log(error);
 				});
 			});
+			return function () {
+				cStream.end();
+				i.destroy();
+			};
 		},
 	]);
 };
