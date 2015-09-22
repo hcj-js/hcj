@@ -57,7 +57,7 @@ var colorString = function (c) {
 };
 var transparent = color({
 	a: 0,
-})
+});
 var black = color({
 	r: 0,
 	g: 0,
@@ -112,10 +112,10 @@ var windowWidth = Stream.never();
 var windowHeight = Stream.never();
 var updateWindowWidth = function () {
 	windowWidth.push(document.body.clientWidth);
-}
+};
 var updateWindowHeight = function () {
 	windowHeight.push(window.innerHeight);
-}
+};
 $(updateWindowWidth);
 $(updateWindowHeight);
 $(window).on('resize', function () {
@@ -359,10 +359,6 @@ var sideBySide = function (config, cs) {
 					ctx.left.push(position.left);
 					ctx.width.push(position.width);
 				});
-			});
-
-			is.map(function (i) {
-				i.minHeight;
 			});
 
 			Stream.combine(is.map(function (i) {
@@ -847,7 +843,7 @@ var dropdownPanel = function (source, panel, onOff, config) {
 			}];
 		}),
 	]);
-}
+};
 
 var fixedHeaderBody = function (config, header, body) {
 	config.transition = config.transition || "0.5s";
@@ -1432,9 +1428,6 @@ var route = function (router) {
 					console.log(error);
 				});
 			});
-		},
-		function (i) {
-			i.minHeight;
 		},
 	]);
 };
