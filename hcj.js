@@ -252,34 +252,34 @@ var component = function (build) {
 				
 				var resultContexts = instance.wireChildren.apply(null, [instance, context].concat(childInstances)) || [];
 				
+				var applyResult = function (resultContext, childInstance, childContext) {
+					resultContext = resultContext || {};
+					if (resultContext.top) {
+						resultContext.top.pushAll(childContext.top);
+					}
+					if (resultContext.left) {
+						resultContext.left.pushAll(childContext.left);
+					}
+					if (resultContext.width) {
+						resultContext.width.pushAll(childContext.width);
+					}
+					if (resultContext.height) {
+						resultContext.height.pushAll(childContext.height);
+					}
+					if (resultContext.backgroundColor) {
+						resultContext.backgroundColor.pushAll(childContext.backgroundColor);
+					}
+					if (resultContext.fontColor) {
+						resultContext.fontColor.pushAll(childContext.fontColor);
+					}
+				};
+
 				for (var i = 0; i < childInstances.length; i++) {
 					var resultContext = resultContexts[i] || {};
 					
 					var childInstance = childInstances[i];
 					var childContext = childContexts[i];
 					
-					var applyResult = function (resultContext, childInstance, childContext) {
-						resultContext = resultContext || {};
-						if (resultContext.top) {
-							resultContext.top.pushAll(childContext.top);
-						}
-						if (resultContext.left) {
-							resultContext.left.pushAll(childContext.left);
-						}
-						if (resultContext.width) {
-							resultContext.width.pushAll(childContext.width);
-						}
-						if (resultContext.height) {
-							resultContext.height.pushAll(childContext.height);
-						}
-						if (resultContext.backgroundColor) {
-							resultContext.backgroundColor.pushAll(childContext.backgroundColor);
-						}
-						if (resultContext.fontColor) {
-							resultContext.fontColor.pushAll(childContext.fontColor);
-						}
-					};
-
 					if ($.isArray(childInstance)) {
 						for (var j = 0; j < childInstance.length; j++) {
 							applyResult(resultContext[j], childInstance[j], childContext[j]);
