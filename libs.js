@@ -9,7 +9,6 @@ var passThroughToFirst = function (instance, context, i) {
 	}];
 };
 
-var Unit = func(Number, String);
 var unit = function (unit) {
 	return function (number) {
 		return number + unit;
@@ -313,6 +312,86 @@ var paragraph = function (text, minWidth) {
 	]);
 };
 
+var ignoreSurplusWidth = function (_, cols) {
+	return cols;
+};
+var ignoreSurplusHeight = function (_, rows) {
+	return rows;
+};
+var evenSplitSurplusWidth = function (gridWidth, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+	var widthPerCol = surplusWidth / positions.length;
+	positions.map(function (position, i) {
+		position.width += widthPerCol;
+		position.left += i * widthPerCol;
+	});
+	return positions;
+};
+var justifySurplusWidth = function (gridWidth, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+	positions.map(function (position, i) {
+		for (var index = 0; index < i; index++) {
+			position.left += surplusWidth / (positions.length - 1);
+		}		
+	});
+	return positions;
+};
+var justifyAndCenterSurplusWidth = function (gridWidth, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+	positions.map(function (position, i) {
+		position.left += i * surplusWidth / (positions.length) +
+			surplusWidth / (2 * positions.length);
+	});
+	return positions;
+};
+
+var superSurplusWidth = function (gridWidth, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+	if (positions.length === 1) {
+		// if we're the only thing on the row, stretch up to roughly
+		// double our min width
+		if (surplusWidth < positions[0].width) {
+			return evenSplitSurplusWidth(gridWidth, positions);
+		}
+		else {
+			return positions;
+		}
+	}
+	if (positions.length === 2) {
+		// if there are two things in the row, make two columns each
+		// with centered content
+		return justifyAndCenterSurplusWidth(gridWidth, positions);
+	}
+	// if there are 3+ things in the row, then justify
+	return justifySurplusWidth(gridWidth, positions);
+};
+
+var giveToNth = function (n) {
+	return function (gridWidth, positions) {
+		var lastPosition = positions[positions.length - 1];
+		var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+		positions.map(function (position, i) {
+			if (i === n || (i === positions.length - 1 && n >= positions.length)) {
+				position.width += surplusWidth;
+			}
+			else if (i > n) {
+				position.left += surplusWidth;
+			}
+		});
+		return positions;
+	};
+};
+var giveToFirst = giveToNth(0);
+var giveToSecond = giveToNth(1);
+var giveToThird = giveToNth(2);
+var evenSplitSurplusHeight = function (gridHeight, rows, config) {
+};
+
+
 var sideBySide = function (config, cs) {
 	config.gutterSize = config.gutterSize || 0;
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
@@ -404,7 +483,7 @@ var stack = function (options, cs) {
 						var optionMinHeight = options.mhs[index](context);
 						return Stream.combine([i.minHeight, optionMinHeight], function (a, b) {
 							return Math.max(a, b);
-						}, 'stack option min height');
+						});
 					}
 					else {
 						return i.minHeight;
@@ -418,7 +497,7 @@ var stack = function (options, cs) {
 					return mh;
 				});
 			};
-
+			
 			var contexts = [];
 			is.reduce(function (is, i) {
 				var top = totalMinHeightStream(is).map(function (t) {
@@ -475,7 +554,7 @@ var padding = function (amount, c) {
 	// or an object with properties containing 'top', 'bottom', 'left', and 'right'
 	else {
 		for (var key in amount) {
-			lcKey = key.toLowerCase();
+			var lcKey = key.toLowerCase();
 			if (lcKey.indexOf('top') !== -1) {
 				top = amount[key];
 			}
@@ -720,9 +799,9 @@ var toggleComponent = function (cs, indexStream) {
 
 			indexStream.onValue(function (index) {
 				is.map(function (i) {
-					i.$el.css('display', 'none');
+					i.$el.css('z-index', '-1');
 				});
-				is[index].$el.css('display', '');
+				is[index].$el.css('z-index', '');
 			});
 			
 			combineStreams(is.map(function (i) {
@@ -947,55 +1026,8 @@ var stickyHeaderBody = function (body1, header, body2) {
 };
 
 
-var GridConfig = object({
-	gutterSize: number,
-	outerGutter: bool,
-	minColumnWidth: number,
-	handleSurplusWidth: func(),
-	handleSurplusHeight: func(),
-});
-
-var ignoreSurplusWidth = function (_, cols) {
-	return cols;
-};
-var ignoreSurplusHeight = function (_, rows) {
-	return rows;
-};
-var evenSplitSurplusWidth = function (gridWidth, positions) {
-	var lastPosition = positions[positions.length - 1];
-	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
-	var widthPerCol = surplusWidth / positions.length;
-	positions.map(function (position, i) {
-		position.width += widthPerCol;
-		position.left += i * widthPerCol;
-	});
-	return positions;
-};
-var giveToNth = function (n) {
-	return function (gridWidth, positions) {
-		var lastPosition = positions[positions.length - 1];
-		var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
-		positions.map(function (position, i) {
-			if (i === n || (i === positions.length - 1 && n >= positions.length)) {
-				position.width += surplusWidth;
-			}
-			else if (i > n) {
-				position.left += surplusWidth;
-			}
-		});
-		return positions;
-	};
-};
-var giveToFirst = giveToNth(0);
-var giveToSecond = giveToNth(1);
-var giveToThird = giveToNth(2);
-var evenSplitSurplusHeight = function (gridHeight, rows, config) {
-};
-
-
 var grid = function (config, cs) {
 	config.gutterSize = config.gutterSize || 0;
-	config.minColumnWidth = config.minColumnWidth || 100;
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
 	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
 	
@@ -1007,6 +1039,10 @@ var grid = function (config, cs) {
 			]);
 		})),
 		wireChildren(function (instance, context, is) {
+			if (is.length === 0) {
+				instance.minWidth.push(0);
+				instance.minHeight.push(0);
+			}
 			var minWidths = Stream.combine(is.map(function (i) {
 				return i.minWidth;
 			}), function () {
@@ -1036,9 +1072,6 @@ var grid = function (config, cs) {
 			var rowsStream = Stream.combine([
 				context.width,
 				minWidths], function (gridWidth, mws) {
-					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth);
-					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
-
 					var blankRow = function () {
 						return {
 							cells: [],
@@ -1053,20 +1086,18 @@ var grid = function (config, cs) {
 						
 						var mw = mws[index];
 
-						var gridCellsUsed = currentRow.cells.reduce(function (a, b) {
-							return a + b;
-						}, 0);
-						var gridCellsNeeded = Math.min(
-							1 + Math.ceil((mw - cellWidth) / (cellWidth + config.gutterSize)),
-							cellsPerRow);
+						var widthUsedThisRow = currentRow.cells.reduce(function (a, b) {
+							return a + b + config.gutterSize;
+						}, -config.gutterSize);
+						var widthNeeded = Math.min(mw, gridWidth);
 						
-						if (gridCellsUsed > 0 &&
-							gridCellsUsed + gridCellsNeeded > cellsPerRow) {
+						if (widthNeeded > 0 &&
+							widthNeeded + widthUsedThisRow > gridWidth) {
 							rows.push(currentRow);
 							currentRow = blankRow();
 						}
 
-						currentRow.cells.push(gridCellsNeeded);
+						currentRow.cells.push(widthNeeded);
 						currentRow.contexts.push(contexts[index]);
 						
 						return {
@@ -1077,19 +1108,17 @@ var grid = function (config, cs) {
 						rows: [],
 						currentRow: blankRow(),
 					});
-					rows = rowsAndCurrentRow.rows;
+					var rows = rowsAndCurrentRow.rows;
 					rows.push(rowsAndCurrentRow.currentRow);
 
 					rows.map(function (row, i) {
-						var cellsUsed = 0;
-						var positions = row.cells.map(function (cells) {
-							var cellGutterWidth = cellWidth + config.gutterSize;
+						var widthUsed = 0;
+						var positions = row.cells.map(function (widthNeeded) {
 							var position = {
-								top: top,
-								left: cellGutterWidth * (cellsUsed),
-								width: cellWidth + cellGutterWidth * (cells - 1),
+								left: widthUsed,
+								width: widthNeeded,
 							};
-							cellsUsed += cells;
+							widthUsed += widthNeeded + config.gutterSize;
 							return position;
 						});
 						positions = config.handleSurplusWidth(gridWidth, positions, config, i);
@@ -1126,22 +1155,18 @@ var grid = function (config, cs) {
 				context.width,
 				context.height,
 				rowsWithHeights], function (gridWidth, gridHeight, rows) {
-					var cellsPerRow = Math.floor(gridWidth / config.minColumnWidth);
-					var cellWidth = (gridWidth - config.gutterSize * (cellsPerRow - 1)) / cellsPerRow;
-
 					var top = 0;
 					rows = config.handleSurplusHeight(gridHeight, rows, config);
 					rows.map(function (row, i) {
-						var cellsUsed = 0;
-						var positions = row.cells.map(function (cells) {
-							var cellGutterWidth = cellWidth + config.gutterSize;
+						var widthUsed = 0;
+						var positions = row.cells.map(function (widthNeeded) {
 							var position = {
 								top: top,
-								left: cellGutterWidth * (cellsUsed),
-								width: cellWidth + cellGutterWidth * (cells - 1),
+								left: widthUsed,
+								width: widthNeeded,
 								height: row.height,
 							};
-							cellsUsed += cells;
+							widthUsed += widthNeeded + config.gutterSize;
 							return position;
 						});
 						positions = config.handleSurplusWidth(gridWidth, positions, config, i);
@@ -1165,11 +1190,6 @@ var backgroundImagePosition = {
 	fit: 'fit',
 	fill: 'fill',
 };
-
-var BackgroundImageConfig = object({
-	src: string,
-	position: string,
-});
 
 var withMinHeightStream = function (getMinHeightStream, c) {
 	return div.all([
@@ -1315,7 +1335,9 @@ var componentStream = function (cStream) {
 	return div.all([
 		componentName('use-component-stream'),
 		function (instance, context) {
-			cStream.map(function (c) {
+			var localCStream = Stream.create();
+			cStream.pushAll(localCStream);
+			localCStream.map(function (c) {
 				Q.all([c]).then(function (cs) {
 					if (i) {
 						i.destroy();
@@ -1332,16 +1354,18 @@ var componentStream = function (cStream) {
 				});
 			});
 			return function () {
-				cStream.end();
-				i.destroy();
+				localCStream.end();
+				if (i) {
+					i.destroy();
+				}
 			};
 		},
 	]);
 };
 
 
-var tabs = function (list) {
-	var whichTab = Stream.once(0);
+var tabs = function (list, stream) {
+	var whichTab = stream || Stream.once(0);
 	return stack({}, [
 		sideBySide({}, list.map(function (item, index) {
 			return alignTBM({
@@ -1410,24 +1434,27 @@ var routeMatchRest = function (f) {
 var route = function (router) {
 	var i;
 	return div.all([
-		componentName('route'),
-		function (instance, context) {
-			windowHash.onValue(function (hash) {
-				if (i) {
-					i.destroy();
-				}
+		child(div.all([
+			componentName('route'),
+			function (instance, context) {
+				windowHash.onValue(function (hash) {
+					if (i) {
+						i.destroy();
+					}
 
-				Q.all([router(hash)]).then(function (cs) {
-					var c = cs[0];
-					i = c.create(context);
-					i.$el.css('transition', 'inherit');
-					i.minWidth.pushAll(instance.minWidth);
-					i.minHeight.pushAll(instance.minHeight);
-				}, function (error) {
-					console.error('child components failed to load');
-					console.log(error);
+					Q.all([router(hash)]).then(function (cs) {
+						var c = cs[0];
+						i = c.create(context);
+						i.$el.css('transition', 'inherit');
+						i.minWidth.pushAll(instance.minWidth);
+						i.minHeight.pushAll(instance.minHeight);
+					}, function (error) {
+						console.error('child components failed to load');
+						console.log(error);
+					});
 				});
-			});
-		},
+			},
+		])),
+		wireChildren(passThroughToFirst),
 	]);
 };

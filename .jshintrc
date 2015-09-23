@@ -1,0 +1,45 @@
+{
+	"eqeqeq": true,
+	"latedef": true,
+	"nocomma": true,
+	"undef": true,
+	"globals": {
+		"storeItems": false,
+		
+		"$": false,
+		"CKEDITOR": false,
+		"console": false,
+		"define": false,
+		"document": false,
+		"FormData": false,
+		"location": false,
+		"Q": false,
+		"require": false,
+		"requirejs": false,
+		"schema": false,
+		"Stream": false,
+		"setTimeout": false,
+		"type": false,
+		"waitForWebfonts": false,
+		"window": false,
+		
+		"a": false,
+		"div": false,
+		"form": false,
+		"img": false,
+		"input": false,
+		"option": false,
+		"select": false,
+		"textarea": false,
+
+		"findMinHeight": false,
+		"findMinWidth": false,
+		"findOptimalHeight": false,
+
+		"child": false,
+		"children": false,
+		"wireChildren": false,
+		
+		"rootComponent": false
+	}
+}

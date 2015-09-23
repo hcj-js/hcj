@@ -72,6 +72,16 @@ var Stream = {
 				});
 				return stream;
 			},
+			reduce: function (f, v) {
+				var stream = Stream.once(v);
+				if (lastValue !== undefined) {
+					stream.push(f(stream.lastValue(), lastValue));
+				}
+				listeners.push(function (v) {
+					stream.push(f(stream.lastValue(), v));
+				});
+				return stream;
+			},
 			onValue: function (f) {
 				return this.map(function (v) {
 					f(v);
@@ -205,11 +215,23 @@ var Stream = {
 };
 
 var child = function (component) {
+	Q.all([component]).then(function (components) {
+		if (!components[0]) {
+			console.error('faulty component');
+		}
+	});
 	return function (i) {
 		i.child(component);
 	};
 };
 var children = function (components) {
+	Q.all(components).then(function (components) {
+		return components.map(function (component) {
+			if (!component.create) {
+				console.error('faulty component');
+			}
+		});
+	});
 	return function (i) {
 		i.children(components);
 	};
