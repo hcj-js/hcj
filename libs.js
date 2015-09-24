@@ -54,6 +54,9 @@ var desaturate = function (amount) {
 var colorString = function (c) {
 	return 'rgba(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ',' + c.a + ')';
 };
+var rgbColorString = function (c) {
+	return 'rgb(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ')';
+};
 var transparent = color({
 	a: 0,
 });
