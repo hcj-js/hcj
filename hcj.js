@@ -215,22 +215,18 @@ var Stream = {
 };
 
 var child = function (component) {
-	Q.all([component]).then(function (components) {
-		if (!components[0]) {
-			console.error('faulty component');
-		}
-	});
+	if (!component || !component.create) {
+		console.error('faulty component');
+	}
 	return function (i) {
 		i.child(component);
 	};
 };
 var children = function (components) {
-	Q.all(components).then(function (components) {
-		return components.map(function (component) {
-			if (!component.create) {
-				console.error('faulty component');
-			}
-		});
+	components.map(function (component) {
+		if (!component || !component.create) {
+			console.error('faulty component');
+		}
 	});
 	return function (i) {
 		i.children(components);
@@ -250,71 +246,67 @@ var component = function (build) {
 
 			instance.wireChildren = instance.wireChildren || function () {};
 
-			Q.all(instance.childComponentPs).then(function (childComponents) {
-				var childContexts = [];
-				var childInstances = childComponents.map(function (childComponent) {
-					if ($.isArray(childComponent)) {
-						var ctxs = [];
-						var is = childComponent.map(function (c) {
-							var ctx = instance.newCtx();
-							ctxs.push(ctx);
-							return c.create(ctx);
-						});
-						childContexts.push(ctxs);
-						return is;
-					}
-					else {
+			var childComponents = instance.childComponentPs;
+			var childContexts = [];
+			var childInstances = childComponents.map(function (childComponent) {
+				if ($.isArray(childComponent)) {
+					var ctxs = [];
+					var is = childComponent.map(function (c) {
 						var ctx = instance.newCtx();
-						childContexts.push(ctx);
-						return childComponent.create(ctx);
-					}
-				});
-				
-				instance.childInstances = childInstances;
-				
-				var resultContexts = instance.wireChildren.apply(null, [instance, context].concat(childInstances)) || [];
-				
-				var applyResult = function (resultContext, childInstance, childContext) {
-					resultContext = resultContext || {};
-					if (resultContext.top) {
-						resultContext.top.pushAll(childContext.top);
-					}
-					if (resultContext.left) {
-						resultContext.left.pushAll(childContext.left);
-					}
-					if (resultContext.width) {
-						resultContext.width.pushAll(childContext.width);
-					}
-					if (resultContext.height) {
-						resultContext.height.pushAll(childContext.height);
-					}
-					if (resultContext.backgroundColor) {
-						resultContext.backgroundColor.pushAll(childContext.backgroundColor);
-					}
-					if (resultContext.fontColor) {
-						resultContext.fontColor.pushAll(childContext.fontColor);
-					}
-				};
+						ctxs.push(ctx);
+						return c.create(ctx);
+					});
+					childContexts.push(ctxs);
+					return is;
+				}
+				else {
+					var ctx = instance.newCtx();
+					childContexts.push(ctx);
+					return childComponent.create(ctx);
+				}
+			});
+			
+			instance.childInstances = childInstances;
+			
+			var resultContexts = instance.wireChildren.apply(null, [instance, context].concat(childInstances)) || [];
+			
+			var applyResult = function (resultContext, childInstance, childContext) {
+				resultContext = resultContext || {};
+				if (resultContext.top) {
+					resultContext.top.pushAll(childContext.top);
+				}
+				if (resultContext.left) {
+					resultContext.left.pushAll(childContext.left);
+				}
+				if (resultContext.width) {
+					resultContext.width.pushAll(childContext.width);
+				}
+				if (resultContext.height) {
+					resultContext.height.pushAll(childContext.height);
+				}
+				if (resultContext.backgroundColor) {
+					resultContext.backgroundColor.pushAll(childContext.backgroundColor);
+				}
+				if (resultContext.fontColor) {
+					resultContext.fontColor.pushAll(childContext.fontColor);
+				}
+			};
 
-				for (var i = 0; i < childInstances.length; i++) {
-					var resultContext = resultContexts[i] || {};
-					
-					var childInstance = childInstances[i];
-					var childContext = childContexts[i];
-					
-					if ($.isArray(childInstance)) {
-						for (var j = 0; j < childInstance.length; j++) {
-							applyResult(resultContext[j], childInstance[j], childContext[j]);
-						}
-					}
-					else {
-						applyResult(resultContext, childInstance, childContext);
+			for (var i = 0; i < childInstances.length; i++) {
+				var resultContext = resultContexts[i] || {};
+				
+				var childInstance = childInstances[i];
+				var childContext = childContexts[i];
+				
+				if ($.isArray(childInstance)) {
+					for (var j = 0; j < childInstance.length; j++) {
+						applyResult(resultContext[j], childInstance[j], childContext[j]);
 					}
 				}
-			}, function (error) {
-				console.error('child components failed to load');
-				console.log(error);
-			});
+				else {
+					applyResult(resultContext, childInstance, childContext);
+				}
+			}
 
 			return instance;
 		},
@@ -439,6 +431,10 @@ var el = function (name) {
 		context.height.onValue(function (h) {
 			updateDomFunc(function () {
 				$el.css('height', px(h));
+			});
+		});
+		Stream.combine([context.width, context.height, context.top, context.left], function () {
+			updateDomFunc(function () {
 				$el.css('visibility', '');
 			});
 		});
@@ -504,16 +500,24 @@ var el = function (name) {
 
 				this.$el.remove();
 			},
-			updateDimensions: function (onlyNonzero) {
-				var mw = findMinWidth(this.$el);
-				var mh = findMinHeight(this.$el);
-				if (!onlyNonzero || mw !== 0) {
-					this.minWidth.push(mw);
-				}
-				if (!onlyNonzero || mh !== 0) {
-					this.minHeight.push(mh);
-				}
-			},
+			updateDimensions: (function () {
+				var html = null;
+				return function (onlyNonzero) {
+					var htmlNow = this.$el.html();
+					if (html === htmlNow) {
+						return;
+					}
+					html = htmlNow;
+					var mw = findMinWidth(this.$el);
+					var mh = findMinHeight(this.$el);
+					if (!onlyNonzero || mw !== 0) {
+						this.minWidth.push(mw);
+					}
+					if (!onlyNonzero || mh !== 0) {
+						this.minHeight.push(mh);
+					}
+				};
+			})(),
 		};
 	});
 };
