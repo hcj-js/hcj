@@ -307,8 +307,11 @@ var paragraph = function (text, minWidth) {
 			chooseHeightFromWidth(instance, context);
 			text.onValue(function (t) {
 				instance.$el.html(t);
-				var optimalHeight = findOptimalHeight(instance.$el, minWidth);
-				instance.minHeight.push(optimalHeight);
+				var w = context.width.lastValue();
+				if (w) {
+					var optimalHeight = findOptimalHeight(instance.$el, w);
+					instance.minHeight.push(optimalHeight);
+				}
 			});
 		},
 		withMinWidth(minWidth, true),

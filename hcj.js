@@ -412,7 +412,6 @@ var el = function (name) {
 		$el.css('visibility', 'hidden');
 		context.$el.append($el);
 		
-
 		context.top.onValue(function (t) {
 			updateDomFunc(function () {
 				$el.css('top', px(t));
@@ -501,13 +500,7 @@ var el = function (name) {
 				this.$el.remove();
 			},
 			updateDimensions: (function () {
-				var html = null;
 				return function (onlyNonzero) {
-					var htmlNow = this.$el.html();
-					if (html === htmlNow) {
-						return;
-					}
-					html = htmlNow;
 					var mw = findMinWidth(this.$el);
 					var mh = findMinHeight(this.$el);
 					if (!onlyNonzero || mw !== 0) {
