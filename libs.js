@@ -552,9 +552,9 @@ var stack = function (options, cs) {
 			};
 			
 			var contexts = [];
-			is.reduce(function (is, i) {
+			is.reduce(function (is, i, index) {
 				var top = totalMinHeightStream(is).map(function (t) {
-					return t === 0 ? t : t + gutterSize;
+					return t === index ? t : t + gutterSize;
 				});
 				var iMinHeight;
 				
