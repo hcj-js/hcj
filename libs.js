@@ -197,7 +197,17 @@ var componentName = function (name) {
 var onThis = function (event) {
 	return function (handler) {
 		return function (i) {
-			i.$el.on(event, handler);
+			var disabled = false;
+			i.$el.on(event, function (ev) {
+				if (!disabled) {
+					return handler(ev, function () {
+						disabled = true;
+						return function () {
+							disabled = false;
+						};
+					});
+				}
+			});
 		};
 	};
 };
@@ -1476,6 +1486,12 @@ var matchStrings = function (stringsAndRouters) {
 var routeToComponent = function (component) {
 	return function () {
 		return component;
+	};
+};
+
+var routeToComponentF = function (componentF) {
+	return function () {
+		return componentF();
 	};
 };
 
