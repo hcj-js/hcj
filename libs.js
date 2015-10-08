@@ -529,6 +529,7 @@ var stackTwo = function (options, cs) {
 
 var stack = function (options, cs) {
 	options.gutterSize = options.gutterSize || 0;
+	options.collapseGutters = options.collapseGutters || false;
 	options.align = options.align || 'left';
 	return div.all([
 		componentName('stack'),
@@ -555,7 +556,7 @@ var stack = function (options, cs) {
 				}), function () {
 					var args = Array.prototype.slice.call(arguments);
 					var mh = args.reduce(function (a, b) {
-						return a + b + gutterSize;
+						return a + b + ((options.collapseGutters && b === 0) ? 0 : gutterSize);
 					}, -gutterSize);
 					return mh;
 				});
@@ -564,7 +565,7 @@ var stack = function (options, cs) {
 			var contexts = [];
 			is.reduce(function (is, i, index) {
 				var top = totalMinHeightStream(is).map(function (t) {
-					return t === index ? t : t + gutterSize;
+					return t === 0 ? t : t + ((options.collapseGutters && t === 0) ? 0 : gutterSize);
 				});
 				var iMinHeight;
 				

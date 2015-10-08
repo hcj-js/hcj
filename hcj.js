@@ -82,6 +82,16 @@ var Stream = {
 				});
 				return stream;
 			},
+			filter: function (f) {
+				var stream = Stream.create();
+				if (lastValue !== undefined) {
+					f(lastValue, stream.push);
+				}
+				listeners.push(function (v) {
+					f(v, stream.push);
+				});
+				return stream;
+			},
 			onValue: function (f) {
 				return this.map(function (v) {
 					f(v);
