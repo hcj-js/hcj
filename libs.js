@@ -1441,6 +1441,89 @@ var withBackgroundImage = function (config, c) {
 	]);
 };
 
+var table = function (config, css) {
+	config = config || {};
+	var gutterSize = (config.paddingSize || 0) * 2;
+	return div.all(css.map(function (cs) {
+		return children(cs);
+	})).all([
+		componentName('table'),
+		wireChildren(function () {
+			var args = Array.prototype.slice.call(arguments);
+			var instance = args[0];
+			var context = args[1];
+			var iss = args.slice(2);
+
+			// we blindly assume all rows have the same number of columns
+			
+			// set table min width
+			var maxMWs = Stream.combine(iss.reduce(function (a, is) {
+				a.push(Stream.combine(is.map(function (i) {
+					return i.minWidth;
+				}), function () {
+					return Array.prototype.slice.call(arguments);
+				}));
+				return a;
+			}, []), function () {
+				var rowMWs = Array.prototype.slice.call(arguments);
+				return rowMWs.reduce(function (a, rowMWs) {
+					return rowMWs.map(function (mw, i) {
+						return Math.max(a[i] || 0, mw);
+					});
+				}, []);
+			});
+			maxMWs.map(function (maxMWs) {
+				var mw = maxMWs.reduce(function (a, mw) {
+					return a + mw + gutterSize;
+				}, -gutterSize);
+				instance.minWidth.push(mw);
+			});
+
+			// set table min height
+			var rowMinHeights = iss.reduce(function (a, is) {
+				a.push(Stream.combine(is.map(function (i) {
+					return i.minHeight;
+				}), function () {
+					var args = Array.prototype.slice.call(arguments);
+					return args.reduce(function (a, mh) {
+						return Math.max(a, mh);
+					}, 0);
+				}));
+				return a;
+			}, []);
+			Stream.combine(rowMinHeights, function () {
+				var mhs = Array.prototype.slice.call(arguments);
+				var mh = mhs.reduce(function (a, mh) {
+					return a + mh + gutterSize;
+				}, -gutterSize);
+				instance.minHeight.push(mh);
+			});
+
+			return rowMinHeights.map(function (mh, i) {
+				return iss[i].map(function (_, index) {
+					return {
+						width: maxMWs.map(function (maxMWs) {
+							return maxMWs[index];
+						}),
+						height: rowMinHeights[i],
+						top: Stream.combine(rowMinHeights.slice(0, i).concat([Stream.once(0)]), function () {
+							var mhs = Array.prototype.slice.call(arguments);
+							return mhs.reduce(function (a, mh) {
+								return a + mh + gutterSize;
+							}, -gutterSize);
+						}),
+						left: maxMWs.map(function (maxMWs) {
+							return maxMWs.reduce(function (a, mw, mwI) {
+								return a + (mwI < index ? mw + gutterSize : 0);
+							}, 0);
+						}),
+					};
+				});
+			});
+		}),
+	]);
+};
+
 var tabs = function (list, stream) {
 	var whichTab = stream || Stream.once(0);
 	return stack({}, [
