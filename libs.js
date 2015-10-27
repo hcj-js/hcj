@@ -1317,7 +1317,7 @@ var grid = function (config, cs) {
 
 						var widthUsedThisRow = currentRow.cells.reduce(function (a, b) {
 							return a + b + config.gutterSize;
-						}, -config.gutterSize);
+						}, 0);
 						var widthNeeded = Math.min(mw, gridWidth);
 						
 						if (widthNeeded > 0 &&
