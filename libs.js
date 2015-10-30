@@ -1039,13 +1039,13 @@ var toggleComponent = function (cs, indexStream) {
 	}));
 };
 
-var modalDialog = function (stream, transition) {
-	var open = Stream.once(false);
-	stream.pushAll(open);
-	
-	transition = transition || 0;
-	
-	return function (c) {
+var modalDialog = function (c) {
+	return function (stream, transition) {
+		var open = Stream.once(false);
+		stream.pushAll(open);
+		
+		transition = transition || 0;
+		
 		return div.all([
 			$css('z-index', 100),
 			componentName('toggle-height'),
@@ -1056,7 +1056,7 @@ var modalDialog = function (stream, transition) {
 				
 				var $el = i.$el;
 				$el.css('position', 'fixed');
-				$el.css('transition', 'opacity ' + transition + 's');
+				$el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
 				$el.css('display', 'none');
 				
 				open.onValue(function (on) {
@@ -1075,13 +1075,23 @@ var modalDialog = function (stream, transition) {
 				});
 				
 				return [{
-					width: i.minWidth,
-					height: i.minHeight,
+					width: Stream.combine([
+						windowWidth,
+						i.minWidth,
+					], function (windowWidth, minWidth) {
+						return Math.min(windowWidth, minWidth);
+					}),
+					height: Stream.combine([
+						windowHeight,
+						i.minHeight,
+					], function (windowHeight, minHeight) {
+						return Math.min(windowHeight, minHeight);
+					}),
 					left: Stream.combine([
 						windowWidth,
 						i.minWidth,
 					], function (windowWidth, minWidth) {
-						return (windowWidth - minWidth) / 2;
+						return Math.max(0, (windowWidth - minWidth) / 2);
 					}),
 					top: Stream.combine([
 						windowHeight,
