@@ -241,6 +241,24 @@ var mouseoutThis = onThis('mouseout');
 var mouseupThis = onThis('mouseup');
 var submitThis = onThis('click');
 
+var hoverThis = function (cb) {
+	return function (instance) {
+		instance.$el.on('mouseover', function () {
+			cb(true);
+		});
+		instance.$el.on('mouseout', function () {
+			cb();
+		});
+	};
+};
+
+var cssStream = function (style, valueS) {
+	return function (instance) {
+		valueS.map(function (value) {
+			instance.$el.css(style, value);
+		});
+	};
+};
 
 var image = function (config) {
 	var srcStream = (config.src && config.src.map) ? config.src : Stream.once(config.src);
@@ -431,6 +449,87 @@ var evenSplitSurplusHeight = function (gridHeight, rows, config) {
 };
 
 
+var slideshow = function (config, cs) {
+	config.gutterSize = config.gutterSize || 0;
+	config.leftTransition = config.leftTransition || 'none';
+	config.alwaysFullWidth = config.alwaysFullWidth || false;
+	return div.all([
+		$css('overflow', 'hidden'),
+		componentName('slideshow'),
+		children(cs.map(function (c) {
+			return c.all([
+				$css('transition', 'left ' + config.leftTransition),
+			]);
+		})),
+		wireChildren(function (instance, context, is) {
+			var allMinWidths = Stream.combine(is.map(function (i) {
+				return i.minWidth;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				return args;
+			});
+			
+			allMinWidths.onValue(function (mws) {
+				instance.minWidth.push(mws.reduce(function (a, mw) {
+					return a + mw;
+				}, config.gutterSize * (is.length - 1)));
+			});
+			
+			var contexts = is.map(function () {
+				return {
+					top: Stream.once(0),
+					left: Stream.never(),
+					width: Stream.never(),
+					height: context.height,};});
+
+			Stream.all([config.selected, context.width, allMinWidths], function (selected, width, mws) {
+				var selectedLeft = 0;
+				var selectedWidth = 0;
+				var left = 0;
+				var positions = mws.map(function (mw, index) {
+					mw = config.alwaysFullWidth ? width : mw;
+					if (selected === index) {
+						selectedLeft = left + config.gutterSize * index;
+						selectedWidth = mw;
+					}
+					var position = {
+						left: left + config.gutterSize * index,
+						width: mw };
+					left += mw;
+					return position;
+				});
+				var dLeft = (width - selectedWidth) / 2 - selectedLeft;
+				positions.map(function (position) {
+					position.left += dLeft;
+				});
+
+				positions.map(function (position, index) {
+					var ctx = contexts[index];
+					ctx.left.push(position.left);
+					ctx.width.push(position.width);
+				});
+			});
+
+			Stream.combine(is.map(function (i) {
+				return i.minHeight;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				var height = args.reduce(function (a, b) {
+					return Math.max(a, b);
+				}, 0);
+				
+				contexts.map(function (ctx) {
+					ctx.height.push(height);
+				});
+				
+				return height;
+			}).pushAll(instance.minHeight);
+
+			return [contexts];
+		}),
+	]);
+};
+
 var sideBySide = function (config, cs) {
 	config.gutterSize = config.gutterSize || 0;
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
@@ -588,7 +687,7 @@ var stack = function (options, cs) {
 			var contexts = [];
 			is.reduce(function (is, i, index) {
 				var top = totalMinHeightStream(is).map(function (t) {
-					return t === 0 ? t : t + ((options.collapseGutters && t === 0) ? 0 : gutterSize);
+					return t + ((index === 0 || (options.collapseGutters && t === 0)) ? 0 : gutterSize);
 				});
 				var iMinHeight;
 				
@@ -628,6 +727,34 @@ var stack = function (options, cs) {
 	]);
 };
 
+var adjustPosition = function (amount, c) {
+	var top = amount.top || 0;
+	var left = amount.left || 0;
+	var expand = amount.expand;
+	return div.all([
+		componentName('adjustPosition'),
+		child(c),
+		wireChildren(function (instance, context, i) {
+			i.minWidth.map(function (w) {
+				return w + expand ? left : 0;
+			}).pushAll(instance.minWidth);
+			i.minHeight.map(function (h) {
+				return h + expand ? top : 0;
+			}).pushAll(instance.minHeight);
+			return [{
+				top: context.top.map(function (t) {
+					return t + top;
+				}),
+				left: context.left.map(function (l) {
+					return l + left;
+				}),
+				width: context.width,
+				height: context.height,
+			}];
+		}),
+	]);
+};
+
 var padding = function (amount, c) {
 	var top = amount.all || 0,
 		bottom = amount.all || 0,
@@ -662,21 +789,21 @@ var padding = function (amount, c) {
 		wireChildren(function (instance, context, i) {
 			i.minWidth.map(function (mw) {
 				return mw + left + right;
-			}, 'padding min width').pushAll(instance.minWidth);
+			}).pushAll(instance.minWidth);
 			
 			i.minHeight.map(function (mh) {
 				return mh + top + bottom;
-			}, 'padding min height').pushAll(instance.minHeight);
+			}).pushAll(instance.minHeight);
 			
 			return [{
 				top: Stream.once(top, 'padding top'),
 				left: Stream.once(left, 'padding left'),
 				width: context.width.map(function (w) {
 					return w - left - right;
-				}, 'padding width'),
+				}),
 				height: context.height.map(function (h) {
 					return h - top - bottom;
-				}, 'padding height'),
+				}),
 			}];
 		}),
 	]);
@@ -762,7 +889,7 @@ var alignTBM = function (tbm) {
 					return Math.max(w, mw);
 				}, 0);
 					return width;
-			}, 'alignTBM min width');
+			});
 			minWidth.pushAll(instance.minWidth);
 			
 			Stream.combine([mI, bI, tI].map(function (i) {
@@ -773,19 +900,19 @@ var alignTBM = function (tbm) {
 					return h + mh;
 				}, 0);
 					return height;
-			}, 'alignTBM min height').pushAll(instance.minHeight);
+			}).pushAll(instance.minHeight);
 
 			return [{
 				top: Stream.combine([context.height, mI.minHeight], function (height, mh) {
 					return (height - mh) / 2;
-				}, 'alignTBM top.top'),
+				}),
 				left: Stream.once(0),
 				width: context.width,
 				height: mI.minHeight,
 			}, {
 				top: Stream.combine([context.height, bI.minHeight], function (height, mh) {
 					return height - mh;
-				}, 'alignTBM bottom.top'),
+				}),
 				left: Stream.once(0),
 				width: context.width,
 				height: bI.minHeight,
@@ -935,13 +1062,13 @@ var toggleComponent = function (cs, indexStream) {
 	}));
 };
 
-var modalDialog = function (stream, transition) {
-	var open = Stream.once(false);
-	stream.pushAll(open);
-	
-	transition = transition || 0;
-	
-	return function (c) {
+var modalDialog = function (c) {
+	return function (stream, transition) {
+		var open = Stream.once(false);
+		stream.pushAll(open);
+		
+		transition = transition || 0;
+		
 		return div.all([
 			$css('z-index', 100),
 			componentName('toggle-height'),
@@ -952,7 +1079,7 @@ var modalDialog = function (stream, transition) {
 				
 				var $el = i.$el;
 				$el.css('position', 'fixed');
-				$el.css('transition', 'opacity ' + transition + 's');
+				$el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
 				$el.css('display', 'none');
 				
 				open.onValue(function (on) {
@@ -971,13 +1098,23 @@ var modalDialog = function (stream, transition) {
 				});
 				
 				return [{
-					width: i.minWidth,
-					height: i.minHeight,
+					width: Stream.combine([
+						windowWidth,
+						i.minWidth,
+					], function (windowWidth, minWidth) {
+						return Math.min(windowWidth, minWidth);
+					}),
+					height: Stream.combine([
+						windowHeight,
+						i.minHeight,
+					], function (windowHeight, minHeight) {
+						return Math.min(windowHeight, minHeight);
+					}),
 					left: Stream.combine([
 						windowWidth,
 						i.minWidth,
 					], function (windowWidth, minWidth) {
-						return (windowWidth - minWidth) / 2;
+						return Math.max(0, (windowWidth - minWidth) / 2);
 					}),
 					top: Stream.combine([
 						windowHeight,
@@ -1213,7 +1350,7 @@ var grid = function (config, cs) {
 
 						var widthUsedThisRow = currentRow.cells.reduce(function (a, b) {
 							return a + b + config.gutterSize;
-						}, -config.gutterSize);
+						}, 0);
 						var widthNeeded = Math.min(mw, gridWidth);
 						
 						if (widthNeeded > 0 &&
