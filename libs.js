@@ -166,6 +166,25 @@ var withMinHeight = function (mh, end) {
 		}
 	};
 };
+var adjustMinHeight = function (f) {
+	return function (c) {
+		return div.all([
+			child(c),
+			wireChildren(function (instance, context, i) {
+				i.minWidth.pushAll(instance.minWidth);
+				i.minHeight.map(function (mh) {
+					return f(mh);
+				}).pushAll(instance.minHeight);
+				return [{
+					top: Stream.once(0),
+					left: Stream.once(0),
+					width: context.width,
+					height: context.height,
+				}];
+			}),
+		]);
+	};
+};
 var withBackgroundColor = function (bc) {
 	return function (i, context) {
 		context.backgroundColor.push(colorString(bc));
@@ -230,8 +249,12 @@ var image = function (config) {
 			srcStream.map(function (src) {
 				i.$el.prop('src', src);
 			});
+			i.minWidth.push(config.minWidth || config.chooseWidth || 0);
+			i.minHeight.push(config.minHeight || config.chooseHeight || 0);
+			i.$el.css('display', 'none');
 			
 			i.$el.on('load', function () {
+				i.$el.css('display', '');
 				var nativeWidth = findMinWidth(i.$el);
 				var nativeHeight = findMinHeight(i.$el);
 				var aspectRatio = nativeWidth / nativeHeight;
