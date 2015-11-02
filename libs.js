@@ -1052,6 +1052,8 @@ var promiseComponent = function (cP) {
 	var stream = Stream.once(nothing);
 	cP.then(function (c) {
 		stream.push(c);
+	}, function (error) {
+		console.log(error);
 	});
 	return componentStream(stream);
 };
@@ -1318,7 +1320,7 @@ var grid = function (config, cs) {
 
 			minWidths.map(function (mws) {
 				return mws.reduce(function (a, mw) {
-					return Math.max(a, mw);
+					return config.useFullWidth ? a + mw : Math.max(a, mw);
 				}, 0);
 			}).pushAll(instance.minWidth);
 
