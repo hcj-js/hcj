@@ -468,18 +468,16 @@ var el = function (name) {
 
 				this.$el.remove();
 			},
-			updateDimensions: (function () {
-				return function (onlyNonzero) {
-					var mw = findMinWidth(this.$el);
-					var mh = findMinHeight(this.$el);
-					if (!onlyNonzero || mw !== 0) {
-						this.minWidth.push(mw);
-					}
-					if (!onlyNonzero || mh !== 0) {
-						this.minHeight.push(mh);
-					}
-				};
-			})(),
+			updateDimensions: function (onlyNonzero) {
+				var mw = findMinWidth(this.$el);
+				var mh = findMinHeight(this.$el);
+				if (!onlyNonzero || mw !== 0) {
+					this.minWidth.push(mw);
+				}
+				if (!onlyNonzero || mh !== 0) {
+					this.minHeight.push(mh);
+				}
+			},
 		};
 	});
 };
