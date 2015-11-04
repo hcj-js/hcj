@@ -377,6 +377,9 @@ var nothing = div.all([
 ]);
 
 var text = function (text) {
+	while (text.indexOf(' ') !== -1) {
+		text = text.replace(' ', '&nbsp;');
+	}
 	if (!(text.map && text.push)) {
 		text = Stream.once(text);
 	}
