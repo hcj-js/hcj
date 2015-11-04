@@ -653,6 +653,9 @@ var stack = function (options, cs) {
 	options.gutterSize = options.gutterSize || 0;
 	options.collapseGutters = options.collapseGutters || false;
 	options.align = options.align || 'left';
+	if (cs.length === 0) {
+		cs = [nothing];
+	}
 	return div.all([
 		componentName('stack'),
 		children(cs),
