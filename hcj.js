@@ -421,6 +421,9 @@ var el = function (name) {
 		var topAccumStream = Stream.combine([context.topAccum, context.top], function (a, b) {
 			return a + b;
 		});
+		var leftAccumStream = Stream.combine([context.leftAccum, context.left], function (a, b) {
+			return a + b;
+		});
 		var newCtx = function (ctx) {
 			return {
 				$el: $el,
@@ -428,6 +431,7 @@ var el = function (name) {
 				topAccum: topAccumStream,
 				top: Stream.never(),
 				left: Stream.never(),
+				leftAccum: leftAccumStream,
 				width: Stream.never(),
 				height: Stream.never(),
 				backgroundColor: Stream.once('rgba(0,0,0,0)'),
@@ -502,6 +506,7 @@ var rootContext = function () {
 		top: Stream.once(0),
 		topAccum: Stream.once(0),
 		left: Stream.once(0),
+		leftAccum: Stream.once(0),
 		scroll: windowScroll,
 		width: windowWidth,
 		height: Stream.never(),
