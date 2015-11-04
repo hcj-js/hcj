@@ -377,9 +377,6 @@ var nothing = div.all([
 ]);
 
 var text = function (text) {
-	while (text.indexOf(' ') !== -1) {
-		text = text.replace(' ', '&nbsp;');
-	}
 	if (!(text.map && text.push)) {
 		text = Stream.once(text);
 	}
@@ -389,6 +386,11 @@ var text = function (text) {
 		function (instance, context) {
 			chooseHeightFromWidth(instance, context);
 			text.onValue(function (t) {
+				if (t) {
+					while (t.indexOf(' ') !== -1) {
+						t = t.replace(' ', '&nbsp;');
+					}
+				}
 				instance.$el.html(t);
 				instance.minWidth.push(findMinWidth(instance.$el));
 			});
