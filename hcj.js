@@ -63,6 +63,15 @@ var Stream = {
 					return v[str];
 				});
 			},
+			delay: function (amount) {
+				var stream = Stream.create();
+				this.map(function (v) {
+					setTimeout(function () {
+						stream.push(v);
+					}, amount);
+				});
+				return stream;
+			},
 			end: function () {
 				ended = true;
 			},
