@@ -339,6 +339,19 @@ var findMinWidth = function ($el) {
 	return width;
 };
 
+var findScrollWidth = function ($el, w) {
+	var $sandbox = $('.sandbox');
+	var $clone = $el.clone();
+	$clone.css('width', w)
+		.css('height', '')
+		.appendTo($sandbox);
+
+	var width = $clone[0].scrollWidth;
+	$clone.remove();
+
+	return width;
+};
+
 var findMinHeight = function ($el) {
 	var $sandbox = $('.sandbox');
 	var $clone = $el.clone();

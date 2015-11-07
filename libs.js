@@ -413,14 +413,16 @@ var paragraph = function (text, minWidth) {
 			chooseHeightFromWidth(instance, context);
 			text.onValue(function (t) {
 				instance.$el.html(t);
-				var w = context.width.lastValue();
-				if (w) {
-					var optimalHeight = findOptimalHeight(instance.$el, w);
-					instance.minHeight.push(optimalHeight);
-				}
+				instance.minWidth.push(findScrollWidth(instance.$el, minWidth));
+			});
+			Stream.combine([
+				text,
+				context.width,
+			], function (text, w) {
+				var optimalHeight = findOptimalHeight(instance.$el, w);
+				instance.minHeight.push(optimalHeight);
 			});
 		},
-		withMinWidth(minWidth, true),
 	]);
 };
 
@@ -1550,6 +1552,9 @@ var grid = function (config, cs) {
 				context.width,
 				context.height,
 				rowsWithHeights], function (gridWidth, gridHeight, rows) {
+					if (config.bottomToTop) {
+						rows = rows.slice(0).reverse();
+					}
 					var top = 0;
 					rows = config.handleSurplusHeight(gridHeight, rows, config);
 					rows.map(function (row, i) {
