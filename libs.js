@@ -411,9 +411,12 @@ var paragraph = function (text, minWidth) {
 		componentName('paragraph'),
 		function (instance, context) {
 			chooseHeightFromWidth(instance, context);
+			instance.updateDimensions = function () {
+				instance.minWidth.push(findScrollWidth(instance.$el, minWidth));
+			};
 			text.onValue(function (t) {
 				instance.$el.html(t);
-				instance.minWidth.push(findScrollWidth(instance.$el, minWidth));
+				instance.updateDimensions();
 			});
 			Stream.combine([
 				text,
