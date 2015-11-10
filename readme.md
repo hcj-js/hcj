@@ -2,6 +2,12 @@
 
 A javascript library for web app frontend templating
 
+## Getting Started ##
+
+The `example/example.js` file shows what typical HCJ code looks like.  Components are defined, and then one is taken to be the root component.  Open `example/example.html` in a browser to see this code in action.
+
+The components and layouts used in that file, and more, are described below.
+
 ## What's it like ##
 
 1. Define Components.
@@ -11,12 +17,6 @@ A javascript library for web app frontend templating
 Components are the building blocks of this library.  Layouts glue components together to form new components.  A single piece of text can be a component; so can an entire web page.
 
 This makes it very easy to edit and rearrange your website.  Component you've defined can be moved around wherever you want, placed into any context.  And because they are content-size-aware, edits to them are risk-free.
-
-## Getting Started ##
-
-The `example/example.js` file shows what typical HCJ code looks like.  Components are defined, and then one is taken to be the root component.  Open `example/example.html` in a browser to see this code in action.
-
-The components and layouts used in that file, and more, are described below.
 
 ## How it works ##
 
