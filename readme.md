@@ -1,6 +1,6 @@
 # hcj.js #
 
-A javascript library for web app frontend templating
+Javascript library for web app frontend templating
 
 ## Getting Started ##
 
@@ -39,13 +39,13 @@ Minimum dimensions bubble up repeatedly, not just once.  One image can be swappe
 
 Actual dimensions bubble down repeatedly too.  When a component's minimum dimensions change, its actual dimensions usually get adjusted.  And whenever the root component's container is resized, a new set of actual dimensions must be computed.
 
-## Broken Symmetry ##
+## Broken Symmetry, "oops" ##
 
 Width and Height are treated differently from each other.
 
 Think of a paragraph of text (or of your favorite website).  How tall it is depends on the width you're viewing it at.  This is true of all components.  Heights can depend on widths.
 
-The minimum dimensions that components bubble up do not consist of a `width : Number` and a `height : Number`.  They consist of a `width : Number` and a function `height : Number -> Number` that takes a width and returns the height that would be required at that width.
+A "minimum dimensions" does not consist of two numbers `width` and `height`.  It consists of a number `width`, and a function `height` that takes a width and returns the height that would be required at that width.
 
 ## Standard Library ##
 
@@ -78,7 +78,7 @@ Multi-line text.  Takes a min-width and some text, returns a component.
 
 `image :: ImageConfig -> Component`
 
-Image component.  At least one of the `ImageConfig`'s `useNativeSize`, `minWidth`, or `minHeight` properties must be set.
+Image component.  At least one of the ImageConfig's useNativeSize, minWidth, or minHeight properties must be set.
 
 * `src`: source, or stream of image sources
 * `useNativeSize`: if truthy, the component's minWidth and minHegiht are set to the image's native width and height
