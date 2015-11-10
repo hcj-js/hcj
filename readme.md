@@ -18,19 +18,31 @@ Edit `example.js` or compose your own components - and bootstrap them onto your 
 
 Components are the building blocks of this library.  Layouts glue components together to form new components.  A single piece of text can be a component; so can an entire web page.
 
-This makes it very easy to edit and rearrange your website.  Component you've defined can be moved around wherever you want, placed into any context.  And because they are content-size-aware, edits to them are risk-free.
+This leads to modular code that's very easy to edit, test, and rearrange.  Components you've defined can be moved around wherever you want, put into any context.
 
 ## How it works ##
 
-Basically, two things happen when you render a component onto a page.
+A `Component` is part of a page.  When you render a component, it can do whatever it wants: attach nodes to the page, sign up event handlers, even make network requests.  Importantly, a component's render function returns an "undo" function that, when called, reverts everything done by the render function.
+
+One component can be instanced many times, and each instance can be removed from the page independently using its undo function.
+
+
+Basically two things happen when you render a component:
 
 First, minimum dimensions bubble up.  The innermost components (text and images) measure themselves, and report their dimensions to their layouts.  The layouts use these to calculate their own minimum dimensions, and report these to their own parents.  This continues until the root component is reached.
 
-Second, actual dimensions bubble down.  A size is given to the root component.  It gives its children positions and sizes based on their minimum dimensions and its own actual size.  This repeats until the innermost components are reached.
+Second, actual dimensions bubble down.  You provide a size to the root component.  It gives its children positions and sizes based on their minimum dimensions and its own actual size.  This repeats until the innermost components are reached.
+
+
+To render a component, you need two things: a parent element, and a way to come up with actual dimensions, taking into account minimum dimensions.
+
+The function `rootComponent` does this.  By default, it uses `body` as the parent element.  Your component's minimum width is ignored; it is given the width of its parent element.  It is given exactly its own minimum height, and the parent element is resized to match.
 
 ## Layouts ##
 
-You have great freedom in how you design layouts.  You can shuffle your child components around, change their sizes on the fly, and fade them in and out, to name a few.
+Layouts are functions that take components and return a component.
+
+Layouts can do whatever they want to their child components.  shuffle them around, change their sizes on the fly, and fade them in and out, to name a few.
 
 Child components report their minimum dimensions to you; it's your responsibility as a layout to give them enough space.
 
