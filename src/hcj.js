@@ -2,7 +2,7 @@ var Stream = {
 	create: function () {
 		var ended = false;
 		
-		var valueD = Q.defer();
+		var valueD = $.Deferred();
 
 		var lastValue;
 		var listeners = [];
