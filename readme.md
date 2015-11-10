@@ -4,9 +4,11 @@ A javascript library for web app frontend templating
 
 ## Getting Started ##
 
-The `example/example.js` file shows what typical HCJ code looks like.  Components are defined, and then one is taken to be the root component.  Open `example/example.html` in a browser to see this code in action.
+The `example/example.js` file shows what typical HCJ code looks like.  Open `example.html` in a browser and see what happens.
 
-The components and layouts used in that file, and more, are described below.
+Read the last part of this readme to see what kinds of components and layouts there are.
+
+Edit `example.js` or compose your own components - and bootstrap them onto your pages with `rootComponent`.  It's really that simple.
 
 ## What's it like ##
 
