@@ -13,7 +13,7 @@ Edit `example.js` or compose your own components - and bootstrap them onto your 
 ## What's it like ##
 
 1. Define Components.
-2. ???
+2. Layer Components.
 3. Profit!
 
 Components are the building blocks of this library.  Layouts glue components together to form new components.  A single piece of text can be a component; so can an entire web page.
