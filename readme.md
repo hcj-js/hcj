@@ -22,7 +22,7 @@ This leads to modular code that's very easy to edit, test, and rearrange.  Compo
 
 ## How it works ##
 
-A `Component` is part of a page.  When you render a component, it can do whatever it wants: attach nodes to the page, sign up event handlers, even make network requests.  Importantly, a component's render function returns an "undo" function that, when called, reverts everything done by the render function.
+A `Component` is part of a page.  When you render a component, it can run any code.  It can attach nodes to the page, sign up event handlers, even make network requests.  Importantly, a component's render function returns an "undo" function that, when called, reverts everything done by the render function.
 
 One component can be instanced many times, and each instance can be removed from the page independently using its undo function.
 
@@ -42,7 +42,7 @@ The function `rootComponent` does this.  By default, it uses `body` as the paren
 
 Layouts are functions that take components and return a component.
 
-Layouts can do whatever they want to their child components.  shuffle them around, change their sizes on the fly, and fade them in and out, to name a few.
+Layouts can do anything to their child components: shuffle them around, change their sizes on the fly, fade them in and out, and more.
 
 Child components report their minimum dimensions to you; it's your responsibility as a layout to give them enough space.
 
