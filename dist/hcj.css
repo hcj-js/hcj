@@ -63,3 +63,29 @@ a:active {
     text-decoration: inherit;
     font-weight: inherit;
 }
+
+input {
+	border: none;
+	padding: 0;
+}
+
+input[type=checkbox]:not(old),
+input[type=radio   ]:not(old){
+  margin    : 0;
+  padding   : 0;
+}
+
+button {
+	border: none;
+	padding: 0px;
+	font: inherit;
+}
+strong {
+	font-weight: bold;
+}
+em {
+	font-style: italic;
+}
+p {
+	margin-bottom: 1em;
+}

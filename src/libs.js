@@ -262,53 +262,80 @@ var cssStream = function (style, valueS) {
 	};
 };
 
-var keepAspectRatio = function (c) {
-	return div.all([
-		child(c),
-		wireChildren(function (instance, context, i) {
-			i.minWidth.pushAll(instance.minWidth);
-			i.minHeight.pushAll(instance.minHeight);
-			
-			var ctx = {
-				top: Stream.create(),
-				left: Stream.create(),
-				width: Stream.create(),
-				height: Stream.create(),
-			};
+var keepAspectRatioCorner = function (config) {
+	config = config || {};
+	return function (c) {
+		return div.all([
+			child(c),
+			wireChildren(function (instance, context, i) {
+				i.minWidth.pushAll(instance.minWidth);
+				i.minHeight.pushAll(instance.minHeight);
+				
+				var ctx = {
+					top: Stream.create(),
+					left: Stream.create(),
+					width: Stream.create(),
+					height: Stream.create(),
+				};
 
-			Stream.combine([
-				instance.minWidth,
-				instance.minHeight,
-				context.width,
-				context.height,
-			], function (mw, mh, w, h) {
-				var ar = mw / mh;
-				var AR = w / h;
+				Stream.combine([
+					i.minWidth,
+					i.minHeight,
+					context.width,
+					context.height,
+				], function (mw, mh, w, h) {
+					var ar = mw / mh;
+					var AR = w / h;
 
-				// container is wider
-				if (AR > ar) {
-					var usedWidth = h * ar;
-					
-					ctx.top.push(0);
-					ctx.left.push((w - usedWidth) / 2);
-					ctx.width.push(usedWidth);
-					ctx.height.push(h);
-				}
-				// container is taller
-				else {
-					var usedHeight = w / ar;
-					
-					ctx.top.push((h - usedHeight) / 2);
-					ctx.left.push(0);
-					ctx.width.push(w);
-					ctx.height.push(usedHeight);
-				}
-			});
+					// container is wider
+					if (AR > ar) {
+						var usedWidth = h * ar;
 
-			return [ctx];
-		}),
-	]);
+						var left;
+						if (config.left) {
+							left = 0;
+						}
+						else if (config.right) {
+							left = w - usedWidth;
+						}
+						else {
+							left = (w - usedWidth) / 2;
+						}
+						
+						ctx.top.push(0);
+						ctx.left.push(left);
+						ctx.width.push(usedWidth);
+						ctx.height.push(h);
+					}
+					// container is taller
+					else {
+						var usedHeight = w / ar;
+
+						var top;
+						if (config.top) {
+							top = 0;
+						}
+						else if (config.bottom) {
+							top = h - usedHeight;
+						}
+						else {
+							top = (h - usedHeight) / 2;
+						}
+						
+						ctx.top.push(top);
+						ctx.left.push(0);
+						ctx.width.push(w);
+						ctx.height.push(usedHeight);
+					}
+				});
+
+				return [ctx];
+			}),
+		]);
+	};
 };
+
+var keepAspectRatio = keepAspectRatioCorner();
 
 var image = function (config) {
 	var srcStream = (config.src && config.src.map) ? config.src : Stream.once(config.src);
@@ -1025,7 +1052,7 @@ var alignTBM = function (tbm) {
 				var width = args.reduce(function (w, mw) {
 					return Math.max(w, mw);
 				}, 0);
-					return width;
+				return width;
 			});
 			minWidth.pushAll(instance.minWidth);
 			
@@ -1036,7 +1063,7 @@ var alignTBM = function (tbm) {
 				var height = args.reduce(function (h, mh) {
 					return h + mh;
 				}, 0);
-					return height;
+				return height;
 			}).pushAll(instance.minHeight);
 
 			return [{

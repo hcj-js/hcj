@@ -2,7 +2,7 @@ var Stream = {
 	create: function () {
 		var ended = false;
 		
-		var valueD = Q.defer();
+		var valueD = $.Deferred();
 
 		var lastValue;
 		var listeners = [];
@@ -537,15 +537,17 @@ var rootContext = function () {
 	};
 };
 
-var rootComponent = function (component, ctx) {
+var rootComponent = function (component, ctx, setContainerSize) {
 	var context = $.extend(rootContext(), ctx);
 	var instance = component.create(context);
 	instance.minHeight.pushAll(context.height);
-	context.width.map(function (w) {
-		context.$el.css('width', w);
-	});
-	context.height.map(function (h) {
-		context.$el.css('height', h);
-	});
+	if (setContainerSize) {
+		context.width.map(function (w) {
+			context.$el.css('width', w);
+		});
+		context.height.map(function (h) {
+			context.$el.css('height', h);
+		});
+	}
 	return instance;
 };
