@@ -226,7 +226,7 @@ var onThis = function (event) {
 						return function () {
 							disabled = false;
 						};
-					});
+					}, i);
 				}
 			});
 		};
@@ -246,10 +246,10 @@ var submitThis = onThis('click');
 var hoverThis = function (cb) {
 	return function (instance) {
 		instance.$el.on('mouseover', function () {
-			cb(true);
+			cb(true, instance);
 		});
 		instance.$el.on('mouseout', function () {
-			cb();
+			cb(false, instance);
 		});
 	};
 };
@@ -1296,18 +1296,34 @@ var dropdownPanel = function (source, panel, onOff, config) {
 	config.transition = config.transition || "0.5s";
 	return div.all([
 		componentName('dropdown-panel'),
-		child(panel),
+		child(div.all([
+			child(panel),
+			wireChildren(function (instance, context, i) {
+				i.minWidth.pushAll(instance.minWidth);
+				i.minHeight.pushAll(instance.minHeight);
+				i.$el.css('transition', 'top ' + config.transition);
+				instance.$el.css('pointer-events', 'none');
+				i.$el.css('pointer-events', 'initial');
+				i.$el.css('z-index', '1000');
+				return [{
+					width: context.width,
+					height: i.minHeight,
+					top: Stream.combine([onOff, i.minHeight], function (on, mh) {
+						return on ? 0 : -mh;
+					}),
+					left: Stream.once(0),
+				}];
+			}),
+			$css('overflow', 'hidden'),
+		])),
 		child(source),
 		wireChildren(function (instance, context, iPanel, iSource) {
 			iSource.minWidth.pushAll(instance.minWidth);
 			iSource.minHeight.pushAll(instance.minHeight);
-			iPanel.$el.css('transition', 'top ' + config.transition);
 			return [{
 				width: context.width,
 				height: iPanel.minHeight,
-				top: Stream.combine([onOff, iPanel.minHeight, context.height], function (on, mh, h) {
-					return on ? h : h - mh;
-				}),
+				top: context.height,
 				left: Stream.once(0),
 			}, {
 				width: context.width,
@@ -1855,7 +1871,6 @@ var tabs = function (list, stream) {
 		})),
 	]);
 };
-
 
 var matchStrings = function (stringsAndRouters) {
 	return function (str) {
