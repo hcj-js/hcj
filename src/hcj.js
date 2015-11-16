@@ -57,7 +57,7 @@ var Stream = {
 					return true;
 				});
 			},
-			promise: valueD.promise,
+			promise: valueD.promise(),
 			prop: function (str) {
 				return this.map(function (v) {
 					return v[str];
