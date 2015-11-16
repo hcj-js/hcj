@@ -350,8 +350,8 @@ var image = function (config) {
 			
 			i.$el.on('load', function () {
 				i.$el.css('display', '');
-				var nativeWidth = findMinWidth(i.$el);
-				var nativeHeight = findMinHeight(i.$el);
+				var nativeWidth = i.$el[0].naturalWidth;
+				var nativeHeight = i.$el[0].naturalHeight;
 				var aspectRatio = nativeWidth / nativeHeight;
 
 				var minWidth, minHeight;
