@@ -933,17 +933,19 @@ var padding = function (amount, c) {
 	else {
 		for (var key in amount) {
 			var lcKey = key.toLowerCase();
-			if (lcKey.indexOf('top') !== -1) {
-				top = amount[key];
-			}
-			if (lcKey.indexOf('bottom') !== -1) {
-				bottom = amount[key];
-			}
-			if (lcKey.indexOf('left') !== -1) {
-				left = amount[key];
-			}
-			if (lcKey.indexOf('right') !== -1) {
-				right = amount[key];
+			if (amount[key] !== null) {
+				if (lcKey.indexOf('top') !== -1) {
+					top = amount[key];
+				}
+				if (lcKey.indexOf('bottom') !== -1) {
+					bottom = amount[key];
+				}
+				if (lcKey.indexOf('left') !== -1) {
+					left = amount[key];
+				}
+				if (lcKey.indexOf('right') !== -1) {
+					right = amount[key];
+				}
 			}
 		}
 	}
