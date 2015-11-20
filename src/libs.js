@@ -1470,6 +1470,8 @@ var grid = function (config, cs) {
 	config.gutterSize = config.gutterSize || 0;
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
 	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
+
+	console.log(config);
 	
 	return padding(config.outerGutter ? config.gutterSize : 0, div.all([
 		componentName('grid'),
@@ -1655,6 +1657,19 @@ var extendToWindowBottom = function (c, distanceStream) {
 							   distanceStream,
 							   windowResize], function (mh, t, ta, distance) {
 								   return Math.max(mh, window.innerHeight - t - ta - distance);
+							   });
+	}, c);
+};
+
+var atMostWindowBottom = function (c, distanceStream) {
+	distanceStream = distanceStream || Stream.once(0);
+	return withMinHeightStream(function (instance, context) {
+		return Stream.combine([instance.minHeight,
+							   context.top,
+							   context.topAccum,
+							   distanceStream,
+							   windowResize], function (mh, t, ta, distance) {
+								   return Math.min(mh, window.innerHeight - t - ta - distance);
 							   });
 	}, c);
 };
