@@ -355,35 +355,25 @@ var image = function (config) {
 				var aspectRatio = nativeWidth / nativeHeight;
 
 				var minWidth, minHeight;
-				if (config.useNativeSize !== undefined) {
-					i.minWidth.push(nativeWidth);
-					i.minHeight.push(nativeHeight);
-				}
 				
-				if (config.minWidth !== undefined) {
+				if (config.minWidth !== null) {
 					minWidth = config.minWidth;
 					minHeight = minWidth / aspectRatio;
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
-				else if (config.minHeight !== undefined) {
+				else if (config.minHeight !== null) {
 					minHeight = config.minHeight;
 					minWidth = minHeight * aspectRatio;
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
-
-				if (config.chooseWidth !== undefined) {
-					context.height.map(function (height) {
-						return Math.max(config.chooseWidth, height * aspectRatio);
-					}).pushAll(i.minWidth);
+				else {
+					i.minWidth.push(nativeWidth);
 				}
-				
-				if (config.chooseHeight !== undefined) {
-					context.width.map(function (width) {
-						return Math.max(config.chooseHeight, width / aspectRatio);
-					}).pushAll(i.minHeight);
-				}
+				context.width.map(function (width) {
+					return width / aspectRatio;
+				}).pushAll(i.minHeight);
 			});
 		},
 	]);
