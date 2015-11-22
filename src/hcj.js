@@ -6,6 +6,7 @@ var Stream = {
 
 		var lastValue;
 		var listeners = [];
+		var children = [];
 
 		var pushValue = function (v) {
 			valueD.resolve(v);
@@ -23,6 +24,7 @@ var Stream = {
 			},
 			map: function (f) {
 				var stream = Stream.create();
+				children.push(stream);
 				if (lastValue !== undefined) {
 					stream.push(f(lastValue));
 				}
@@ -33,6 +35,7 @@ var Stream = {
 			},
 			reduce: function (f, v) {
 				var stream = Stream.once(v);
+				children.push(stream);
 				if (lastValue !== undefined) {
 					stream.push(f(stream.lastValue(), lastValue));
 				}
@@ -43,6 +46,7 @@ var Stream = {
 			},
 			filter: function (f) {
 				var stream = Stream.create();
+				children.push(stream);
 				if (lastValue !== undefined) {
 					f(lastValue, stream.push);
 				}
@@ -65,6 +69,7 @@ var Stream = {
 			},
 			delay: function (amount) {
 				var stream = Stream.create();
+				children.push(stream);
 				this.map(function (v) {
 					setTimeout(function () {
 						stream.push(v);
@@ -73,6 +78,9 @@ var Stream = {
 				return stream;
 			},
 			end: function () {
+				children.map(function (s) {
+					s.end();
+				});
 				ended = true;
 			},
 			push: pushValue,
