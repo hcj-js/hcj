@@ -1,3 +1,56 @@
+var color = function (c) {
+	return $.extend({
+		r: 0,
+		g: 0,
+		b: 0,
+		a: 1,
+	}, c);
+};
+var multiplyColor = function (amount) {
+	return function (c) {
+		return {
+			r: Math.min(255, c.r * amount),
+			g: Math.min(255, c.g * amount),
+			b: Math.min(255, c.b * amount),
+			a: c.a,
+		};
+	};
+};
+var desaturate = function (amount) {
+	return function (c) {
+		var average = (c.r + c.g + c.b) / 3;
+		var coAmount = 1 - amount;
+		return {
+			r: coAmount * c.r + amount * average,
+			g: coAmount * c.g + amount * average,
+			b: coAmount * c.b + amount * average,
+			a: c.a,
+		};
+	};
+};
+var colorBrightness = function (c) {
+	return (c.r + c.g + c.b) / (255 + 255 + 255);
+};
+var colorString = function (c) {
+	return 'rgba(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ',' + c.a + ')';
+};
+var rgbColorString = function (c) {
+	return 'rgb(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ')';
+};
+var transparent = color({
+	a: 0,
+});
+var black = color({
+	r: 0,
+	g: 0,
+	b: 0,
+});
+var white = color({
+	r: 255,
+	g: 255,
+	b: 255,
+});
+
 var Stream = {
 	create: function () {
 		var ended = false;
@@ -407,6 +460,7 @@ var el = function (name) {
 		};
 
 		var $el = $(document.createElement(name));
+		$el.css('pointer-events', 'none');
 		$el.css('position', 'absolute');
 		$el.css('visibility', 'hidden');
 		context.$el.append($el);
@@ -436,11 +490,11 @@ var el = function (name) {
 				$el.css('visibility', '');
 			});
 		});
-		context.backgroundColor.onValue(function (bgcolor) {
-			$el.css('background-color', bgcolor);
+		context.backgroundColor.onValue(function (backgroundColor) {
+			$el.css('background-color', colorString(backgroundColor));
 		});
-		context.fontColor.onValue(function (bgcolor) {
-			$el.css('color', bgcolor);
+		context.fontColor.onValue(function (fontColor) {
+			$el.css('color', colorString(fontColor));
 		});
 
 		var childComponentPs = [];
@@ -454,6 +508,11 @@ var el = function (name) {
 		var leftAccumStream = Stream.combine([context.leftAccum, context.left], function (a, b) {
 			return a + b;
 		});
+		var brightnessStream = Stream.combine([context.brightness, context.backgroundColor], function (parentBrightness, c) {
+			var brightness = colorBrightness(c);
+			return c.a * brightness +
+				(1 - c.a) * parentBrightness;
+		});
 		var newCtx = function (ctx) {
 			return {
 				$el: $el,
@@ -464,8 +523,9 @@ var el = function (name) {
 				leftAccum: leftAccumStream,
 				width: Stream.never(),
 				height: Stream.never(),
-				backgroundColor: Stream.once('rgba(0,0,0,0)'),
-				fontColor: Stream.once('inherit'),
+				backgroundColor: Stream.once(transparent),
+				fontColor: Stream.never(),
+				brightness: brightnessStream,
 			};
 		};
 		
@@ -505,11 +565,16 @@ var el = function (name) {
 			updateDimensions: function (onlyNonzero) {
 				var mw = findMinWidth(this.$el);
 				var mh = findMinHeight(this.$el);
-				if (!onlyNonzero || mw !== 0) {
-					this.minWidth.push(mw);
-				}
-				if (!onlyNonzero || mh !== 0) {
-					this.minHeight.push(mh);
+				// hack to do this - should really improve 'text' and
+				// 'paragraph' functions, and call updateDimensions in
+				// fewer places
+				if (this.$el.prop('tagName') !== 'IMG') {
+					if (!onlyNonzero || mw !== 0) {
+						this.minWidth.push(mw);
+					}
+					if (!onlyNonzero || mh !== 0) {
+						this.minHeight.push(mh);
+					}
 				}
 			},
 		};
@@ -540,14 +605,16 @@ var rootContext = function () {
 		scroll: windowScroll,
 		width: windowWidth,
 		height: Stream.never(),
-		backgroundColor: Stream.once('white'),
-		fontColor: Stream.once('black'),
+		backgroundColor: Stream.once(white),
+		fontColor: Stream.once(black),
+		brightness: Stream.once(1),
 	};
 };
 
 var rootComponent = function (component, ctx, setContainerSize) {
 	var context = $.extend(rootContext(), ctx);
 	var instance = component.create(context);
+
 	instance.minHeight.pushAll(context.height);
 	if (setContainerSize) {
 		context.width.map(function (w) {

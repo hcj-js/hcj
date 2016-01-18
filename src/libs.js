@@ -21,55 +21,6 @@ var url = function (str) {
 };
 
 
-var color = function (c) {
-	return $.extend({
-		r: 0,
-		g: 0,
-		b: 0,
-		a: 1,
-	}, c);
-};
-var multiplyColor = function (amount) {
-	return function (c) {
-		return {
-			r: Math.min(255, c.r * amount),
-			g: Math.min(255, c.g * amount),
-			b: Math.min(255, c.b * amount),
-			a: c.a,
-		};
-	};
-};
-var desaturate = function (amount) {
-	return function (c) {
-		var average = (c.r + c.g + c.b) / 3;
-		var coAmount = 1 - amount;
-		return {
-			r: coAmount * c.r + amount * average,
-			g: coAmount * c.g + amount * average,
-			b: coAmount * c.b + amount * average,
-			a: c.a,
-		};
-	};
-};
-var colorString = function (c) {
-	return 'rgba(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ',' + c.a + ')';
-};
-var rgbColorString = function (c) {
-	return 'rgb(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ')';
-};
-var transparent = color({
-	a: 0,
-});
-var black = color({
-	r: 0,
-	g: 0,
-	b: 0,
-});
-var white = color({
-	r: 255,
-	g: 255,
-	b: 255,
-});
 
 
 
@@ -120,7 +71,7 @@ var $html = function (html, setWidth) {
 var windowWidth = Stream.never();
 var windowHeight = Stream.never();
 var updateWindowWidth = function () {
-	windowWidth.push(document.body.clientWidth);
+	windowWidth.push(document.documentElement.clientWidth);
 };
 var updateWindowHeight = function () {
 	windowHeight.push(window.innerHeight);
@@ -187,18 +138,39 @@ var adjustMinSize = function (config) {
 		]);
 	};
 };
-var withBackgroundColor = function (bc) {
+var withBackgroundColor = function (stream, arg2) {
+	// stream is an object
+	if (!stream.map) {
+		stream = Stream.once({
+			backgroundColor: stream,
+			fontColor: arg2,
+		});
+	}
 	return function (i, context) {
-		context.backgroundColor.push(colorString(bc));
+		stream.map(function (colors) {
+			var bc = colors.backgroundColor;
+			var fc = colors.fontColor;
+			context.backgroundColor.push(bc);
+			setTimeout(function () {
+				setTimeout(function () {
+					var brightness = bc.a * colorBrightness(bc) +
+						(1 - bc.a) * context.brightness.lastValue();
+					context.fontColor.push(fc || (brightness > 0.5 ? black : white));
+				});
+			});
+		});
 	};
 };
 var withFontColor = function (fc) {
 	return function (i, context) {
-		context.fontColor.push(colorString(fc));
+		context.fontColor.push(fc);
 	};
 };
 
-var link = $css('cursor', 'pointer');
+var link = function (i) {
+	i.$el.css('cursor', 'pointer')
+		.css('pointer-events', 'all');
+};
 
 var componentName = function (name) {
 	return function (i) {
@@ -340,40 +312,52 @@ var keepAspectRatio = keepAspectRatioCorner();
 var image = function (config) {
 	var srcStream = (config.src && config.src.map) ? config.src : Stream.once(config.src);
 	return img.all([
+		$css('pointer-events', 'all'),
 		function (i, context) {
 			srcStream.map(function (src) {
 				i.$el.prop('src', src);
 			});
+			console.log("here 1");
 			i.minWidth.push(config.minWidth || config.chooseWidth || 0);
 			i.minHeight.push(config.minHeight || config.chooseHeight || 0);
 			i.$el.css('display', 'none');
-			
+
 			i.$el.on('load', function () {
+				console.log('load');
 				i.$el.css('display', '');
 				var nativeWidth = i.$el[0].naturalWidth;
 				var nativeHeight = i.$el[0].naturalHeight;
 				var aspectRatio = nativeWidth / nativeHeight;
 
 				var minWidth, minHeight;
-				
-				if (config.minWidth !== null) {
+
+				if (config.minWidth !== undefined && config.minWidth !== null) {
 					minWidth = config.minWidth;
 					minHeight = minWidth / aspectRatio;
+					console.log("here 2");
+					console.log(config);
+					console.log(minWidth);
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
-				else if (config.minHeight !== null) {
+				else if (config.minHeight !== undefined && config.minHeight !== null) {
 					minHeight = config.minHeight;
 					minWidth = minHeight * aspectRatio;
+					console.log("here 3");
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
 				else {
+					console.log("here 4");
 					i.minWidth.push(nativeWidth);
 				}
 				context.width.map(function (width) {
+					console.log(new Error().stack);
 					return width / aspectRatio;
 				}).pushAll(i.minHeight);
+			});
+			i.minWidth.map(function (mw) {
+				console.log('image min with: ' + mw);
 			});
 		},
 	]);
@@ -400,6 +384,7 @@ var text = function (text) {
 	
 	return div.all([
 		componentName('text'),
+		$css('pointer-events', 'all'),
 		function (instance, context) {
 			chooseHeightFromWidth(instance, context);
 			text.onValue(function (t) {
@@ -426,6 +411,7 @@ var paragraph = function (text, minWidth) {
 	
 	return div.all([
 		componentName('paragraph'),
+		$css('pointer-events', 'all'),
 		function (instance, context) {
 			chooseHeightFromWidth(instance, context);
 			instance.updateDimensions = function () {
@@ -451,6 +437,15 @@ var ignoreSurplusWidth = function (_, cols) {
 };
 var ignoreSurplusHeight = function (_, rows) {
 	return rows;
+};
+var centerSurplusWidth = function (gridWidth, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+	var widthPerCol = surplusWidth / positions.length;
+	positions.map(function (position, i) {
+		position.left += surplusWidth / 2;
+	});
+	return positions;
 };
 var evenSplitSurplusWidth = function (gridWidth, positions) {
 	var lastPosition = positions[positions.length - 1];
@@ -1337,7 +1332,10 @@ var dropdownPanel = function (source, panel, onOff, config) {
 		])),
 		child(source),
 		wireChildren(function (instance, context, iPanel, iSource) {
-			iSource.minWidth.pushAll(instance.minWidth);
+			Stream.combine([
+				iPanel.minWidth,
+				iSource.minWidth,
+			], Math.max).pushAll(instance.minWidth);
 			iSource.minHeight.pushAll(instance.minHeight);
 			return [{
 				width: context.width,
@@ -1471,8 +1469,6 @@ var grid = function (config, cs) {
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
 	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
 
-	console.log(config);
-	
 	return padding(config.outerGutter ? config.gutterSize : 0, div.all([
 		componentName('grid'),
 		children(cs),
@@ -1494,8 +1490,8 @@ var grid = function (config, cs) {
 
 			minWidths.map(function (mws) {
 				return mws.reduce(function (a, mw) {
-					return config.useFullWidth ? a + mw : Math.max(a, mw);
-				}, 0);
+					return config.useFullWidth ? a + mw + config.gutterSize : Math.max(a, mw) + config.gutterSize;
+				}, -config.gutterSize);
 			}).pushAll(instance.minWidth);
 
 			var contexts = is.map(function (i) {
@@ -1878,7 +1874,9 @@ var table = function (config, css) {
 var tabs = function (list, stream) {
 	var whichTab = stream || Stream.once(0);
 	return stack({}, [
-		sideBySide({}, list.map(function (item, index) {
+		sideBySide({
+			handleSurplusWidth: centerSurplusWidth,
+		}, list.map(function (item, index) {
 			return alignTBM({
 				bottom: toggleComponent([
 					item.tab.left,
@@ -1886,11 +1884,14 @@ var tabs = function (list, stream) {
 					item.tab.selected,
 				], whichTab.map(function (i) {
 					if (index < i) {
+						console.log("0");
 						return 0;
 					}
 					if (index > i) {
+						console.log("1");
 						return 1;
 					}
+					console.log("2");
 					return 2;
 				})).all([
 					link,
