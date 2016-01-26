@@ -460,7 +460,9 @@ var el = function (name) {
 		};
 
 		var $el = $(document.createElement(name));
-		$el.css('pointer-events', 'none');
+		if ($el.prop('tagName') === 'div') {
+			$el.css('pointer-events', 'none');
+		}
 		$el.css('position', 'absolute');
 		$el.css('visibility', 'hidden');
 		context.$el.append($el);
