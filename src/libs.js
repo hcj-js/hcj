@@ -376,13 +376,18 @@ var image = function (config) {
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
+				else if (config.useNativeWidth) {
+					i.minWidth.push(nativeWidth);
+					i.minHeight.push(nativeHeight);
+				}
 				else {
 					i.minWidth.push(nativeWidth);
 				}
-				context.width.map(function (width) {
-					console.log(width);
-					return width / aspectRatio;
-				}).pushAll(i.minHeight);
+				if (!config.useNativeWidth) {
+					context.width.map(function (width) {
+						return width / aspectRatio;
+					}).pushAll(i.minHeight);
+				}
 			});
 		},
 	]);
