@@ -460,8 +460,11 @@ var el = function (name) {
 		};
 
 		var $el = $(document.createElement(name));
-		if ($el.prop('tagName') === 'div') {
+		if ($el.prop('tagName').toLowerCase() === 'div') {
 			$el.css('pointer-events', 'none');
+		}
+		else {
+			$el.css('pointer-events', 'initial');
 		}
 		$el.css('position', 'absolute');
 		$el.css('visibility', 'hidden');
