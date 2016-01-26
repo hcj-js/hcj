@@ -22,7 +22,18 @@ var url = function (str) {
 
 
 
-
+var debugPrintHeight = function (instance) {
+	instance.minHeight.map(function (mh) {
+		console.log(mh);
+		console.log(new Error().stack);
+	});
+};
+var debugPrintWidth = function (instance) {
+	instance.minWidth.map(function (mw) {
+		console.log(mw);
+		console.log(new Error().stack);
+	});
+};
 
 
 // $$ :: String -> [*] -> Component -> Component
@@ -226,6 +237,21 @@ var hoverThis = function (cb) {
 	};
 };
 
+var hoverStream = function (stream, f) {
+	f = f || function (v) {
+		return v;
+	};
+	return function (instance) {
+		instance.$el.on('mouseover', function (ev) {
+			stream.push(f(ev));
+			ev.stopPropagation();
+		});
+		$('body').on('mouseover', function (ev) {
+			stream.push(f(false));
+		});
+	};
+};
+
 var cssStream = function (style, valueS) {
 	return function (instance) {
 		valueS.map(function (value) {
@@ -242,7 +268,7 @@ var keepAspectRatioCorner = function (config) {
 			wireChildren(function (instance, context, i) {
 				i.minWidth.pushAll(instance.minWidth);
 				i.minHeight.pushAll(instance.minHeight);
-				
+
 				var ctx = {
 					top: Stream.create(),
 					left: Stream.create(),
@@ -273,7 +299,7 @@ var keepAspectRatioCorner = function (config) {
 						else {
 							left = (w - usedWidth) / 2;
 						}
-						
+
 						ctx.top.push(0);
 						ctx.left.push(left);
 						ctx.width.push(usedWidth);
@@ -293,7 +319,7 @@ var keepAspectRatioCorner = function (config) {
 						else {
 							top = (h - usedHeight) / 2;
 						}
-						
+
 						ctx.top.push(top);
 						ctx.left.push(0);
 						ctx.width.push(w);
@@ -317,47 +343,46 @@ var image = function (config) {
 			srcStream.map(function (src) {
 				i.$el.prop('src', src);
 			});
-			console.log("here 1");
-			i.minWidth.push(config.minWidth || config.chooseWidth || 0);
-			i.minHeight.push(config.minHeight || config.chooseHeight || 0);
 			i.$el.css('display', 'none');
 
 			i.$el.on('load', function () {
-				console.log('load');
 				i.$el.css('display', '');
 				var nativeWidth = i.$el[0].naturalWidth;
 				var nativeHeight = i.$el[0].naturalHeight;
 				var aspectRatio = nativeWidth / nativeHeight;
+
+				var initialMinWidth =
+					config.minWidth ||
+					config.chooseWidth ||
+					nativeWidth;
+				var initialMinHeight =
+					config.minHeight ||
+					config.chooseHeight ||
+					(initialMinWidth / aspectRatio);
+				i.minWidth.push(initialMinWidth);
+				i.minHeight.push(initialMinHeight);
 
 				var minWidth, minHeight;
 
 				if (config.minWidth !== undefined && config.minWidth !== null) {
 					minWidth = config.minWidth;
 					minHeight = minWidth / aspectRatio;
-					console.log("here 2");
-					console.log(config);
-					console.log(minWidth);
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
 				else if (config.minHeight !== undefined && config.minHeight !== null) {
 					minHeight = config.minHeight;
 					minWidth = minHeight * aspectRatio;
-					console.log("here 3");
 					i.minWidth.push(minWidth);
 					i.minHeight.push(minHeight);
 				}
 				else {
-					console.log("here 4");
 					i.minWidth.push(nativeWidth);
 				}
 				context.width.map(function (width) {
-					console.log(new Error().stack);
+					console.log(width);
 					return width / aspectRatio;
 				}).pushAll(i.minHeight);
-			});
-			i.minWidth.map(function (mw) {
-				console.log('image min with: ' + mw);
 			});
 		},
 	]);
@@ -1685,10 +1710,10 @@ var overlays = function (cs) {
 
 			chooseLargest(is.map(function (i) {
 				return i.minHeight;
-			})).test().pushAll(instance.minHeight);
+			})).pushAll(instance.minHeight);
 			chooseLargest(is.map(function (i) {
 				return i.minWidth;
-			})).test().pushAll(instance.minWidth);
+			})).pushAll(instance.minWidth);
 			return [
 				is.map(function (i) {
 					return {
@@ -1884,14 +1909,11 @@ var tabs = function (list, stream) {
 					item.tab.selected,
 				], whichTab.map(function (i) {
 					if (index < i) {
-						console.log("0");
 						return 0;
 					}
 					if (index > i) {
-						console.log("1");
 						return 1;
 					}
-					console.log("2");
 					return 2;
 				})).all([
 					link,
@@ -1980,3 +2002,4 @@ var route = function (router) {
 		wireChildren(passThroughToFirst),
 	]);
 };
+
