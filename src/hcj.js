@@ -388,6 +388,27 @@ var component = function (build) {
 	return comp;
 };
 
+// Takes a function that can be used with and or all.  Returns a
+// function that can be used with compose.
+var liftC = function (f) {
+	return function (c) {
+		return c.and(f);
+	};
+};
+
+// Takes a function that takes arguments and returns a function that
+// can be used with and or all.  Returns a function that takes those
+// same arguments and returns a function that can be used with
+// compose.
+var liftCF = function (f) {
+	return function () {
+		var args = arguments;
+		return function (c) {
+			return c.and(f.apply(null, args));
+		};
+	};
+};
+
 var findOptimalHeight = function ($el, w) {
 	var $sandbox = $('.sandbox');
 	var $clone = $el.clone();

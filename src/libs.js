@@ -55,6 +55,8 @@ var $css = $$('css');
 var $attr = $$('attr');
 var $prop = $$('prop');
 
+var $cssC = liftCF($css);
+
 var chooseHeightFromWidth = function (instance, context) {
 	var choosingHeight = false;
 	context.width.onValue(function (w) {
@@ -517,7 +519,6 @@ var justifyAndCenterSurplusWidth = function (gridWidth, positions) {
 	});
 	return positions;
 };
-
 var superSurplusWidth = function (gridWidth, positions) {
 	var lastPosition = positions[positions.length - 1];
 	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
