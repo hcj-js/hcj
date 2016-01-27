@@ -149,35 +149,6 @@ var adjustMinSize = function (config) {
 		]);
 	};
 };
-var withBackgroundColor = function (stream, arg2) {
-	// stream is an object
-	if (!stream.map) {
-		stream = Stream.once({
-			backgroundColor: stream,
-			fontColor: arg2,
-		});
-	}
-	return function (i, context) {
-		stream.map(function (colors) {
-			var bc = colors.backgroundColor;
-			var fc = colors.fontColor;
-			context.backgroundColor.push(bc);
-			setTimeout(function () {
-				setTimeout(function () {
-					var brightness = bc.a * colorBrightness(bc) +
-						(1 - bc.a) * context.brightness.lastValue();
-					context.fontColor.push(fc || (brightness > 0.5 ? black : white));
-				});
-			});
-		});
-	};
-};
-var withFontColor = function (fc) {
-	return function (i, context) {
-		context.fontColor.push(fc);
-	};
-};
-
 var link = function (i) {
 	i.$el.css('cursor', 'pointer')
 		.css('pointer-events', 'all');
@@ -228,6 +199,7 @@ var submitThis = onThis('click');
 
 var hoverThis = function (cb) {
 	return function (instance) {
+		cb(false, instance);
 		instance.$el.on('mouseover', function () {
 			cb(true, instance);
 		});
@@ -258,6 +230,45 @@ var cssStream = function (style, valueS) {
 			instance.$el.css(style, value);
 		});
 	};
+};
+
+var withBackgroundColor = function (stream, arg2) {
+	// stream is an object
+	if (!stream.map) {
+		stream = Stream.once({
+			backgroundColor: stream,
+			fontColor: arg2,
+		});
+	}
+	return function (i, context) {
+		stream.map(function (colors) {
+			var bc = colors.backgroundColor;
+			var fc = colors.fontColor;
+			context.backgroundColor.push(bc);
+			setTimeout(function () {
+				setTimeout(function () {
+					var brightness = bc.a * colorBrightness(bc) +
+						(1 - bc.a) * context.brightness.lastValue();
+					context.fontColor.push(fc || (brightness > 0.5 ? black : white));
+				});
+			});
+		});
+	};
+};
+var withFontColor = function (fc) {
+	return function (i, context) {
+		context.fontColor.push(fc);
+	};
+};
+var hoverColor = function (backgroundColor, hoverBackgroundColor, fontColor, hoverFontColor) {
+	backgroundColor = colorString(backgroundColor || transparent);
+	hoverBackgroundColor = colorString(hoverBackgroundColor || backgroundColor);
+	fontColor = colorString(fontColor || black);
+	hoverFontColor = colorString(hoverFontColor || fontColor);
+	return hoverThis(function (h, instance) {
+		instance.$el.css('background-color', h ? backgroundColor : hoverBackgroundColor);
+		instance.$el.css('color', h ? fontColor : hoverFontColor);
+	});
 };
 
 var keepAspectRatioCorner = function (config) {
