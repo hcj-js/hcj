@@ -1,3 +1,12 @@
+var add = function (a, b) {
+	return a + b;
+};
+var mathMax = function (a, b) {
+	return Math.max(a, b);
+};
+var mathMin = function (a, b) {
+	return Math.min(a, b);
+};
 var passThroughToFirst = function (instance, context, i) {
 	i.minHeight.pushAll(instance.minHeight);
 	i.minWidth.pushAll(instance.minWidth);
@@ -194,6 +203,7 @@ var inputPropertychangeThis = onThis('input propertychange');
 var keydownThis = onThis('keydown');
 var keyupThis = onThis('keyup');
 var mousedownThis = onThis('mousedown');
+var mousemoveThis = onThis('mousemove');
 var mouseoverThis = onThis('mouseover');
 var mouseoutThis = onThis('mouseout');
 var mouseupThis = onThis('mouseup');
@@ -506,7 +516,7 @@ var justifySurplusWidth = function (gridWidth, positions) {
 	positions.map(function (position, i) {
 		for (var index = 0; index < i; index++) {
 			position.left += surplusWidth / (positions.length - 1);
-		}		
+		}
 	});
 	return positions;
 };
@@ -609,9 +619,7 @@ var slideshow = function (config, cs) {
 			});
 			
 			allMinWidths.onValue(function (mws) {
-				instance.minWidth.push(mws.reduce(function (a, mw) {
-					return a + mw;
-				}, config.gutterSize * (is.length - 1)));
+				instance.minWidth.push(mws.reduce(add, config.gutterSize * (is.length - 1)));
 			});
 			
 			var contexts = is.map(function () {
@@ -653,9 +661,7 @@ var slideshow = function (config, cs) {
 				return i.minHeight;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				var height = args.reduce(function (a, b) {
-					return Math.max(a, b);
-				}, 0);
+				var height = args.reduce(mathMax, 0);
 				
 				contexts.map(function (ctx) {
 					ctx.height.push(height);
@@ -684,9 +690,7 @@ var sideBySide = function (config, cs) {
 			});
 			
 			allMinWidths.onValue(function (mws) {
-				instance.minWidth.push(mws.reduce(function (a, mw) {
-					return a + mw;
-				}, config.gutterSize * (is.length - 1)));
+				instance.minWidth.push(mws.reduce(add, config.gutterSize * (is.length - 1)));
 			});
 			
 			var contexts = is.map(function () {
@@ -721,12 +725,94 @@ var sideBySide = function (config, cs) {
 				return i.minHeight;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				return args.reduce(function (a, b) {
-					return Math.max(a, b);
-				}, 0);
+				return args.reduce(mathMax, 0);
 			}).pushAll(instance.minHeight);
 			
 			return [contexts];
+		}),
+	]);
+};
+
+var slider = function (config, cs) {
+	var grabbedS = Stream.once(false);
+	var edge = {
+		left: 'left',
+		right: 'right',
+	};
+	var stateS = Stream.once({
+		index: 0,
+		edge: 'left',
+	});
+	return div.all([
+		componentName('slider'),
+		children(cs),
+		wireChildren(function (instance, context, is) {
+			var allMinWidths = Stream.combine(is.map(function (i) {
+				return i.minWidth;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				return args;
+			});
+			allMinWidths.onValue(function (mws) {
+				instance.minWidth.push(mws.reduce(mathMax, 0));
+			});
+
+			Stream.combine(is.map(function (i) {
+				return i.minHeight;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				return args.reduce(mathMax, 0);
+			}).pushAll(instance.minHeight);
+
+			var leftS = Stream.combine([
+				context.width,
+				allMinWidths,
+				stateS,
+				grabbedS
+			], function (width, mws, state, grabbed) {
+				// configure left to be the left parameter of the first article in the slider
+				var left = state.edge === 'left' ? 0 : width; // would love to case split
+				mws.map(function (mw, index) {
+					if (index < state.index) {
+						left += mw;
+					}
+					if (state.edge === 'right' && index === state.index) {
+						left += mw;
+					}
+					return a + mw;
+				});
+				if (grabbed !== false) {
+					left += grabbed;
+				}
+			});
+
+			var leftsS = Stream.combine([
+				allMinWidths,
+				leftS,
+			], function (mws, left) {
+				return mws.reduce(add, left);
+			});
+
+			return [is.map(function (i, index) {
+				return {
+					top: Stream.once(0),
+					left: leftsS.map(function (lefts) {
+						return lefts[index];
+					}),
+					width: i.minWidth,
+					height: context.height,
+				};
+			})];
+		}),
+	]).all([
+		mousedownThis(function () {
+			grabbedS.push(0);
+		}),
+		mouseupThis(function () {
+			grabbedS.push(false);
+		}),
+		mousemoveThis(function (ev) {
+			debugger;
 		}),
 	]);
 };
@@ -746,9 +832,7 @@ var stack2 = function (config, cs) {
 			});
 			
 			allMinHeights.onValue(function (mhs) {
-				instance.minHeight.push(mhs.reduce(function (a, mh) {
-					return a + mh;
-				}, config.gutterSize * (is.length - 1)));
+				instance.minHeight.push(mhs.reduce(add, config.gutterSize * (is.length - 1)));
 			});
 			
 			var contexts = is.map(function () {
@@ -783,9 +867,7 @@ var stack2 = function (config, cs) {
 				return i.minWidth;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				return args.reduce(function (a, b) {
-					return Math.max(a, b);
-				}, 0);
+				return args.reduce(mathMax, 0);
 			}).pushAll(instance.minWidth);
 			
 			return [contexts];
@@ -871,9 +953,7 @@ var stack = function (options, cs) {
 					
 					if (options && options.mhs && options.mhs[index]) {
 						var optionMinHeight = options.mhs[index](context);
-						return Stream.combine([i.minHeight, optionMinHeight], function (a, b) {
-							return Math.max(a, b);
-						});
+						return Stream.combine([i.minHeight, optionMinHeight], mathMax);
 					}
 					else {
 						return i.minHeight;
@@ -897,9 +977,7 @@ var stack = function (options, cs) {
 				
 				if (options && options.mhs && options.mhs[is.length]) {
 					var optionMinHeight = options.mhs[is.length](context);
-					iMinHeight = Stream.combine([i.minHeight, optionMinHeight], function (a, b) {
-						return Math.max(a, b);
-					});
+					iMinHeight = Stream.combine([i.minHeight, optionMinHeight], mahtMax);
 				}
 				else {
 					iMinHeight = i.minHeight;
@@ -921,9 +999,7 @@ var stack = function (options, cs) {
 				return i.minWidth;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				return args.reduce(function (a, b) {
-					return Math.max(a, b);
-				}, 0);
+				return args.reduce(mathMax, 0);
 			}).pushAll(instance.minWidth);
 			
 			return [contexts];
@@ -1050,9 +1126,7 @@ var alignLRM = function (lrm) {
 			}).pushAll(instance.minWidth);
 
 			var minAvailableRequested = function (available, requested) {
-				return Stream.combine([available, requested], function (a, r) {
-					return Math.min(a, r);
-				});
+				return Stream.combine([available, requested], mathMin);
 			};
 			var mWidth = minAvailableRequested(context.width, mI.minWidth);
 			var lWidth = minAvailableRequested(context.width, lI.minWidth);
@@ -1431,18 +1505,14 @@ var fixedHeaderBody = function (config, header, body) {
 				return i.minHeight;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				return args.reduce(function (a, i) {
-					return a + i;
-				}, 0);
+				return args.reduce(add, 0);
 			}).pushAll(instance.minHeight);
 			
 			Stream.combine([bodyI, headerI].map(function (i) {
 				return i.minWidth;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				return args.reduce(function (a, i) {
-					return Math.max(a, i);
-				}, 0);
+				return args.reduce(mathMax, 0);
 			}).pushAll(instance.minWidth);
 
 			return [{
@@ -1472,9 +1542,7 @@ var stickyHeaderBody = function (body1, header, body2) {
 				return i.minHeight;
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
-				return args.reduce(function (a, i) {
-					return a + i;
-				}, 0);
+				return args.reduce(add, 0);
 			}).pushAll(instance.minHeight);
 			
 			var fixedNow = false;
@@ -1485,9 +1553,7 @@ var stickyHeaderBody = function (body1, header, body2) {
 				width: context.width,
 				height: body1I.minHeight,
 			}, {
-				top: Stream.combine([body1I.minHeight, headerI.minHeight], function (a, b) {
-					return a + b;
-				}),
+				top: Stream.combine([body1I.minHeight, headerI.minHeight], add),
 				left: Stream.once(0),
 				width: context.width,
 				height: body2I.minHeight,
@@ -1738,9 +1804,7 @@ var overlays = function (cs) {
 			var chooseLargest = function (streams) {
 				return Stream.combine(streams, function () {
 					var args = Array.prototype.slice.call(arguments);
-					return args.reduce(function (a, v) {
-						return Math.max(a, v);
-					}, 0);
+					return args.reduce(mathMax, 0);
 				});
 			};
 
@@ -1893,9 +1957,7 @@ var table = function (config, css) {
 					return i.minHeight;
 				}), function () {
 					var args = Array.prototype.slice.call(arguments);
-					return args.reduce(function (a, mh) {
-						return Math.max(a, mh);
-					}, 0);
+					return args.reduce(mathMax, 0);
 				}));
 				return a;
 			}, []);
