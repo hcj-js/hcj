@@ -519,6 +519,19 @@ var justifyAndCenterSurplusWidth = function (gridWidth, positions) {
 	});
 	return positions;
 };
+var surplusWidthAlign = function (t) {
+	return function (gridWidth, positions) {
+		var lastPosition = positions[positions.length - 1];
+		var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+		positions.map(function (position, i) {
+			position.left += t * surplusWidth;
+		});
+		return positions;
+	};
+};
+var surplusWidthAlignLeft = surplusWidthAlign(0);
+var surplusWidthAlignCenter = surplusWidthAlign(0.5);
+var surplusWidthAlignRight = surplusWidthAlign(1);
 var superSurplusWidth = function (gridWidth, positions) {
 	var lastPosition = positions[positions.length - 1];
 	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
