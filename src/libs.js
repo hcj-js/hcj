@@ -1001,6 +1001,12 @@ var padding = function (amount, c) {
 	]);
 };
 
+var margin = function (amount) {
+	return function (c) {
+		return padding(amount, c);
+	};
+};
+
 var alignLRM = function (lrm) {
 	return div.all([
 		componentName('alignLRM'),

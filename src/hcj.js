@@ -379,6 +379,11 @@ var component = function (build) {
 				return c.and(f);
 			}, this);
 		},
+		compose: function (fs) {
+			return fs.reduce(function (c, f) {
+				return f(c);
+			}, this);
+		},
 	};
 	return comp;
 };
