@@ -734,6 +734,8 @@ var sideBySide = function (config, cs) {
 };
 
 var slider = function (config, cs) {
+	config = config || {};
+	config.leftTransition = config.leftTransition || '0s';
 	var grabbedS = Stream.once(false);
 	var edge = {
 		left: 'left',
@@ -743,8 +745,10 @@ var slider = function (config, cs) {
 		index: 0,
 		edge: 'left',
 	});
+	var xCoord = 0;
 	return div.all([
 		componentName('slider'),
+		$css('overflow-x', 'hidden'),
 		children(cs),
 		wireChildren(function (instance, context, is) {
 			var allMinWidths = Stream.combine(is.map(function (i) {
@@ -752,6 +756,9 @@ var slider = function (config, cs) {
 			}), function () {
 				var args = Array.prototype.slice.call(arguments);
 				return args;
+			});
+			var totalMinWidthS = allMinWidths.map(function (mws) {
+				return mws.reduce(add, 0);
 			});
 			allMinWidths.onValue(function (mws) {
 				instance.minWidth.push(mws.reduce(mathMax, 0));
@@ -774,23 +781,113 @@ var slider = function (config, cs) {
 				var left = state.edge === 'left' ? 0 : width; // would love to case split
 				mws.map(function (mw, index) {
 					if (index < state.index) {
-						left += mw;
+						left -= mw;
 					}
 					if (state.edge === 'right' && index === state.index) {
-						left += mw;
+						left -= mw;
 					}
-					return a + mw;
 				});
 				if (grabbed !== false) {
 					left += grabbed;
 				}
+				return left;
 			});
 
 			var leftsS = Stream.combine([
 				allMinWidths,
 				leftS,
 			], function (mws, left) {
-				return mws.reduce(add, left);
+				return mws.reduce(function (acc, v) {
+					acc.arr.push(acc.lastValue);
+					acc.lastValue += v;
+					return acc;
+				}, {
+					arr: [],
+					lastValue: left,
+				}).arr;
+			});
+
+			instance.$el.css('user-select', 'none');
+			instance.$el.on('mousedown', function () {
+				grabbedS.push(0);
+				is.map(function (i) {
+					i.$el.css('transition', 'left 0s');
+				});
+			});
+			var release = function (ev) {
+				is.map(function (i) {
+					i.$el.css('transition', 'left ' + config.leftTransition);
+				});
+				var mws = allMinWidths.lastValue();
+				var width = context.width.lastValue();
+				var grabbed = grabbedS.lastValue();
+				if (!grabbed) {
+					return;
+				}
+				var left = leftS.lastValue();
+				// array of sums of min widths
+				var edgeScrollPoints = mws.reduce(function (a, mw) {
+					var last = a[a.length - 1];
+					a.push(last - mw);
+					return a;
+				}, [0]);
+				var closest = edgeScrollPoints.reduce(function (a, scrollPoint, index) {
+					var leftDistanceHere = Math.abs(scrollPoint - left);
+					var rightDistanceHere = Math.abs(scrollPoint - (left - width));
+					return {
+						left: leftDistanceHere < a.left.distance ? {
+							distance: leftDistanceHere,
+							index: index,
+						} : a.left,
+						right: rightDistanceHere < a.right.distance ? {
+							distance: rightDistanceHere,
+							index: index - 1,
+						} : a.right,
+					};
+				}, {
+					left: {
+						distance: Number.MAX_VALUE,
+						index: -1,
+					},
+					right: {
+						distance: Number.MAX_VALUE,
+						index: -1,
+					},
+				});
+				if (closest.left.distance <= closest.right.distance) {
+					stateS.push({
+						index: closest.left.index,
+						edge: 'left',
+					});
+				}
+				else {
+					stateS.push({
+						index: closest.right.index,
+						edge: 'right',
+					});
+				}
+				grabbedS.push(false);
+				ev.preventDefault();
+			};
+			instance.$el.on('mouseup', release);
+			instance.$el.on('mouseout', release);
+			instance.$el.on('mousemove', function (ev) {
+				var grabbed = grabbedS.lastValue();
+				var totalMinWidth = totalMinWidthS.lastValue();
+				var width = context.width.lastValue();
+				var left = leftS.lastValue();
+				if (grabbed !== false) {
+					var dx = ev.clientX - xCoord;
+					var left2 = left + dx;
+					left2 = Math.min(0, left2);
+					if (totalMinWidth > width) {
+						left2 = Math.max(width - totalMinWidth, left2);
+					}
+					dx = left2 - left;
+					grabbed = grabbed + dx;
+					grabbedS.push(grabbed);
+				}
+				xCoord = ev.clientX;
 			});
 
 			return [is.map(function (i, index) {
@@ -805,15 +902,6 @@ var slider = function (config, cs) {
 			})];
 		}),
 	]).all([
-		mousedownThis(function () {
-			grabbedS.push(0);
-		}),
-		mouseupThis(function () {
-			grabbedS.push(false);
-		}),
-		mousemoveThis(function (ev) {
-			debugger;
-		}),
 	]);
 };
 
