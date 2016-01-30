@@ -618,6 +618,7 @@ var a = el('a');
 var button = el('button');
 var div = el('div');
 var form = el('form');
+var iframe = el('iframe');
 var img = el('img');
 var input = el('input');
 var li = el('li');
