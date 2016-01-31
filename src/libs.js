@@ -207,7 +207,7 @@ var mousemoveThis = onThis('mousemove');
 var mouseoverThis = onThis('mouseover');
 var mouseoutThis = onThis('mouseout');
 var mouseupThis = onThis('mouseup');
-var submitThis = onThis('click');
+var submitThis = onThis('submit');
 
 var hoverThis = function (cb) {
 	return function (instance) {
@@ -309,7 +309,8 @@ var keepAspectRatioCorner = function (config) {
 					var AR = w / h;
 
 					// container is wider
-					if (AR > ar) {
+					if ((!config.fillSpace && AR > ar) ||
+						(config.fillSpace && ar < AR)) {
 						var usedWidth = h * ar;
 
 						var left;
@@ -357,6 +358,9 @@ var keepAspectRatioCorner = function (config) {
 };
 
 var keepAspectRatio = keepAspectRatioCorner();
+var keepAspectRatioFill = keepAspectRatioCorner({
+	fillSpace: true,
+});
 
 var image = function (config) {
 	var srcStream = (config.src && config.src.map) ? config.src : Stream.once(config.src);
@@ -749,6 +753,7 @@ var slider = function (config, cs) {
 	return div.all([
 		componentName('slider'),
 		$css('overflow-x', 'hidden'),
+		$css('cursor', 'grab; -webkit-grab; -moz-grab;'),
 		children(cs),
 		wireChildren(function (instance, context, is) {
 			var allMinWidths = Stream.combine(is.map(function (i) {
@@ -808,7 +813,8 @@ var slider = function (config, cs) {
 			});
 
 			instance.$el.css('user-select', 'none');
-			instance.$el.on('mousedown', function () {
+			instance.$el.on('mousedown', function (ev) {
+				ev.preventDefault();
 				grabbedS.push(0);
 				is.map(function (i) {
 					i.$el.css('transition', 'left 0s');
