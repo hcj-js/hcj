@@ -463,15 +463,17 @@ var findMinHeight = function ($el) {
 };
 
 var updateDomFuncs = [];
+var applyFunc = function (f) {
+	f.$el.css(f.prop, f.value);
+};
+var runDomFuncs = function () {
+	updateDomFuncs.map(applyFunc);
+	updateDomFuncs = [];
+	updateWindowWidth();
+};
 var updateDomFunc = function (func) {
 	if (updateDomFuncs.length === 0) {
-		setTimeout(function () {
-			updateDomFuncs.map(function (f) {
-				f();
-			});
-			updateDomFuncs = [];
-			updateWindowWidth();
-		});
+		setTimeout(runDomFuncs);
 	}
 	updateDomFuncs.push(func);
 };
@@ -497,28 +499,38 @@ var el = function (name) {
 		context.$el.append($el);
 		
 		context.top.onValue(function (t) {
-			updateDomFunc(function () {
-				$el.css('top', px(t));
+			updateDomFunc({
+				$el: $el,
+				prop: 'top',
+				value: px(t),
 			});
 		});
 		context.left.onValue(function (l) {
-			updateDomFunc(function () {
-				$el.css('left', px(l));
+			updateDomFunc({
+				$el: $el,
+				prop: 'left',
+				value: px(l),
 			});
 		});
 		context.width.onValue(function (w) {
-			updateDomFunc(function () {
-				$el.css('width', px(w));
+			updateDomFunc({
+				$el: $el,
+				prop: 'width',
+				value: px(w),
 			});
 		});
 		context.height.onValue(function (h) {
-			updateDomFunc(function () {
-				$el.css('height', px(h));
+			updateDomFunc({
+				$el: $el,
+				prop: 'height',
+				value: px(h),
 			});
 		});
 		Stream.combine([context.width, context.height, context.top, context.left], function () {
-			updateDomFunc(function () {
-				$el.css('visibility', '');
+			updateDomFunc({
+				$el: $el,
+				prop: 'visibility',
+				value: '',
 			});
 		});
 		context.backgroundColor.onValue(function (backgroundColor) {
