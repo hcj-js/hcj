@@ -287,6 +287,7 @@ var keepAspectRatioCorner = function (config) {
 	config = config || {};
 	return function (c) {
 		return div.all([
+			$css('overflow', 'hidden'),
 			child(c),
 			wireChildren(function (instance, context, i) {
 				i.minWidth.pushAll(instance.minWidth);
@@ -310,7 +311,7 @@ var keepAspectRatioCorner = function (config) {
 
 					// container is wider
 					if ((!config.fillSpace && AR > ar) ||
-						(config.fillSpace && ar < AR)) {
+						(config.fillSpace && AR < ar)) {
 						var usedWidth = h * ar;
 
 						var left;
@@ -673,6 +674,85 @@ var slideshow = function (config, cs) {
 				
 				return height;
 			}).pushAll(instance.minHeight);
+
+			return [contexts];
+		}),
+	]);
+};
+var slideshowVertical = function (config, cs) {
+	config.gutterSize = config.gutterSize || 0;
+	config.topTransition = config.topTransition || 'none';
+	config.alwaysFullHeight = config.alwaysFullHeight || false;
+	return div.all([
+		$css('overflow', 'hidden'),
+		componentName('slideshow'),
+		children(cs.map(function (c) {
+			return c.all([
+				$css('transition', 'top ' + config.topTransition),
+			]);
+		})),
+		wireChildren(function (instance, context, is) {
+			var allMinHeights = Stream.combine(is.map(function (i) {
+				return i.minHeight;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				return args;
+			});
+
+			allMinHeights.onValue(function (mhs) {
+				instance.minHeight.push(mhs.reduce(mathMax, 0));
+			});
+
+			var contexts = is.map(function (i) {
+				return {
+					top: Stream.never(),
+					left: Stream.once(0),
+					width: context.width,
+					height: i.minHeight,
+				};
+			});
+
+			Stream.all([
+				config.selected,
+				context.height,
+				allMinHeights
+			], function (selected, height, mhs) {
+				var selectedTop = 0;
+				var selectedHeight = 0;
+				var top = 0;
+				var positions = mhs.map(function (mh, index) {
+					mh = config.alwaysFullHeight ? height : mh;
+					if (selected === index) {
+						selectedTop = top + config.gutterSize * index;
+						selectedHeight = mh;
+					}
+					var position = {
+						top: top + config.gutterSize * index,
+						height: mh
+					};
+					top += mh;
+					return position;
+				});
+				var dTop = (height - selectedHeight) / 2 - selectedTop;
+				positions.map(function (position) {
+					position.top += dTop;
+				});
+
+				positions.map(function (position, index) {
+					var ctx = contexts[index];
+					ctx.top.push(position.top);
+					ctx.height.push(position.height);
+				});
+			});
+
+			Stream.combine(is.map(function (i) {
+				return i.minWidth;
+			}), function () {
+				var args = Array.prototype.slice.call(arguments);
+				var width = args.reduce(mathMax, 0);
+
+				return width;
+			}).pushAll(instance.minWidth);
 
 			return [contexts];
 		}),
