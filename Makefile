@@ -5,4 +5,6 @@ css:
 	cp ./src/*.css ./dist
 
 js:
-	uglifyjs ./src/*.js -mo ./dist/hcj.js
+	mkdir -p tmp
+	cd ./src; find -name '*.js' | sed 's/\.\/\(.*\)\.js/\1/' | xargs -I file sed "s/define(/define('file', /" ./file.js > ../tmp/hcj.js
+	uglifyjs ./tmp/hcj.js -mo ./dist/hcj.js
