@@ -154,6 +154,14 @@ var Stream = {
 				}, 5000);
 				return this;
 			},
+			cases: function (streams, indexS) {
+				streams.push(indexS);
+				return Stream.combine(streams, function () {
+					var args = Array.prototype.slice.call(arguments);
+					var index = args.pop();
+					return args[index];
+				});
+			},
 		};
 	},
 	once: function (v) {

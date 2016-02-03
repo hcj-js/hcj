@@ -278,8 +278,8 @@ var hoverColor = function (backgroundColor, hoverBackgroundColor, fontColor, hov
 	fontColor = colorString(fontColor || black);
 	hoverFontColor = colorString(hoverFontColor || fontColor);
 	return hoverThis(function (h, instance) {
-		instance.$el.css('background-color', h ? backgroundColor : hoverBackgroundColor);
-		instance.$el.css('color', h ? fontColor : hoverFontColor);
+		instance.$el.css('background-color', h ? hoverBackgroundColor : backgroundColor);
+		instance.$el.css('color', h ? hoverFontColor : fontColor);
 	});
 };
 
@@ -1419,36 +1419,44 @@ var invertOnHover = function (c) {
 	]);
 };
 
-var border = function (color, amount, c) {
+var border = function (colorS, amount, c) {
 	var left = amount.left || amount.all || 0;
 	var right = amount.right || amount.all || 0;
 	var top = amount.top || amount.all || 0;
 	var bottom = amount.bottom || amount.all || 0;
 	var radius = amount.radius || 0;
 
-	var colorstring = colorString(color);
-	
+	if (!colorS.onValue) {
+		colorS = Stream.once(colorS);
+	}
+
+	var colorStringS = colorS.map(colorString);
+
 	return div.all([
 		componentName('border'),
 		child(div.all([
 			componentName('border-child'),
-			$css('border-left', px(left) + ' solid ' + colorstring),
-			$css('border-right', px(right) + ' solid ' + colorstring),
-			$css('border-top', px(top) + ' solid ' + colorstring),
-			$css('border-bottom', px(bottom) + ' solid ' + colorstring),
 			$css('border-radius', px(radius)),
 			child(c),
 			wireChildren(passThroughToFirst),
 		])),
+		function (i) {
+			colorStringS.map(function (colorstring) {
+				i.$el.css('border-left', px(left) + ' solid ' + colorstring);
+				i.$el.css('border-right', px(right) + ' solid ' + colorstring);
+				i.$el.css('border-top', px(top) + ' solid ' + colorstring);
+				i.$el.css('border-bottom', px(bottom) + ' solid ' + colorstring);
+			});
+		},
 		wireChildren(function (instance, context, i) {
 			i.minWidth.map(function (mw) {
 				return mw + left + right;
 			}).pushAll(instance.minWidth);
-			
+
 			i.minHeight.map(function (mh) {
 				return mh + top + bottom;
 			}).pushAll(instance.minHeight);
-			
+
 			return [{
 				top: Stream.once(0),
 				left: Stream.once(0),

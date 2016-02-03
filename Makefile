@@ -5,4 +5,6 @@ css:
 	cp ./src/*.css ./dist
 
 js:
-	uglifyjs ./src/*.js -mo ./dist/hcj.js
+	uglifyjs ./src/hcj.js \
+	         ./src/libs.js \
+	         -mo ./dist/hcj.js
