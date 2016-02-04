@@ -1516,6 +1516,55 @@ var componentStream = function (cStream) {
 	]);
 };
 
+var componentStreamWithExit = function (cStream, exit) {
+	var i;
+	return div.all([
+		componentName('component-stream'),
+		function (instance, context) {
+			var ctx = instance.newCtx();
+			ctx.top.push(0);
+			ctx.left.push(0);
+			context.width.pushAll(ctx.width);
+			context.height.pushAll(ctx.height);
+
+			var localCStream = Stream.create();
+			cStream.pushAll(localCStream);
+			localCStream.map(function (c) {
+				var instanceC = function (c) {
+					if (i) {
+						(function (i) {
+							exit(i).then(function () {
+								i.destroy();
+							});
+						})(i);
+					}
+					i = c.create(ctx);
+					i.$el.css('transition', 'inherit');
+					i.minWidth.pushAll(instance.minWidth);
+					i.minHeight.pushAll(instance.minHeight);
+				};
+				if (c.then) {
+					c.then(function (c) {
+						instanceC(c);
+					}, function (error) {
+						console.error('child components failed to load');
+						console.log(error);
+					});
+				}
+				else {
+					instanceC(c);
+				}
+			});
+			return function () {
+				localCStream.end();
+				if (i) {
+					i.destroy();
+				}
+			};
+		},
+	]);
+};
+
 var promiseComponent = function (cP) {
 	var stream = Stream.once(nothing);
 	cP.then(function (c) {
