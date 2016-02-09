@@ -52,9 +52,34 @@ var $$ = function (func) {
 		var args = Array.prototype.slice.call(arguments);
 		return function (i) {
 			i.$el[func].apply(i.$el, args);
-			setTimeout(function () {
+			if (i.$el.hasClass('text') ||
+				i.$el.hasClass('paragraph') ||
+				i.$el.hasClass('image')) {
 				i.updateDimensions(true);
-			});
+				if (!i.$el.hasClass('waiting-for-width')) {
+					i.$el.addClass('waiting-for-width');
+					// record old min width
+					var mw = findMinWidth(i.$el);
+					var initialWait = 1000;
+					var exp = 1.1;
+					// see if min width has changed
+					var tryNewWidth = function (waitTime) {
+						return function () {
+							var mw2 = findMinWidth(i.$el);
+							if (mw2 !== mw) {
+								i.updateDimensions(true);
+								i.$el.removeClass('waiting-for-width');
+							}
+							else {
+								// exponential backoff
+								setTimeout(tryNewWidth(waitTime * exp), waitTime);
+							}
+						};
+					};
+					// if width hasn't immediately changed, then wait
+					setTimeout(tryNewWidth(initialWait));
+				}
+			}
 		};
 	};
 };
@@ -366,6 +391,7 @@ var keepAspectRatioFill = keepAspectRatioCorner({
 var image = function (config) {
 	var srcStream = (config.src && config.src.map) ? config.src : Stream.once(config.src);
 	return img.all([
+		componentName('image'),
 		$css('pointer-events', 'all'),
 		function (i, context) {
 			srcStream.map(function (src) {
