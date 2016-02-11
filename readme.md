@@ -210,3 +210,14 @@ Takes a stream of components, returns a component.  Each time the stream yields 
 Useful for displaying ajax spinners and replacing them with content as it arrives.
 
 Minimum dimensions of a `componentStream` are always the minimum dimensions of the latest componment in the stream.
+
+
+## Version 2 ##
+
+Version 2 is in progress in the v2 branch.  Improvements include:
+
+Require.js is now being used for dependency management.  This library no longer pollutes the window object.
+
+Pages are now represented as data structures.  This makes them easier to edit and render how you choose.  It will enable things like server-side rendering and drag & drop editors.
+
+Core library is more efficient.  Leaks far less memory.  Creates fewer closures.  The `Stream` interface has safer and faster implementations.
