@@ -450,7 +450,9 @@ var image = function (config) {
 var linkTo = function (href, c) {
 	return a.all([
 		$prop('href', href),
-		child(c),
+		child(c.all([
+			$css('pointer-events', 'initial'),
+		])),
 		wireChildren(passThroughToFirst),
 	]);
 };
