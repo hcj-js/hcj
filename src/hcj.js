@@ -657,7 +657,7 @@ var rootContext = function () {
 		scroll: windowScroll,
 		width: windowWidth,
 		height: Stream.never(),
-		backgroundColor: Stream.once(white),
+		backgroundColor: Stream.once(transparent),
 		fontColor: Stream.once(black),
 		brightness: Stream.once(1),
 	};
