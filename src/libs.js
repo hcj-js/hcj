@@ -662,7 +662,7 @@ var slideshow = function (config, cs) {
 					width: Stream.never(),
 					height: context.height,};});
 
-			Stream.all([config.selected, context.width, allMinWidths], function (selected, width, mws) {
+			Stream.all([config.selectedS, context.width, allMinWidths], function (selected, width, mws) {
 				var selectedLeft = 0;
 				var selectedWidth = 0;
 				var left = 0;
