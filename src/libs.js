@@ -251,6 +251,7 @@ var hoverStream = function (stream, f) {
 		return v;
 	};
 	return function (instance) {
+		instance.$el.css('pointer-events', 'initial');
 		instance.$el.on('mouseover', function (ev) {
 			stream.push(f(ev));
 			ev.stopPropagation();
@@ -650,11 +651,11 @@ var slideshow = function (config, cs) {
 				var args = Array.prototype.slice.call(arguments);
 				return args;
 			});
-			
+
 			allMinWidths.onValue(function (mws) {
 				instance.minWidth.push(mws.reduce(add, config.gutterSize * (is.length - 1)));
 			});
-			
+
 			var contexts = is.map(function () {
 				return {
 					top: Stream.once(0),
