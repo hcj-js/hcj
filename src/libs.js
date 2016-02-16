@@ -54,6 +54,8 @@ var $$ = function (func) {
 			i.$el[func].apply(i.$el, args);
 			if (i.$el.hasClass('text') ||
 				i.$el.hasClass('paragraph') ||
+				i.$el.hasClass('input') ||
+				i.$el.hasClass('textarea') ||
 				i.$el.hasClass('image')) {
 				i.updateDimensions(true);
 				if (!i.$el.hasClass('waiting-for-width')) {
@@ -1600,6 +1602,8 @@ var promiseComponent = function (cP) {
 		stream.push(c);
 	}, function (error) {
 		console.log(error);
+	}).catch(function (err) {
+		console.log(err);
 	});
 	return componentStream(stream);
 };
