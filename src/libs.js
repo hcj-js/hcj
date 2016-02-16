@@ -54,9 +54,10 @@ var $$ = function (func) {
 			i.$el[func].apply(i.$el, args);
 			if (i.$el.hasClass('text') ||
 				i.$el.hasClass('paragraph') ||
-				i.$el.hasClass('input') ||
-				i.$el.hasClass('textarea') ||
-				i.$el.hasClass('image')) {
+				i.$el.hasClass('image') ||
+				'BUTTON' === i.$el.prop('tagName') ||
+				'INPUT' === i.$el.prop('tagName') ||
+				'TEXTAREA' === i.$el.prop('tagName')) {
 				i.updateDimensions(true);
 				if (!i.$el.hasClass('waiting-for-width')) {
 					i.$el.addClass('waiting-for-width');
@@ -474,6 +475,7 @@ var text = function (text) {
 	return div.all([
 		componentName('text'),
 		$css('pointer-events', 'all'),
+		$css('white-space', 'nowrap'),
 		function (instance, context) {
 			chooseHeightFromWidth(instance, context);
 			text.onValue(function (t) {
