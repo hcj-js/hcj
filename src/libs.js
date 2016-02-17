@@ -866,7 +866,7 @@ var slider = function (config, cs) {
 	return div.all([
 		componentName('slider'),
 		$css('overflow-x', 'hidden'),
-		$css('cursor', 'grab; -webkit-grab; -moz-grab;'),
+		$css('cursor', 'move'),
 		children(cs),
 		wireChildren(function (instance, context, is) {
 			var allMinWidths = Stream.combine(is.map(function (i) {
