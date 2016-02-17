@@ -2020,6 +2020,22 @@ var backgroundImagePosition = {
 	fill: 'fill',
 };
 
+var withMinWidthStream = function (getMinWidthStream, c) {
+	return div.all([
+		componentName('with-min-width-stream'),
+		child(c),
+		wireChildren(function (instance, context, i) {
+			getMinWidthStream(i, context).pushAll(instance.minWidth);
+			i.minHeight.pushAll(instance.minHeight);
+			return [{
+				top: Stream.once(0),
+				left: Stream.once(0),
+				width: context.width,
+				height: context.height,
+			}];
+		}),
+	]);
+};
 var withMinHeightStream = function (getMinHeightStream, c) {
 	return div.all([
 		componentName('with-min-height-stream'),
