@@ -1883,6 +1883,7 @@ var grid = function (config, cs) {
 	config.gutterSize = config.gutterSize || 0;
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
 	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
+	config.maxPerRow = config.maxPerRow || 0;
 
 	return padding(config.outerGutter ? config.gutterSize : 0, div.all([
 		componentName('grid'),
@@ -1939,8 +1940,10 @@ var grid = function (config, cs) {
 						}, 0);
 						var widthNeeded = Math.min(mw, gridWidth);
 						
-						if (widthNeeded > 0 &&
-							widthNeeded + widthUsedThisRow > gridWidth) {
+						if ((config.maxPerRow > 0 &&
+							currentRow.cells.length === config.maxPerRow) ||
+							(widthNeeded > 0 &&
+							 widthNeeded + widthUsedThisRow > gridWidth)) {
 							rows.push(currentRow);
 							currentRow = blankRow();
 						}
