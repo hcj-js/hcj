@@ -1620,9 +1620,9 @@ var modalDialog = function (c) {
 	return function (stream, transition) {
 		var open = Stream.once(false);
 		stream.pushAll(open);
-		
+
 		transition = transition || 0;
-		
+
 		return div.all([
 			$css('z-index', 100),
 			componentName('toggle-height'),
@@ -1630,13 +1630,13 @@ var modalDialog = function (c) {
 			wireChildren(function (instance, context, i) {
 				instance.minWidth.push(0);
 				instance.minHeight.push(0);
-				
+
 				var $el = i.$el;
 				$el.css('position', 'fixed');
 				$el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
 				$el.css('display', 'none');
 				$el.css('pointer-events', 'initial');
-				
+
 				open.onValue(function (on) {
 					if (on) {
 						$el.css('display', '');
@@ -1651,32 +1651,14 @@ var modalDialog = function (c) {
 						}, transition * 1000);
 					}
 				});
-				
+
 				return [{
-					width: Stream.combine([
-						windowWidth,
-						i.minWidth,
-					], function (windowWidth, minWidth) {
-						return Math.max(windowWidth, minWidth);
+					width: windowWidth.map(function () {
+						return window.innerWidth;
 					}),
-					height: Stream.combine([
-						windowHeight,
-						i.minHeight,
-					], function (windowHeight, minHeight) {
-						return Math.min(windowHeight, minHeight);
-					}),
-					left: Stream.combine([
-						windowWidth,
-						i.minWidth,
-					], function (windowWidth, minWidth) {
-						return Math.max(0, (windowWidth - minWidth) / 2);
-					}),
-					top: Stream.combine([
-						windowHeight,
-						i.minHeight,
-					], function (windowHeight, minHeight) {
-						return Math.max(0, (windowHeight - minHeight) / 2);
-					}),
+					height: windowHeight,
+					left: Stream.once(0),
+					top: Stream.once(0),
 				}];
 			}),
 		]);
