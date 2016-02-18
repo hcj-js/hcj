@@ -636,6 +636,20 @@ var giveHeightToNth = function (n) {
 		return positions;
 	};
 };
+var giveHeightToLast = function (totalHeight, positions) {
+	var n = positions.length - 1;
+	var lastPosition = positions[positions.length - 1];
+	var surplusHeight = totalHeight - (lastPosition.top + lastPosition.height);
+	positions.map(function (position, i) {
+		if (i === n || (i === positions.length - 1 && n >= positions.length)) {
+			position.height += surplusHeight;
+		}
+		else if (i > n) {
+			position.top += surplusHeight;
+		}
+	});
+	return positions;
+};
 var slideshow = function (config, cs) {
 	config.gutterSize = config.gutterSize || 0;
 	config.leftTransition = config.leftTransition || 'none';
@@ -1037,11 +1051,11 @@ var stack2 = function (config, cs) {
 				var args = Array.prototype.slice.call(arguments);
 				return args;
 			});
-			
+
 			allMinHeights.onValue(function (mhs) {
 				instance.minHeight.push(mhs.reduce(add, config.gutterSize * (is.length - 1)));
 			});
-			
+
 			var contexts = is.map(function () {
 				return {
 					top: Stream.create(),
@@ -1076,7 +1090,7 @@ var stack2 = function (config, cs) {
 				var args = Array.prototype.slice.call(arguments);
 				return args.reduce(mathMax, 0);
 			}).pushAll(instance.minWidth);
-			
+
 			return [contexts];
 		}),
 	]);
@@ -1721,14 +1735,17 @@ var dropdownPanel = function (source, panel, onOff, config) {
 				iSource.minWidth,
 			], Math.max).pushAll(instance.minWidth);
 			iSource.minHeight.pushAll(instance.minHeight);
+			if (config.panelHeightS) {
+				iPanel.minHeight.pushAll(config.panelHeightS);
+			}
 			return [{
 				width: context.width,
 				height: iPanel.minHeight,
-				top: context.height,
+				top: iSource.minHeight,
 				left: Stream.once(0),
 			}, {
 				width: context.width,
-				height: context.height,
+				height: iSource.minHeight,
 				top: Stream.once(0),
 				left: Stream.once(0),
 			}];
