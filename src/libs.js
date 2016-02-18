@@ -1635,6 +1635,7 @@ var modalDialog = function (c) {
 				$el.css('position', 'fixed');
 				$el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
 				$el.css('display', 'none');
+				$el.css('pointer-events', 'initial');
 				
 				open.onValue(function (on) {
 					if (on) {
@@ -1656,7 +1657,7 @@ var modalDialog = function (c) {
 						windowWidth,
 						i.minWidth,
 					], function (windowWidth, minWidth) {
-						return Math.min(windowWidth, minWidth);
+						return Math.max(windowWidth, minWidth);
 					}),
 					height: Stream.combine([
 						windowHeight,
