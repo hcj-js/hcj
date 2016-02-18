@@ -1779,6 +1779,45 @@ var fixedHeaderBody = function (config, header, body) {
 	]);
 };
 
+var makeSticky = function (c) {
+	return div.all([
+		componentName('stickyHeaderBody'),
+		child(c),
+		wireChildren(function (instance, context, i) {
+			i.minWidth.pushAll(instance.minWidth);
+			i.minHeight.pushAll(instance.minHeight);
+
+			return [{
+				top: Stream.once(0),
+				left: Stream.combine([
+					i.minHeight,
+					context.scroll,
+					context.topAccum,
+					context.left,
+					context.leftAccum,
+				], function (mh, scroll, topAccum, left, leftAccum) {
+					var $el = i.$el;
+					if (0 > scroll) {
+						$el.css('position', 'absolute');
+						$el.css('transition', '');
+						return 0;
+					}
+					else if (0 < scroll) {
+						var leftPosition = left + leftAccum;
+						$el.css('position', 'fixed');
+						$el.css('left', px(leftPosition));
+						setTimeout(function () {
+							$el.css('transition', 'inherit');
+						}, 20);
+						return leftPosition;
+					}
+				}),
+				width: context.width,
+				height: context.height,
+			}];
+		}),
+	]);
+};
 
 var stickyHeaderBody = function (body1, header, body2) {
 	return div.all([
