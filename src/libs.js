@@ -1792,17 +1792,17 @@ var makeSticky = function (c) {
 				left: Stream.combine([
 					i.minHeight,
 					context.scroll,
-					context.topAccum,
+					context.top,
 					context.left,
 					context.leftAccum,
-				], function (mh, scroll, topAccum, left, leftAccum) {
+				], function (mh, scroll, top, left, leftAccum) {
 					var $el = i.$el;
-					if (0 > scroll) {
+					if (top > scroll) {
 						$el.css('position', 'absolute');
 						$el.css('transition', '');
 						return 0;
 					}
-					else if (0 < scroll) {
+					else if (top < scroll) {
 						var leftPosition = left + leftAccum;
 						$el.css('position', 'fixed');
 						$el.css('left', px(leftPosition));
