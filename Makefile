@@ -7,4 +7,4 @@ css:
 js:
 	uglifyjs ./src/hcj.js \
 	         ./src/libs.js \
-	         -mo ./dist/hcj.js
+	         -mo ./dist/hcj.min.js
