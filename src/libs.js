@@ -1361,7 +1361,7 @@ var expandoStream = function (amountS, c) {
 		rightS.push(right);
 	});
 	return div.all([
-		componentName('padding'),
+		componentName('expando-stream'),
 		child(c),
 		wireChildren(function (instance, context, i) {
 			var ctx = instance.newCtx();
