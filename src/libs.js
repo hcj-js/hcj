@@ -1318,6 +1318,88 @@ var margin = function (amount) {
 	};
 };
 
+var expandoStream = function (amountS, c) {
+	var topS = Stream.create();
+	var bottomS = Stream.create();
+	var leftS = Stream.create();
+	var rightS = Stream.create();
+	amountS.map(function (amount) {
+		var top = amount.all || 0,
+			bottom = amount.all || 0,
+			left = amount.all || 0,
+			right = amount.all || 0;
+
+		// amount may be a single number
+		if ($.isNumeric(amount)) {
+			top = bottom = left = right = amount;
+		}
+		// or an object with properties containing 'top', 'bottom', 'left', and 'right'
+		else {
+			for (var key in amount) {
+				var lcKey = key.toLowerCase();
+				if (amount[key] !== null) {
+					if (lcKey.indexOf('top') !== -1) {
+						top = amount[key];
+					}
+					if (lcKey.indexOf('bottom') !== -1) {
+						bottom = amount[key];
+					}
+					if (lcKey.indexOf('left') !== -1) {
+						left = amount[key];
+					}
+					if (lcKey.indexOf('right') !== -1) {
+						right = amount[key];
+					}
+				}
+			}
+		}
+		topS.push(top);
+		bottomS.push(bottom);
+		leftS.push(left);
+		rightS.push(right);
+	});
+	return div.all([
+		componentName('padding'),
+		child(c),
+		wireChildren(function (instance, context, i) {
+			var ctx = instance.newCtx();
+
+			Stream.combine([
+				i.minWidth,
+				leftS,
+				rightS,
+			], function (mw, l, r) {
+				instance.minWidth.push(mw);
+			});
+			Stream.combine([
+				leftS,
+				rightS,
+				context.width,
+			], function (l, r, W) {
+				ctx.left.push(l);
+				ctx.width.push(W - l - r);
+			});
+			Stream.combine([
+				i.minHeight,
+				topS,
+				bottomS,
+			], function (mh, t, b) {
+				instance.minHeight.push(mh);
+			});
+			Stream.combine([
+				topS,
+				bottomS,
+				context.height,
+			], function (t, b, H) {
+				ctx.top.push(t);
+				ctx.height.push(H - t - b);
+			});
+
+			return [ctx];
+		}),
+	]);
+};
+
 var alignLRM = function (lrm) {
 	return div.all([
 		componentName('alignLRM'),
