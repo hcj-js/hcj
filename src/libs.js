@@ -1318,6 +1318,8 @@ var margin = function (amount) {
 	};
 };
 
+// TODO: change this name quick, before there are too many
+// dependencies on it
 var expandoStream = function (amountS, c) {
 	var topS = Stream.create();
 	var bottomS = Stream.create();
