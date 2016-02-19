@@ -621,6 +621,14 @@ var giveToFirst = giveToNth(0);
 var giveToSecond = giveToNth(1);
 var giveToThird = giveToNth(2);
 
+var centerSurplusHeight = function (totalHeight, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusHeight = totalHeight - (lastPosition.top + lastPosition.height);
+	positions.map(function (position, i) {
+		position.top += surplusHeight / 2;
+	});
+	return positions;
+};
 var giveHeightToNth = function (n) {
 	return function (totalHeight, positions) {
 		var lastPosition = positions[positions.length - 1];
