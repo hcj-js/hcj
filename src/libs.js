@@ -240,11 +240,11 @@ var submitThis = onThis('submit');
 var hoverThis = function (cb) {
 	return function (instance) {
 		cb(false, instance);
-		instance.$el.on('mouseover', function () {
-			cb(true, instance);
+		instance.$el.on('mouseover', function (ev) {
+			cb(true, instance, ev);
 		});
-		instance.$el.on('mouseout', function () {
-			cb(false, instance);
+		instance.$el.on('mouseout', function (ev) {
+			cb(false, instance, ev);
 		});
 	};
 };
