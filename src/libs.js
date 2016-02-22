@@ -2159,7 +2159,12 @@ var withMinWidthStream = function (getMinWidthStream, c) {
 		componentName('with-min-width-stream'),
 		child(c),
 		wireChildren(function (instance, context, i) {
-			getMinWidthStream(i, context).pushAll(instance.minWidth);
+			if ($.isFunction(getMinWidthStream)) {
+				getMinWidthStream(i, context).pushAll(instance.minWidth);
+			}
+			else {
+				getMinWidthStream.pushAll(instance.minWidth);
+			}
 			i.minHeight.pushAll(instance.minHeight);
 			return [{
 				top: Stream.once(0),
@@ -2175,7 +2180,12 @@ var withMinHeightStream = function (getMinHeightStream, c) {
 		componentName('with-min-height-stream'),
 		child(c),
 		wireChildren(function (instance, context, i) {
-			getMinHeightStream(i, context).pushAll(instance.minHeight);
+			if ($.isFunction(getMinHeightStream)) {
+				getMinHeightStream(i, context).pushAll(instance.minHeight);
+			}
+			else {
+				getMinHeightStream.pushAll(instance.minHeight);
+			}
 			i.minWidth.pushAll(instance.minWidth);
 			return [{
 				top: Stream.once(0),
