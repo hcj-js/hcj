@@ -548,6 +548,25 @@ var evenSplitSurplusWidth = function (gridWidth, positions) {
 	});
 	return positions;
 };
+// don't read this function, please
+var evenSplitSurplusWidthWithMinPerRow = function (minPerRow) {
+	return function (gridWidth, positions) {
+		var lastPosition = positions[positions.length - 1];
+		var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+		var widthPerCol = gridWidth / Math.max(minPerRow, positions.length);
+		positions.map(function (position, i) {
+			position.width = widthPerCol;
+			position.left = i * widthPerCol;
+		});
+		lastPosition = positions[positions.length - 1];
+		surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+		widthPerCol = surplusWidth / positions.length;
+		positions.map(function (position, i) {
+			position.left += surplusWidth / 2;
+		});
+		return positions;
+	};
+};
 var justifySurplusWidth = function (gridWidth, positions) {
 	var lastPosition = positions[positions.length - 1];
 	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
@@ -2013,6 +2032,7 @@ var grid = function (config, cs) {
 				return Array.prototype.slice.call(arguments);
 			});
 
+			// todo: fix interaction of allSameWidth and useFullWidth
 			minWidths.map(function (mws) {
 				return mws.reduce(function (a, mw) {
 					return config.useFullWidth ? a + mw + config.gutterSize : Math.max(a, mw) + config.gutterSize;
@@ -2031,6 +2051,13 @@ var grid = function (config, cs) {
 			var rowsStream = Stream.combine([
 				context.width,
 				minWidths], function (gridWidth, mws) {
+					if (config.allSameWidth) {
+						var maxMW = mws.reduce(mathMax, 0);
+						// thank you, keenan simons
+						for (var ii = 0; ii < mws.length; ii++) {
+							mws[ii] = maxMW;
+						}
+					}
 					var blankRow = function () {
 						return {
 							cells: [],
