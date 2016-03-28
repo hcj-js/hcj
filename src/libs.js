@@ -394,7 +394,7 @@ var keepAspectRatioFill = keepAspectRatioCorner({
 });
 
 var image = function (config) {
-	var srcStream = (config.src && config.src.map) ? config.src : stream.once(config.src);
+	var srcStream = stream.isStream(config.src) ? config.src : stream.once(config.src);
 	return img.all([
 		componentName('image'),
 		$css('pointer-events', 'all'),
@@ -1679,20 +1679,22 @@ var componentStreamWithExit = function (cStream, exit) {
 	return div.all([
 		componentName('component-stream'),
 		function (instance, context) {
-			var ctx = instance.newCtx();
-			stream.push(ctx.top, 0);
-			stream.push(ctx.left, 0);
-			stream.pushAll(context.width, ctx.width);
-			stream.pushAll(context.height, ctx.height);
-
 			var localCStream = stream.create();
 			stream.pushAll(cStream, localCStream);
 			stream.map(localCStream, function (c) {
+				var ctx = instance.newCtx();
+				stream.push(ctx.top, 0);
+				stream.push(ctx.left, 0);
+				stream.pushAll(context.width, ctx.width);
+				stream.pushAll(context.height, ctx.height);
+
 				var instanceC = function (c) {
 					if (i) {
 						(function (i) {
-							exit(i).then(function () {
-								i.destroy();
+							setTimeout(function () {
+								exit(i).then(function () {
+									i.destroy();
+								});
 							});
 						})(i);
 					}
