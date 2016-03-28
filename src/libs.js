@@ -1062,7 +1062,6 @@ var slider = function (config, cs) {
 				};
 			})];
 		}),
-	]).all([
 	]);
 };
 
@@ -2223,6 +2222,13 @@ var withMinHeightStream = function (getMinHeightStream, c) {
 			}];
 		}),
 	]);
+};
+var minHeightAtLeast = function (number, c) {
+	return withMinHeightStream(function (instance) {
+		return stream.map(instance.minHeight, function (mh) {
+			return Math.max(mh, number);
+		});
+	}, c);
 };
 
 var extendToWindowBottom = function (c, distanceStream) {
