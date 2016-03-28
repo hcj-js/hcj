@@ -51,130 +51,110 @@ var white = color({
 	b: 255,
 });
 
-var Stream = {
+var stream = {
+	// constructors
 	create: function () {
-		var ended = false;
-		
-		var valueD = $.Deferred();
-
-		var lastValue;
-		var listeners = [];
-		var children = [];
-
-		var pushValue = function (v) {
-			valueD.resolve(v);
-			if (!ended && lastValue !== v) {
-				lastValue = v;
-				listeners.map(function (f) {
-					return f(v);
-				});
-			}
-		};
-
 		return {
-			lastValue: function () {
-				return lastValue;
-			},
-			map: function (f) {
-				var stream = Stream.create();
-				children.push(stream);
-				if (lastValue !== undefined) {
-					stream.push(f(lastValue));
-				}
-				listeners.push(function (v) {
-					stream.push(f(v));
-				});
-				return stream;
-			},
-			reduce: function (f, v) {
-				var stream = Stream.once(v);
-				children.push(stream);
-				if (lastValue !== undefined) {
-					stream.push(f(stream.lastValue(), lastValue));
-				}
-				listeners.push(function (v) {
-					stream.push(f(stream.lastValue(), v));
-				});
-				return stream;
-			},
-			filter: function (f) {
-				var stream = Stream.create();
-				children.push(stream);
-				if (lastValue !== undefined) {
-					f(lastValue, stream.push);
-				}
-				listeners.push(function (v) {
-					f(v, stream.push);
-				});
-				return stream;
-			},
-			onValue: function (f) {
-				return this.map(function (v) {
-					f(v);
-					return true;
-				});
-			},
-			promise: valueD.promise(),
-			prop: function (str) {
-				return this.map(function (v) {
-					return v[str];
-				});
-			},
-			delay: function (amount) {
-				var stream = Stream.create();
-				children.push(stream);
-				this.map(function (v) {
-					setTimeout(function () {
-						stream.push(v);
-					}, amount);
-				});
-				return stream;
-			},
-			end: function () {
-				children.map(function (s) {
-					s.end();
-				});
-				ended = true;
-			},
-			push: pushValue,
-			pushAll: function (s) {
-				this.onValue(function (v) {
-					s.push(v);
-				});
-			},
-			test: function () {
-				var args = arguments;
-				var err = new Error();
-				setTimeout(function () {
-					if (lastValue === undefined) {
-						args;
-						err;
-						debugger;
-					}
-				}, 5000);
-				return this;
-			},
-			cases: function (streams, indexS) {
-				streams.push(indexS);
-				return Stream.combine(streams, function () {
-					var args = Array.prototype.slice.call(arguments);
-					var index = args.pop();
-					return args[index];
-				});
-			},
+			listeners: [],
+			lastValue: undefined,
+			ended: false,
 		};
+	},
+	isStream: function (v) {
+		return v.hasOwnProperty('listeners') &&
+			v.hasOwnProperty('lastValue') &&
+			v.hasOwnProperty('ended');
 	},
 	once: function (v) {
-		var stream = Stream.create();
-		stream.push(v);
+		var s = stream.create();
+		// todo: set timeout, and get rid of last value????
+		stream.push(s, v);
+		return s;
+	},
+	push: function (s, v) {
+		if (s.lastValue !== v && !s.ended) {
+			s.lastValue = v;
+			for (var i = 0; i < s.listeners.length; i++) {
+				s.listeners[i](v);
+			}
+		}
+	},
+	map: function (s, f) {
+		var out = stream.create();
+		if (s.lastValue !== undefined) {
+			stream.push(out, f(s.lastValue));
+		}
+		s.listeners.push(function (v) {
+			stream.push(out, f(v));
+		});
+		return out;
+	},
+	reduce: function (s, f, v) {
+		var out = stream.once(v);
+		if (s.lastValue !== undefined) {
+			stream.push(out, f(s.lastValue, v));
+		}
+		s.listeners.push(function (v) {
+			stream.push(out, f(v, out.lastValue));
+		});
+		return out;
+	},
+	filter: function (s, f) {
+		var out = stream.create();
+		if (s.lastValue !== undefined) {
+			f(s.lastValue, out.push);
+		}
+		s.listeners.push(function (v) {
+			f(v, out.push);
+		});
 		return stream;
 	},
+	onValue: function (s, f) {
+		return stream.map(s, function (v) {
+			f(v);
+			return true;
+		});
+	},
+	promise: function (s) {
+		var d = $.Deferred();
+		if (s.lastValue) {
+			d.resolve(s.lastValue);
+		}
+		else {
+			stream.map(s, function (v) {
+				d.resolve(v);
+			});
+		}
+		return d.promise;
+	},
+	prop: function (s, str) {
+		return stream.map(s, function (v) {
+			return v[str];
+		});
+	},
+	delay: function (s, amount) {
+		var out = stream.create();
+		stream.map(s, function (v) {
+			setTimeout(function () {
+				stream.push(out, v);
+			}, amount);
+		});
+		return stream;
+	},
+	end: function (s) {
+		s.ended = true;
+	},
+	pushAll: function (source, target) {
+		stream.onValue(source, function (v) {
+			stream.push(target, v);
+		});
+	},
 	never: function () {
-		return Stream.create();
+		return stream.create();
 	},
 	combine: function (streams, f) {
 		var arr = [];
-		var stream = Stream.create();
+		var out = stream.create();
 
 		var running = false;
 		var err = new Error();
@@ -189,23 +169,23 @@ var Stream = {
 							return;
 						}
 					}
-					stream.push(f.apply(null, arr));
+					stream.push(out, f.apply(null, arr));
 				});
 			}
 		};
-		
-		streams.reduce(function (i, stream) {
-			stream.onValue(function (v) {
+
+		streams.reduce(function (i, s) {
+			stream.onValue(s, function (v) {
 				arr[i] = v;
 				tryRunF();
 			});
 			return i + 1;
 		}, 0);
 
-		return stream;
+		return out;
 	},
 	all: function (streams, f) {
-		return this.combine(streams, function () {
+		return stream.combine(streams, function () {
 			f.apply(null, arguments);
 			return true;
 		});
@@ -213,8 +193,8 @@ var Stream = {
 	combineObject: function (streamsObject) {
 		var keys = Object.keys(streamsObject);
 		var obj = {};
-		var stream = Stream.create();
-		
+		var out = stream.create();
+
 		var running = false;
 		var tryRunF = function () {
 			if (!running) {
@@ -227,39 +207,48 @@ var Stream = {
 							return;
 						}
 					}
-					stream.push($.extend({}, obj));
+					stream.push(out, $.extend({}, obj));
 				});
 			}
 		};
-		
+
 		keys.map(function (key, i) {
-			streamsObject[key].onValue(function (v) {
+			stream.onValue(streamsObject[key], function (v) {
 				obj[key] = v;
 				tryRunF();
 			});
 		});
 
-		return stream;
+		return out;
 	},
 	splitObject: function (obj) {
 		var keys = Object.keys(obj);
 		var streams = {};
 		keys.map(function (key) {
-			streams[key] = Stream.once(obj[key]);
+			streams[key] = stream.once(obj[key]);
 		});
 		return streams;
 	},
 	fromPromise: function (p, initialValue) {
-		var stream = Stream.never();
+		var out = stream.never();
 		if (initialValue) {
-			stream.push(initialValue);
+			stream.push(out, initialValue);
 		}
 		p.then(function (v) {
-			stream.push(v);
+			stream.push(out, v);
 		});
-		return stream;
+		return out;
+	},
+	cases: function (streams, indexS) {
+		streams.push(indexS);
+		return stream.combine(streams, function () {
+			var args = Array.prototype.slice.call(arguments);
+			var index = args.pop();
+			return args[index];
+		});
 	},
 };
+
 
 var child = function (component) {
 	if (!component || !component.create) {
@@ -312,39 +301,39 @@ var component = function (build) {
 					return childComponent.create(ctx);
 				}
 			});
-			
+
 			instance.childInstances = childInstances;
-			
+
 			var resultContexts = instance.wireChildren.apply(null, [instance, context].concat(childInstances)) || [];
-			
+
 			var applyResult = function (resultContext, childInstance, childContext) {
 				resultContext = resultContext || {};
 				if (resultContext.top) {
-					resultContext.top.pushAll(childContext.top);
+					stream.pushAll(resultContext.top, childContext.top);
 				}
 				if (resultContext.left) {
-					resultContext.left.pushAll(childContext.left);
+					stream.pushAll(resultContext.left, childContext.left);
 				}
 				if (resultContext.width) {
-					resultContext.width.pushAll(childContext.width);
+					stream.pushAll(resultContext.width, childContext.width);
 				}
 				if (resultContext.height) {
-					resultContext.height.pushAll(childContext.height);
+					stream.pushAll(resultContext.height, childContext.height);
 				}
 				if (resultContext.backgroundColor) {
-					resultContext.backgroundColor.pushAll(childContext.backgroundColor);
+					stream.pushAll(resultContext.backgroundColor, childContext.backgroundColor);
 				}
 				if (resultContext.fontColor) {
-					resultContext.fontColor.pushAll(childContext.fontColor);
+					stream.pushAll(resultContext.fontColor, childContext.fontColor);
 				}
 			};
 
 			for (var i = 0; i < childInstances.length; i++) {
 				var resultContext = resultContexts[i] || {};
-				
+
 				var childInstance = childInstances[i];
 				var childContext = childContexts[i];
-				
+
 				if ($.isArray(childInstance)) {
 					for (var j = 0; j < childInstance.length; j++) {
 						applyResult(resultContext[j], childInstance[j], childContext[j]);
@@ -462,9 +451,9 @@ var findMinHeight = function ($el) {
 	$clone.css('width', '')
 		.css('height', '')
 		.appendTo($sandbox);
-	
+
 	var height = parseInt($clone.css('height'));
-	
+
 	$clone.remove();
 
 	return height;
@@ -487,12 +476,12 @@ var updateDomFunc = function (func) {
 };
 var el = function (name) {
 	return component(function (context) {
-		var minWidth = Stream.never();
-		var minHeight = Stream.never();
+		var minWidth = stream.never();
+		var minHeight = stream.never();
 		var updateMinHeight = function () {
 			var mh = findMinHeight(i.$el);
-			i.minWidth.push(mw);
-			i.minHeight.push(mh);
+			stream.push(i.minWidth, mw);
+			stream.push(i.minHeight, mh);
 		};
 
 		var $el = $(document.createElement(name));
@@ -505,61 +494,61 @@ var el = function (name) {
 		$el.css('position', 'absolute');
 		$el.css('visibility', 'hidden');
 		context.$el.append($el);
-		
-		context.top.onValue(function (t) {
+
+		stream.onValue(context.top, function (t) {
 			updateDomFunc({
 				$el: $el,
 				prop: 'top',
 				value: px(t),
 			});
 		});
-		context.left.onValue(function (l) {
+		stream.onValue(context.left, function (l) {
 			updateDomFunc({
 				$el: $el,
 				prop: 'left',
 				value: px(l),
 			});
 		});
-		context.width.onValue(function (w) {
+		stream.onValue(context.width, function (w) {
 			updateDomFunc({
 				$el: $el,
 				prop: 'width',
 				value: px(w),
 			});
 		});
-		context.height.onValue(function (h) {
+		stream.onValue(context.height, function (h) {
 			updateDomFunc({
 				$el: $el,
 				prop: 'height',
 				value: px(h),
 			});
 		});
-		Stream.combine([context.width, context.height, context.top, context.left], function () {
+		stream.combine([context.width, context.height, context.top, context.left], function () {
 			updateDomFunc({
 				$el: $el,
 				prop: 'visibility',
 				value: '',
 			});
 		});
-		context.backgroundColor.onValue(function (backgroundColor) {
+		stream.onValue(context.backgroundColor, function (backgroundColor) {
 			$el.css('background-color', colorString(backgroundColor));
 		});
-		context.fontColor.onValue(function (fontColor) {
+		stream.onValue(context.fontColor, function (fontColor) {
 			$el.css('color', colorString(fontColor));
 		});
 
 		var childComponentPs = [];
-		
-		var scrollStream = Stream.combine([context.scroll, context.top], function (scroll, top) {
+
+		var scrollStream = stream.combine([context.scroll, context.top], function (scroll, top) {
 			return scroll - top;
 		});
-		var topAccumStream = Stream.combine([context.topAccum, context.top], function (a, b) {
+		var topAccumStream = stream.combine([context.topAccum, context.top], function (a, b) {
 			return a + b;
 		});
-		var leftAccumStream = Stream.combine([context.leftAccum, context.left], function (a, b) {
+		var leftAccumStream = stream.combine([context.leftAccum, context.left], function (a, b) {
 			return a + b;
 		});
-		var brightnessStream = Stream.combine([context.brightness, context.backgroundColor], function (parentBrightness, c) {
+		var brightnessStream = stream.combine([context.brightness, context.backgroundColor], function (parentBrightness, c) {
 			var brightness = colorBrightness(c);
 			return c.a * brightness +
 				(1 - c.a) * parentBrightness;
@@ -569,17 +558,17 @@ var el = function (name) {
 				$el: $el,
 				scroll: scrollStream,
 				topAccum: topAccumStream,
-				top: Stream.never(),
-				left: Stream.never(),
+				top: stream.never(),
+				left: stream.never(),
 				leftAccum: leftAccumStream,
-				width: Stream.never(),
-				height: Stream.never(),
-				backgroundColor: Stream.once(transparent),
-				fontColor: Stream.never(),
+				width: stream.never(),
+				height: stream.never(),
+				backgroundColor: stream.once(transparent),
+				fontColor: stream.never(),
 				brightness: brightnessStream,
 			};
 		};
-		
+
 		return {
 			$el: $el,
 			optimalWidth: 0,
@@ -594,8 +583,8 @@ var el = function (name) {
 				childComponentPs.push(components);
 			},
 			destroy: function () {
-				minWidth.end();
-				minHeight.end();
+				stream.end(minWidth);
+				stream.end(minHeight);
 
 				var allInstances = this.childInstances || [];
 				for (var i = 0; i < allInstances.length; i++) {
@@ -621,10 +610,10 @@ var el = function (name) {
 				// fewer places
 				if (this.$el.prop('tagName') !== 'IMG') {
 					if (!onlyNonzero || mw !== 0) {
-						this.minWidth.push(mw);
+						stream.push(this.minWidth, mw);
 					}
 					if (!onlyNonzero || mh !== 0) {
-						this.minHeight.push(mh);
+						stream.push(this.minHeight, mh);
 					}
 				}
 			},
@@ -650,16 +639,16 @@ var ul = el('ul');
 var rootContext = function () {
 	return {
 		$el: $('body'),
-		top: Stream.once(0),
-		topAccum: Stream.once(0),
-		left: Stream.once(0),
-		leftAccum: Stream.once(0),
+		top: stream.once(0),
+		topAccum: stream.once(0),
+		left: stream.once(0),
+		leftAccum: stream.once(0),
 		scroll: windowScroll,
 		width: windowWidth,
-		height: Stream.never(),
-		backgroundColor: Stream.once(transparent),
-		fontColor: Stream.once(black),
-		brightness: Stream.once(1),
+		height: stream.never(),
+		backgroundColor: stream.once(transparent),
+		fontColor: stream.once(black),
+		brightness: stream.once(1),
 	};
 };
 
@@ -667,12 +656,12 @@ var rootComponent = function (component, ctx, setContainerSize) {
 	var context = $.extend(rootContext(), ctx);
 	var instance = component.create(context);
 
-	instance.minHeight.pushAll(context.height);
+	stream.pushAll(instance.minHeight, context.height);
 	if (setContainerSize) {
-		context.width.map(function (w) {
+		stream.map(context.width, function (w) {
 			context.$el.css('width', w);
 		});
-		context.height.map(function (h) {
+		stream.map(context.height, function (h) {
 			context.$el.css('height', h);
 		});
 	}
