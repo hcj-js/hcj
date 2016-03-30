@@ -258,9 +258,8 @@ var hoverStream = function (s, f) {
 		instance.$el.css('pointer-events', 'initial');
 		instance.$el.on('mouseover', function (ev) {
 			stream.push(s, f(ev));
-			ev.stopPropagation();
 		});
-		$('body').on('mouseover', function (ev) {
+		instance.$el.on('mouseout', function (ev) {
 			stream.push(s, f(false));
 		});
 	};
@@ -340,8 +339,8 @@ var keepAspectRatioCorner = function (config) {
 					var AR = w / h;
 
 					// container is wider
-					if ((!config.fillSpace && AR > ar) ||
-						(config.fillSpace && AR < ar)) {
+					if ((!config.fill && AR > ar) ||
+						(config.fill && AR < ar)) {
 						var usedWidth = h * ar;
 
 						var left;
@@ -390,7 +389,7 @@ var keepAspectRatioCorner = function (config) {
 
 var keepAspectRatio = keepAspectRatioCorner();
 var keepAspectRatioFill = keepAspectRatioCorner({
-	fillSpace: true,
+	fill: true,
 });
 
 var image = function (config) {
