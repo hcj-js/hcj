@@ -297,8 +297,6 @@ var el = function (name) {
 				updateDomFunc($el, 'width', px(w));
 			});
 			stream.onValue(context.height, function (h) {
-				// console.log($el);
-				// console.log(h);
 				updateDomFunc($el, 'height', px(h));
 			});
 			stream.all([
