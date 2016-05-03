@@ -26,6 +26,9 @@ var mathMax = function (a, b) {
 var mathMin = function (a, b) {
 	return Math.min(a, b);
 };
+var px = function (n) {
+	return n + 'px';
+};
 
 var pushStreams = [];
 var pushValues = [];
@@ -57,14 +60,12 @@ var stream = {
 		return {
 			listeners: [],
 			lastValue: undefined,
-			ended: false,
 		};
 	},
 	isStream: function (v) {
 		return v &&
 			v.hasOwnProperty('listeners') &&
-			v.hasOwnProperty('lastValue') &&
-			v.hasOwnProperty('ended');
+			v.hasOwnProperty('lastValue');
 	},
 	once: function (v) {
 		var s = stream.create();
@@ -75,7 +76,9 @@ var stream = {
 		if (s.lastValue !== v) {
 			s.lastValue = v;
 			for (var i = 0; i < s.listeners.length; i++) {
-				s.listeners[i](v);
+				if (s.listeners[i]) {
+					s.listeners[i](v);
+				}
 			}
 		}
 	},
@@ -92,25 +95,31 @@ var stream = {
 	reduce: function (s, f, v1) {
 		var out = stream.once(v1);
 		if (s.lastValue !== undefined) {
-			stream.push(out, f(s.lastValue, out.lastValue));
+			stream.push(out, f(out.lastValue, s.lastValue));
 		}
 		s.listeners.push(function (v) {
-			stream.push(out, f(v, out.lastValue));
+			stream.push(out, f(out.lastValue, v));
 		});
 		return out;
 	},
 	filter: function (s, f) {
 		var out = stream.create();
 		s.listeners.push(function (v) {
-			f(v, out.push);
+			if (f(v)) {
+				stream.push(out, v);
+			}
 		});
 		return stream;
 	},
 	onValue: function (s, f) {
-		return stream.map(s, function (v) {
+		stream.map(s, function (v) {
 			f(v);
 			return true;
 		});
+		var index = s.listeners.length - 1;
+		return function () {
+			delete s.listeners[index];
+		};
 	},
 	promise: function (s) {
 		var d = $.Deferred();
@@ -133,14 +142,11 @@ var stream = {
 		});
 		return out;
 	},
-	end: function (s) {
-		s.ended = true;
-	},
 	pushAll: function (source, target) {
 		if (source.lastValue !== undefined) {
 			stream.push(target, source.lastValue);
 		}
-		stream.onValue(source, function (v) {
+		return stream.onValue(source, function (v) {
 			stream.push(target, v);
 		});
 	},
@@ -149,12 +155,10 @@ var stream = {
 		var out = stream.create();
 
 		var running = false;
-		var err = new Error();
 		var tryRunF = function () {
 			if (!running) {
 				running = true;
 				setTimeout(function () {
-					err;
 					running = false;
 					for (var i = 0; i < streams.length; i++) {
 						if (arr[i] === undefined) {
@@ -179,6 +183,37 @@ var stream = {
 		}, 0);
 
 		return out;
+	},
+	combineInto: function (streams, f, out) {
+		var arr = [];
+
+		var running = false;
+		var tryRunF = function () {
+			if (!running) {
+				running = true;
+				setTimeout(function () {
+					running = false;
+					for (var i = 0; i < streams.length; i++) {
+						if (arr[i] === undefined) {
+							return;
+						}
+					}
+					stream.push(out, f.apply(null, arr));
+				});
+			}
+		};
+
+		streams.reduce(function (i, s) {
+			if (s.lastValue !== undefined) {
+				arr[i] = s.lastValue;
+				tryRunF();
+			}
+			stream.onValue(s, function (v) {
+				arr[i] = v;
+				tryRunF();
+			});
+			return i + 1;
+		}, 0);
 	},
 	all: function (streams, f) {
 		return stream.combine(streams, function () {
@@ -225,8 +260,15 @@ var stream = {
 		});
 		return streams;
 	},
+	fromEvent: function ($el, event) {
+		var s = stream.create();
+		$el.on('event', function (ev) {
+			stream.push(s, ev);
+		});
+		return s;
+	},
 	fromPromise: function (p, initialValue) {
-		var out = stream.never();
+		var out = stream.create();
 		if (initialValue) {
 			stream.push(out, initialValue);
 		}
@@ -245,6 +287,8 @@ var stream = {
 	},
 };
 
+var onceZeroS = stream.once(0);
+
 var updateDomEls = [];
 var updateDomProps = [];
 var updateDomValues = [];
@@ -255,7 +299,6 @@ var runDomFuncs = function () {
 	updateDomEls = [];
 	updateDomProps = [];
 	updateDomValues = [];
-	updateWindowWidth();
 };
 var updateDomFunc = function ($el, prop, value) {
 	if (updateDomEls.length === 0) {
@@ -266,99 +309,121 @@ var updateDomFunc = function ($el, prop, value) {
 	updateDomValues.push(value);
 };
 
-var el = function (name) {
+var measureWidth = function ($el, w) {
+	var $sandbox = $('.sandbox');
+	var $clone = $el.clone();
+	$clone.css('width', w ? px(w) : '')
+		.css('height', '')
+		.css('display', 'inline-block')
+		.appendTo($sandbox);
+
+	var width = $clone[0].scrollWidth;
+	$clone.remove();
+
+	return width;
+};
+
+var measureHeight = function ($el) {
+	return function (w) {
+		var $sandbox = $('.sandbox');
+		var $clone = $el.clone();
+		$clone.css('width', px(w))
+			.css('height', '')
+			.appendTo($sandbox);
+
+		var height = parseInt($clone.css('height'));
+
+		$clone.remove();
+
+		return height;
+	};
+};
+
+var el = function (name, build, context) {
+	var $el = $(document.createElement(name));
+
+	if (name === 'textarea') {
+		// give textareas a resize event
+	}
+
+	var unbuild = [];
+	context.child = function (ctx) {
+		ctx = ctx || {};
+		['width', 'height', 'top', 'left'].map(function (prop) {
+			if (ctx[prop] === true) {
+				ctx[prop] = stream.create();
+			}
+		});
+		return {
+			$el: $el,
+			width: ctx.width || context.width,
+			height: ctx.height || context.height,
+			top: ctx.top || onceZeroS,
+			left: ctx.left || onceZeroS,
+			topAccum: stream.combine([context.topAccum, context.top], add),
+			leftAccum: stream.combine([context.leftAccum, context.left], add),
+			unbuild: unbuild.push,
+		};
+	};
+
+	var instance = {
+		$el: $el,
+	};
+	var streams = build($el, context, function (wd) {
+		var w = measureWidth($el, wd);
+		if (instance.minWidth) {
+			stream.push(instance.minWidth, w);
+		}
+		else {
+			instance.initialMinWidth = w;
+		}
+	}, function () {
+		var h = measureHeight($el);
+		if (instance.minHeight) {
+			stream.push(instance.minHeight, h);
+		}
+		else {
+			instance.initialMinHeight = h;
+		}
+	}) || {};
+	instance.minWidth = streams.minWidth ? streams.minWidth : stream.create();
+	instance.minHeight = streams.minHeight ? streams.minHeight : stream.create();
+	if (instance.initialMinWidth) {
+		stream.push(instance.minWidth, instance.initialMinWidth);
+	}
+	if (instance.initialMinHeight) {
+		stream.push(instance.minHeight, instance.initialMinHeight);
+	}
+
+	$el.appendTo(context.$el);
+	$el.before(' ');
+	$el.after(' ');
+
+	instance.destroy = function () {
+		unbuild.map(apply());
+		$el.remove();
+	};
+
+	return instance;
+};
+
+var callEl = function (name) {
 	return function (build) {
-		return function ($parent) {
-			var $el = $(document.createElement(name));
-			var context = {
-				$el: $el,
-				minWidth: stream.create(),
-				minHeight: stream.create(),
-				width: stream.create(),
-				height: stream.create(),
-				top: stream.create(),
-				left: stream.create(),
-				topAccum: stream.create(),
-				leftAccum: stream.create(),
-				scroll: stream.create(),
-			};
-
-			$el.css('pointer-events', 'initial')
-				.css('position', 'absolute')
-				.css('visibility', 'hidden');
-
-			stream.onValue(context.top, function (t) {
-				updateDomFunc($el, 'top', px(t));
-			});
-			stream.onValue(context.left, function (l) {
-				updateDomFunc($el, 'left', px(l));
-			});
-			stream.onValue(context.width, function (w) {
-				updateDomFunc($el, 'width', px(w));
-			});
-			stream.onValue(context.height, function (h) {
-				updateDomFunc($el, 'height', px(h));
-			});
-			stream.all([
-				context.width,
-				context.height,
-				context.top,
-				context.left
-			], function () {
-				updateDomFunc($el, 'visibility', '');
-			});
-
-			var measureWidth = function (w) {
-				var $sandbox = $('.sandbox');
-				var $clone = $el.clone();
-				$clone.css('width', px(w || ''))
-					.css('height', '')
-					.appendTo($sandbox);
-
-				var width = $clone[0].scrollWidth;
-				$clone.remove();
-
-				stream.push(context.minWidth, width);
-				return width;
-			};
-
-			var measureHeight = function () {
-				stream.push(context.minHeight, function (w) {
-					var $sandbox = $('.sandbox');
-					var $clone = $el.clone();
-					$clone.css('width', px(w))
-						.css('height', '')
-						.appendTo($sandbox);
-
-					var height = parseInt($clone.css('height'));
-
-					$clone.remove();
-
-					return height;
-				});
-			};
-
-			var unbuild = build(context, measureWidth, measureHeight) || id;
-			context.destroy = function () {
-				unbuild();
-				$el.remove();
-			};
-			$el.appendTo($parent);
-
-			return context;
+		return function (context) {
+			return el(name, build, context);
 		};
 	};
 };
 
-var a = el('a');
-var button = el('button');
-var div = el('div');
-var form = el('form');
-var iframe = el('iframe');
-var img = el('img');
-var input = el('input');
-var li = el('li');
-var option = el('option');
-var select = el('select');
-var textarea = el('textarea');
-var ul = el('ul');
+var a = callEl('a');
+var button = callEl('button');
+var div = callEl('div');
+var form = callEl('form');
+var iframe = callEl('iframe');
+var img = callEl('img');
+var input = callEl('input');
+var li = callEl('li');
+var option = callEl('option');
+var select = callEl('select');
+var textarea = callEl('textarea');
+var ul = callEl('ul');

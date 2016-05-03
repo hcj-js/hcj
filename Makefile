@@ -1,4 +1,5 @@
-all: css js
+.PHONY: docs
+all: css docs js
 
 css:
 # todo: minify
@@ -10,3 +11,6 @@ js:
 		> ./dist/hcj.js
 	uglifyjs ./dist/hcj.js \
 	         -mo ./dist/hcj.min.js
+
+docs:
+	cd docs && sphinx-build -ab html -d _build/doctrees   . _build/html
