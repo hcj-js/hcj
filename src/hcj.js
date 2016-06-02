@@ -349,7 +349,7 @@ var el = function (name, build, context) {
 	var unbuild = [];
 	context.child = function (ctx) {
 		ctx = ctx || {};
-		['width', 'height', 'top', 'left'].map(function (prop) {
+		['width', 'height', 'top', 'left', 'widthCss', 'heightCss', 'topCss', 'leftCss'].map(function (prop) {
 			if (ctx[prop] === true) {
 				ctx[prop] = stream.create();
 			}
@@ -360,6 +360,10 @@ var el = function (name, build, context) {
 			height: ctx.height || context.height,
 			top: ctx.top || onceZeroS,
 			left: ctx.left || onceZeroS,
+			widthCss: ctx.widthCss,
+			heightCss: ctx.heightCss,
+			topCss: ctx.topCss,
+			leftCss: ctx.leftCss,
 			topAccum: stream.combine([context.topAccum, context.top], add),
 			leftAccum: stream.combine([context.leftAccum, context.left], add),
 			unbuild: unbuild.push,
@@ -422,8 +426,10 @@ var form = callEl('form');
 var iframe = callEl('iframe');
 var img = callEl('img');
 var input = callEl('input');
+var label = callEl('label');
 var li = callEl('li');
 var option = callEl('option');
+var p = callEl('p');
 var select = callEl('select');
 var textarea = callEl('textarea');
 var ul = callEl('ul');

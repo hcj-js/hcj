@@ -349,7 +349,7 @@ var el = function (name, build, context) {
 	var unbuild = [];
 	context.child = function (ctx) {
 		ctx = ctx || {};
-		['width', 'height', 'top', 'left'].map(function (prop) {
+		['width', 'height', 'top', 'left', 'widthCss', 'heightCss', 'topCss', 'leftCss'].map(function (prop) {
 			if (ctx[prop] === true) {
 				ctx[prop] = stream.create();
 			}
@@ -360,6 +360,10 @@ var el = function (name, build, context) {
 			height: ctx.height || context.height,
 			top: ctx.top || onceZeroS,
 			left: ctx.left || onceZeroS,
+			widthCss: ctx.widthCss,
+			heightCss: ctx.heightCss,
+			topCss: ctx.topCss,
+			leftCss: ctx.leftCss,
 			topAccum: stream.combine([context.topAccum, context.top], add),
 			leftAccum: stream.combine([context.leftAccum, context.left], add),
 			unbuild: unbuild.push,
@@ -422,8 +426,10 @@ var form = callEl('form');
 var iframe = callEl('iframe');
 var img = callEl('img');
 var input = callEl('input');
+var label = callEl('label');
 var li = callEl('li');
 var option = callEl('option');
+var p = callEl('p');
 var select = callEl('select');
 var textarea = callEl('textarea');
 var ul = callEl('ul');
@@ -465,16 +471,16 @@ var caseSplit = function (cases, obj) {
 };
 
 var _scrollbarWidth = function () {
-  var parent, child, width;
+	var parent, child, width;
 
-  if(width===undefined) {
-    parent = $('<div style="width:50px;height:50px;overflow:auto"><div/></div>').appendTo('body');
-    child=parent.children();
-    width=child.innerWidth()-child.height(99).innerWidth();
-    parent.remove();
-  }
+	if(width===undefined) {
+		parent = $('<div style="width:50px;height:50px;overflow:auto"><div/></div>').appendTo('body');
+		child=parent.children();
+		width=child.innerWidth()-child.height(99).innerWidth();
+		parent.remove();
+	}
 
- return width;
+	return width;
 };
 
 var unit = function (unit) {
@@ -531,21 +537,22 @@ var layoutRecurse = function ($el, ctx, cs) {
 			// todo: replace with some isInstance function
 			if (!i.minWidth || !i.minHeight) {
 				console.log('not a component');
+				debugger;
 			}
 			ctx.unbuild(i.destroy);
 			i.$el.css('visibility', 'hidden')
 				.css('position', 'absolute')
 				.css('pointer-events', 'initial');
-			stream.onValue(context.width, function (w) {
+			stream.onValue(context.widthCss || context.width, function (w) {
 				updateDomFunc(i.$el, 'width', w);
 			});
-			stream.onValue(context.height, function (h) {
+			stream.onValue(context.heightCss || context.height, function (h) {
 				updateDomFunc(i.$el, 'height', h);
 			});
-			stream.onValue(context.top, function (t) {
+			stream.onValue(context.topCss || context.top, function (t) {
 				updateDomFunc(i.$el, 'top', t);
 			});
-			stream.onValue(context.left, function (l) {
+			stream.onValue(context.leftCss || context.left, function (l) {
 				updateDomFunc(i.$el, 'left', l);
 			});
 			stream.combine([
@@ -783,6 +790,16 @@ var withMinHeight = function (mh) {
 		};
 	});
 };
+var withDimensions = function (mw, mh) {
+	return layout(function ($el, ctx, c) {
+		$el.addClass('withDimensions');
+		var i = c(ctx.child());
+		return {
+			minWidth: stream.once(mw),
+			minHeight: stream.once(constant(mh)),
+		};
+	});
+};
 var passthrough = function (f) {
 	return layout(function ($el, ctx, c) {
 		$el.addClass('passthrough');
@@ -790,18 +807,52 @@ var passthrough = function (f) {
 		return c(ctx.child());
 	});
 };
-// var adjustMinSize = function (config) {
-// 	return layout(function ($el, ctx, i) {
-// 		return [{
-// 			minWidth: stream.map(i.minWidth, function (mw) {
-// 				return config.mw(mw);
-// 			}),
-// 			minHeight: stream.map(i.minHeight, function (mh) {
-// 				return config.mh(mh);
-// 			}),
-// 		}];
-// 	});
-// };
+
+var adjustPosition = function (minSize, position) {
+	minSize = minSize || {};
+	minSize.minWidth = minSize.minWidth || id;
+	minSize.minHeight = minSize.minHeight || id;
+	position = position || {};
+	position.top = position.top || onceZeroS;
+	position.left = position.left || onceZeroS;
+	position.width = position.width || id;
+	position.height = position.height || id;
+	return layout(function ($el, ctx, c) {
+		var context = ctx.child({
+			top: true,
+			left: true,
+			width: true,
+			height: true,
+		});
+		var i = c(context);
+		stream.pushAll(position.top, context.top);
+		stream.pushAll(position.left, context.left);
+		stream.pushAll(stream.map(ctx.width, position.width), context.width);
+		stream.pushAll(stream.map(ctx.height, position.height), context.height);
+		return {
+			minWidth: stream.map(i.minWidth, function (mw) {
+				return minSize.minWidth(mw);
+			}),
+			minHeight: stream.map(i.minHeight, function (mh) {
+				return minSize.minHeight(mh);
+			}),
+		};
+	});
+};
+
+var adjustMinSize = function (config) {
+	return layout(function ($el, ctx, c) {
+		var i = c(ctx.child());
+		return {
+			minWidth: stream.map(i.minWidth, function (mw) {
+				return config.mw(mw);
+			}),
+			minHeight: stream.map(i.minHeight, function (mh) {
+				return config.mh(mh);
+			}),
+		};
+	});
+};
 var link = $css('cursor', 'pointer');
 
 // var componentName = function (name) {
@@ -833,17 +884,17 @@ var pushOnClick = function (s, f) {
 	});
 };
 
-// var hoverThis = function (cb) {
-// 	return passthrough(function ($el) {
-// 		cb(false, $el);
-// 		$el.on('mouseover', function (ev) {
-// 			cb(true, $el, ev);
-// 		});
-// 		$el.on('mouseout', function (ev) {
-// 			cb(false, $el, ev);
-// 		});
-// 	});
-// };
+var hoverThis = function (cb) {
+	return passthrough(function ($el) {
+		cb(false, $el);
+		$el.on('mouseover', function (ev) {
+			cb(true, $el, ev);
+		});
+		$el.on('mouseout', function (ev) {
+			cb(false, $el, ev);
+		});
+	});
+};
 
 // var hoverStream = function (s, f) {
 // 	f = f || function (v) {
@@ -860,31 +911,35 @@ var pushOnClick = function (s, f) {
 // 	});
 // };
 
-// var cssStream = function (style, valueS) {
-// 	return passthrough(function ($el) {
-// 		stream.map(valueS, function (value) {
-// 			$el.css(style, value);
-// 		});
-// 	});
-// };
+var cssStream = function (style, valueS) {
+	return passthrough(function ($el) {
+		stream.map(valueS, function (value) {
+			$el.css(style, value);
+		});
+	});
+};
 
-// var withBackgroundColor = function (s, arg2) {
-// 	// stream is an object
-// 	if (!stream.isStream(s)) {
-// 		s = stream.once({
-// 			backgroundColor: s,
-// 			fontColor: arg2,
-// 		});
-// 	}
-// 	return passthrough(function ($el) {
-// 		stream.map(s, function (colors) {
-// 			var bc = colors.backgroundColor;
-// 			var fc = colors.fontColor;
-// 			$el.css('color', colorString(fc))
-// 				.css('background-color', colorString(bc));
-// 		});
-// 	});
-// };
+var withBackgroundColor = function (s, arg2) {
+	// stream is an object
+	if (!stream.isStream(s)) {
+		s = stream.once({
+			backgroundColor: s,
+			fontColor: arg2,
+		});
+	}
+	return $$(function ($el) {
+		stream.map(s, function (colors) {
+			var bc = colors.backgroundColor;
+			var fc = colors.fontColor;
+			if (bc) {
+				$el.css('background-color', colorString(bc));
+			}
+			if (fc) {
+				$el.css('color', colorString(fc));
+			}
+		});
+	});
+};
 // var withFontColor = function (fc) {
 // 	return passthrough(function ($el) {
 // 		$el.css('color', colorString(fc));
@@ -905,11 +960,17 @@ var keepAspectRatio = function (config) {
 	config = config || {};
 	return layout(function ($el, ctx, c) {
 		$el.addClass('keepAspectRatio');
-		var minWidth = stream.create();
-		var minHeight = stream.create();
-		var props = stream.combine([
-			minWidth,
-			minHeight,
+		$el.css('overflow', 'hidden');
+		var props = stream.create();
+		var i = c(ctx.child({
+			top: stream.prop(props, 'top'),
+			left: stream.prop(props, 'left'),
+			width: stream.prop(props, 'width'),
+			height: stream.prop(props, 'height'),
+		}));
+		stream.combineInto([
+			i.minWidth,
+			i.minHeight,
 			ctx.width,
 			ctx.height,
 		], function (mw, mh, w, h) {
@@ -960,25 +1021,29 @@ var keepAspectRatio = function (config) {
 					height: usedHeight,
 				};
 			}
+		}, props);
+		var minWidth = stream.create();
+		var minHeight = stream.create();
+		stream.combine([
+			i.minWidth,
+			i.minHeight,
+		], function (mw, mh) {
+			if (config.minWidth) {
+				stream.push(minWidth, config.minWidth);
+			}
+			else if (config.minHeight) {
+				stream.push(minWidth, config.minHeight * mw / mh(mw));
+			}
+			else {
+				stream.push(minWidth, mw);
+			}
+			stream.push(minHeight, function (w) {
+				return w / (mw / mh(mw));
+			});
 		});
-		var i = c(ctx.child({
-			top: stream.prop(props, 'top'),
-			left: stream.prop(props, 'left'),
-			width: stream.prop(props, 'width'),
-			height: stream.prop(props, 'height'),
-		}));
-		stream.pushAll(i.minWidth, minWidth);
-		stream.pushAll(i.minHeight, minHeight);
 		return {
-			minWidth: i.minWidth,
-			minHeight: stream.combine([
-				i.minWidth,
-				i.minHeight,
-			], function (mw, mh) {
-				return function (w) {
-					return w / (mw / mh(mw));
-				};
-			}),
+			minWidth: minWidth,
+			minHeight: minHeight,
 		};
 	});
 };
@@ -993,10 +1058,13 @@ var image = function (config) {
 		});
 		$el.on('load', function () {
 			var aspectRatio = $el[0].naturalWidth / $el[0].naturalHeight;
-			var mw = config.minWidth || $el[0].naturalWidth;
-			var mh = mw / aspectRatio;
+			var mw = config.minWidth ||
+					(config.minHeight && config.minHeight * aspectRatio) ||
+					$el[0].naturalWidth;
 			stream.push(minWidth, mw);
-			stream.push(minHeight, constant(mh));
+			stream.push(minHeight, function (w) {
+				return w / aspectRatio;
+			});
 		});
 		return {
 			minWidth: minWidth,
@@ -1026,7 +1094,10 @@ var text = function (strs, config) {
 		strs = [strs];
 	}
 	config = config || strs[0];
-	return div(function ($el, ctx) {
+	if ($.isArray(config)) {
+		config = config.reduce($.extend, {});
+	}
+	return (config.el || div)(function ($el, ctx) {
 		var didMH = false;
 		var mw = stream.create();
 		var mh = stream.create();
@@ -1038,14 +1109,14 @@ var text = function (strs, config) {
 			}
 			var $span = $(document.createElement('span'));
 			$span.html(c.str);
-			if (c.size) {
+			if (c.size || config.size) {
 				$span.css('font-size', c.size);
 			}
 			if (c.weight) {
 				$span.css('font-weight', c.weight);
 			}
-			if (c.font) {
-				$span.css('font-family', c.font);
+			if (c.family) {
+				$span.css('font-family', c.family);
 			}
 			if (c.color) {
 				$span.css('color', colorString(c.color));
@@ -1058,17 +1129,17 @@ var text = function (strs, config) {
 		if (config.weight) {
 			$el.css('font-weight', config.weight);
 		}
-		if (config.font) {
-			$el.css('font-family', config.font);
+		if (config.family) {
+			$el.css('font-family', config.family);
 		}
 		if (config.color) {
-			$el.css('color', config.color);
+			$el.css('color', colorString(config.color));
 		}
 		if (config.align) {
 			$el.css('text-align', config.align);
 		}
-		stream.push(mw, measureWidth($el, config.minWidth));
-		stream.push(mh, measureHeight($el));
+		stream.push(mw, config.hasOwnProperty('minWidth') ? config.minWidth : measureWidth($el));
+		stream.push(mh, config.hasOwnProperty('minHeight') ? constant(config.minHeight) : measureHeight($el));
 		return {
 			minWidth: mw,
 			minHeight: mh,
@@ -1198,6 +1269,16 @@ var centerSurplusHeight = function (totalHeight, positions) {
 	var surplusHeight = totalHeight - (lastPosition.top + lastPosition.height);
 	positions.map(function (position, i) {
 		position.top += surplusHeight / 2;
+	});
+	return positions;
+};
+var evenSplitSurplusHeight = function (totalHeight, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusHeight = totalHeight - (lastPosition.top + lastPosition.height);
+	var heightPerCol = surplusHeight / positions.length;
+	positions.map(function (position, i) {
+		position.height += heightPerCol;
+		position.top += i * heightPerCol;
 	});
 	return positions;
 };
@@ -1380,6 +1461,7 @@ var sideBySide = function (config) {
 	config.padding = config.padding || 0;
 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
 	return layout(function ($el, ctx, cs) {
+		$el.addClass('sideBySide');
 		if (cs.length === 0) {
 			return {
 				minWidth: stream.once(0),
@@ -1403,7 +1485,7 @@ var sideBySide = function (config) {
 			var positions = mws.map(function (mw, index) {
 				var position = {
 					left: left + config.padding * index,
-					width: mw,
+					width: Math.min(width, mw),
 				};
 				left += mw;
 				return position;
@@ -1445,6 +1527,72 @@ var sideBySide = function (config) {
 					}).reduce(mathMax, 0);
 				};
 			}),
+		};
+	});
+};
+
+var slideIn = function (config) {
+	config = config || {};
+	config.top = config.top || 50;
+	config.transition = config.transition || '1s';
+	return layout(function ($el, ctx, c) {
+		var context = ctx.child({
+			top: true,
+		});
+		var i = c(context);
+		i.$el.css('transition', 'top ' + config.transition);
+		var pushed = false;
+		stream.push(context.top, config.top);
+		stream.combine([
+			ctx.topAccum,
+			ctx.top,
+			windowHeight,
+			windowScroll,
+		], function (ta, t, wh, ws) {
+			if (!pushed) {
+				var top = ta + t;
+				var visibleUntil = ws + wh;
+				if (top <= visibleUntil) {
+					stream.push(context.top, 0);
+					pushed = true;
+				}
+			}
+		});
+		return {
+			minWidth: i.minWidth,
+			minHeight: i.minHeight,
+		};
+	});
+};
+var fadeIn = function (config) {
+	config = config || {};
+	config.transition = config.transition || '1s';
+	config.margin = config.margin || 0;
+	return layout(function ($el, ctx, c) {
+		var i = c(ctx.child());
+		var pushed = false;
+		i.$el.css('opacity', 0);
+		setTimeout(function () {
+			i.$el.css('transition', 'opacity ' + config.transition);
+		});
+		stream.combine([
+			ctx.topAccum,
+			ctx.top,
+			windowHeight,
+			windowScroll,
+		], function (ta, t, wh, ws) {
+			if (!pushed) {
+				var top = ta + t;
+				var visibleUntil = ws + wh;
+				if (top + config.margin <= visibleUntil) {
+					i.$el.css('opacity', 1);
+					pushed = true;
+				}
+			}
+		});
+		return {
+			minWidth: i.minWidth,
+			minHeight: i.minHeight,
 		};
 	});
 };
@@ -1625,7 +1773,6 @@ var stack = function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
 	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
-	config.transition = config.transition || 0;
 	var transition = config.transition + 's';
 	return layout(function ($el, ctx, cs) {
 		$el.addClass('stack');
@@ -1644,11 +1791,13 @@ var stack = function (config) {
 			contexts.push(context);
 			return c(context);
 		});
+		if (config.transition) {
+			is.map(function (i) {
+				i.$el.css('transition', 'height ' + config.transition + ', top ' + config.transition);
+			});
+		}
 		var allMinWidths = mapMinWidths(is);
 		var allMinHeights = mapMinHeights(is);
-		is.map(function (i) {
-			i.$el.css('transition', 'height ' + transition + ', top ' + transition);
-		});
 		stream.all([
 			ctx.width,
 			ctx.height,
@@ -1788,6 +1937,24 @@ var stackStream = function (config) {
 	};
 };
 
+var tree = function (config, index) {
+	config = config || {};
+	config.indent = config.indent || 10;
+	return function (actionS) {
+		var expandedS = stream.once(true);
+		return sideBySide()([
+			componentStream(stream.map(expandedS, function (e) {
+			})),
+			stackStream(config)(stream.map(actionS, caseSplit({
+				expand: function (c, i) {
+				},
+				collapse: function (i) {
+				},
+			}))),
+		]);
+	};
+};
+
 // var intersperse = function (arr, v) {
 // 	var result = [];
 // 	stream.map(arr, function (el) {
@@ -1798,29 +1965,6 @@ var stackStream = function (config) {
 // 	return result;
 // };
 
-
-// var adjustPosition = function (amount, c) {
-// 	var top = amount.top || 0;
-// 	var left = amount.left || 0;
-// 	return div.all([
-// 		componentName('adjustPosition'),
-// 		child(c),
-// 		wireChildren(function (instance, context, i) {
-// 			stream.pushAll(i.minWidth, instance.minWidth);
-// 			stream.pushAll(i.minHeight, instance.minHeight);
-// 			return [{
-// 				top: stream.map(context.top, function (t) {
-// 					return t + top;
-// 				}),
-// 				left: stream.map(context.left, function (l) {
-// 					return l + left;
-// 				}),
-// 				width: context.width,
-// 				height: context.height,
-// 			}];
-// 		}),
-// 	]);
-// };
 
 var margin = function (amount) {
 	var top = amount.all || 0,
@@ -1863,6 +2007,8 @@ var margin = function (amount) {
 			height: stream.map(ctx.height, function (h) {
 				return h - top - bottom;
 			}),
+			widthCss: stream.once('calc(100% - ' + px(left + right) + ')'),
+			heightCss: stream.once('calc(100% - ' + px(top + bottom) + ')'),
 		}));
 		return {
 			minWidth: stream.map(i.minWidth, function (mw) {
@@ -1870,7 +2016,7 @@ var margin = function (amount) {
 			}),
 			minHeight: stream.map(i.minHeight, function (mh) {
 				return function (w) {
-					return mh(w) + top + bottom;
+					return mh(w - left - right) + top + bottom;
 				};
 			}),
 		};
@@ -1977,24 +2123,19 @@ var alignLRM = function (config) {
 			var lI = l(lCtx);
 			var rI = r(rCtx);
 			var mI = m(mCtx);
-			useMinWidth(lCtx, lI);
-			useMinWidth(rCtx, rI);
-			stream.combineInto([
+			stream.combine([
+				lI.minWidth,
 				rI.minWidth,
-				ctx.width,
-			], function (mw, w) {
-				return w - mw;
-			}, rCtx.left);
-			useMinWidth(mCtx, mI);
-			stream.combineInto([
 				mI.minWidth,
 				ctx.width,
-			], function (mw, w) {
-				return (w - mw) / 2;
-			}, mCtx.left);
-			lI.$el.css('transition', 'left ' + config.transition);
-			rI.$el.css('transition', 'left ' + config.transition);
-			mI.$el.css('transition', 'left ' + config.transition);
+			], function (lmw, rmw, mmw, w) {
+				stream.push(lCtx.width, Math.min(w, lmw));
+				stream.push(rCtx.width, Math.min(w, rmw));
+				stream.push(mCtx.width, Math.min(w, mmw));
+				stream.push(lCtx.left, 0);
+				stream.push(rCtx.left, w - Math.min(w, rmw));
+				stream.push(mCtx.left, (w - Math.min(w, mmw)) / 2);
+			});
 			return {
 				minWidth: stream.combine([
 					lI.minWidth,
@@ -2012,12 +2153,22 @@ var alignLRM = function (config) {
 					mI.minHeight,
 				], function (lw, rw, mw, lh, rh, mh) {
 					return function (w) {
-						return [lh(lw), rh(rw), mh(mw)].reduce(mathMax);
+						return [lh(Math.min(w, lw)), rh(Math.min(w, rw)), mh(Math.min(w, mw))].reduce(mathMax);
 					};
 				}),
 			};
 		})(lrm.l || nothing, lrm.r || nothing, lrm.m || nothing);
 	};
+};
+var alignLeft = function (c) {
+	return alignLRM()({
+		l: c,
+	});
+};
+var alignRight = function (c) {
+	return alignLRM()({
+		r: c,
+	});
 };
 var center = function (config) {
 	return function (c) {
@@ -2047,23 +2198,20 @@ var alignTBM = function (config) {
 			var tI = t(tCtx);
 			var bI = b(bCtx);
 			var mI = m(mCtx);
-			useMinHeight(tCtx, tI);
-			useMinHeight(bCtx, bI);
-			stream.combineInto([
+			stream.combine([
+				tI.minHeight,
 				bI.minHeight,
-				ctx.height,
-				ctx.width,
-			], function (mh, h, w) {
-				return h - mh(w);
-			}, bCtx.top);
-			useMinHeight(mCtx, mI);
-			stream.combineInto([
 				mI.minHeight,
-				ctx.height,
 				ctx.width,
-			], function (mh, h, w) {
-				return (h - mh(w)) / 2;
-			}, mCtx.top);
+				ctx.height,
+			], function (lmh, rmh, mmh, w, h) {
+				stream.push(tCtx.height, Math.min(h, lmh(w)));
+				stream.push(bCtx.height, Math.min(h, rmh(w)));
+				stream.push(mCtx.height, Math.min(h, mmh(w)));
+				stream.push(tCtx.top, 0);
+				stream.push(bCtx.top, Math.max(0, h - Math.min(h, rmh(w))));
+				stream.push(mCtx.top, Math.max(0, (h - Math.min(h, mmh(w))) / 2));
+			});
 			tI.$el.css('transition', 'top ' + config.transition);
 			bI.$el.css('transition', 'top ' + config.transition);
 			mI.$el.css('transition', 'top ' + config.transition);
@@ -2087,6 +2235,23 @@ var alignTBM = function (config) {
 			};
 		})(tbm.t || nothing, tbm.b || nothing, tbm.m || nothing);
 	};
+};
+var alignTop = function (c) {
+	return alignTBM()({
+		t: c,
+	});
+};
+var alignBottom = function (c) {
+	return alignTBM()({
+		t: c,
+	});
+};
+var alignAbsoluteCenter = function (c) {
+	return alignTBM()({
+		m: alignLRM()({
+			m: c,
+		}),
+	});
 };
 
 // // var invertOnHover = function (c) {
@@ -2129,6 +2294,9 @@ var border = function (colorS, amount, style) {
 	var top = amount.top || amount.all || 0;
 	var bottom = amount.bottom || amount.all || 0;
 	var radius = amount.radius || 0;
+	if ($.isNumeric(amount)) {
+		top = bottom = left = right = amount;
+	}
 	style = style || 'solid';
 
 	if (!stream.isStream(colorS)) {
@@ -2139,6 +2307,8 @@ var border = function (colorS, amount, style) {
 
 	return layout(function ($el, ctx, c) {
 		$el.addClass('border');
+		// overflow hidden is necessary to prevent cutting off corners
+		// of border if there is a border radius
 		var i = c(ctx.child({
 			width: stream.map(ctx.width, function (w) {
 				return w - left - right;
@@ -2146,7 +2316,10 @@ var border = function (colorS, amount, style) {
 			height: stream.map(ctx.height, function (h) {
 				return h - top - bottom;
 			}),
+			widthCss: stream.once('calc(100% - ' + px(left + right) + ')'),
+			heightCss: stream.once('calc(100% - ' + px(top + bottom) + ')'),
 		}));
+		i.$el.css('overflow', 'hidden');
 		i.$el.css('border-radius', px(radius));
 		stream.map(colorStringS, function (colorstring) {
 			i.$el.css('border-left', px(left) + ' ' + style + ' ' + colorstring)
@@ -2169,12 +2342,12 @@ var border = function (colorS, amount, style) {
 
 var componentStream = function (cStream) {
 	var error = new Error();
-	return div(function ($el, ctx, unbuild) {
+	return container(function ($el, ctx, child) {
 		$el.addClass('componentStream');
 		var i;
 		var unpushMW;
 		var unpushMH;
-		unbuild(function () {
+		ctx.unbuild(function () {
 			if (i) {
 				i.destroy();
 			}
@@ -2191,7 +2364,10 @@ var componentStream = function (cStream) {
 			if (unpushMH) {
 				unpushMH();
 			}
-			i = c(ctx.child());
+			i = child(c)(ctx.child({
+				widthCss: stream.once('100%'),
+				heightCss: stream.once('100%'),
+			}));
 			unpushMW = stream.pushAll(i.minWidth, minWidth);
 			unpushMH = stream.pushAll(i.minHeight, minHeight);
 			return i;
@@ -2322,79 +2498,118 @@ var promiseComponent = function (cP) {
 // // 	};
 // // };
 
-// // var toggleHeight = function (s) {
-// // 	var open = stream.once(false);
-// // 	stream.pushAll(s, open);
-// // 	return function (c) {
-// // 		return div.all([
-// // 			$css('overflow', 'hidden'),
-// // 			componentName('toggle-height'),
-// // 			child(c),
-// // 			wireChildren(function (instance, context, i) {
-// // 				stream.pushAll(i.minWidth, instance.minWidth);
-// // 				stream.pushAll(stream.combine([i.minHeight, open], function (mh, onOff) {
-// // 					return onOff ? mh : 0;
-// // 				}), instance.minHeight);
-// // 				return [{
-// // 					top: stream.once(0),
-// // 					left: stream.once(0),
-// // 					width: context.width,
-// // 					height: context.height,
-// // 				}];
-// // 			}),
-// // 		]);
-// // 	};
-// // };
+var toggleHeight = function (open) {
+	return layout(function ($el, ctx, c) {
+		$el.css('overflow', 'hidden')
+			.addClass('toggle-height');
+		var cCtx = ctx.child();
+		var i = c(cCtx);
+		return {
+			minWidth: i.minWidth,
+			minHeight: stream.combine([
+				i.minHeight,
+				open,
+			], function (mh, onOff) {
+				return function (w) {
+					return onOff ? mh(w) : 0;
+				};
+			}),
+		};
+	});
+};
 
-// // var dropdownPanel = function (source, panel, onOff, config) {
-// // 	config = config || {};
-// // 	config.transition = config.transition || "0.5s";
-// // 	return div.all([
-// // 		componentName('dropdown-panel'),
-// // 		child(div.all([
-// // 			child(panel),
-// // 			wireChildren(function (instance, context, i) {
-// // 				stream.pushAll(i.minWidth, instance.minWidth);
-// // 				stream.pushAll(i.minHeight, instance.minHeight);
-// // 				i.$el.css('transition', 'top ' + config.transition);
-// // 				instance.$el.css('pointer-events', 'none');
-// // 				i.$el.css('pointer-events', 'initial');
-// // 				i.$el.css('z-index', '1000');
-// // 				return [{
-// // 					width: context.width,
-// // 					height: i.minHeight,
-// // 					top: stream.combine([onOff, i.minHeight], function (on, mh) {
-// // 						return on ? 0 : -mh;
-// // 					}),
-// // 					left: stream.once(0),
-// // 				}];
-// // 			}),
-// // 			$css('overflow', 'hidden'),
-// // 		])),
-// // 		child(source),
-// // 		wireChildren(function (instance, context, iPanel, iSource) {
-// // 			stream.pushAll(stream.combine([
-// // 				iPanel.minWidth,
-// // 				iSource.minWidth,
-// // 			], Math.max), instance.minWidth);
-// // 			stream.pushAll(iSource.minHeight, instance.minHeight);
-// // 			if (config.panelHeightS) {
-// // 				stream.pushAll(iPanel.minHeight, config.panelHeightS);
-// // 			}
-// // 			return [{
-// // 				width: context.width,
-// // 				height: iPanel.minHeight,
-// // 				top: iSource.minHeight,
-// // 				left: stream.once(0),
-// // 			}, {
-// // 				width: context.width,
-// // 				height: iSource.minHeight,
-// // 				top: stream.once(0),
-// // 				left: stream.once(0),
-// // 			}];
-// // 		}),
-// // 	]);
-// // };
+var dropdownPanel = function (source, panel, onOffS, config) {
+	config = config || {};
+	config.transition = config.transition || "0.5s";
+	return layout(function ($el, ctx, source, panel) {
+		$el.addClass('dropdown-panel');
+		var panelCtx = ctx.child({
+			height: true,
+			top: true,
+		});
+		var sourceCtx = ctx.child();
+		var panelI = panel(panelCtx);
+		var sourceI = source(sourceCtx);
+		useMinHeight(panelCtx, panelI);
+		stream.pushAll(sourceCtx.height, panelCtx.top);
+		return {
+			minWidth: stream.map(stream.combine([
+				panelI.minWidth,
+				sourceI.minWidth,
+			], Math.max), function (mw) {
+				return mw;
+			}),
+			minHeight: sourceI.minHeight,
+		};
+	})(source, layout(function ($el, ctx, panel) {
+		var i = panel(ctx.child({
+			top: stream.combine([
+				onOffS,
+				ctx.height,
+			], function (on, h) {
+				return on ? 0 : -h;
+			})
+		}));
+		$el.css('overflow', 'hidden');
+		i.$el.css('transition', 'top ' + config.transition)
+			.css('z-index', 1000);
+		return i;
+	})(panel));
+};
+
+// generally for headers
+var sideSlidingPanel = function (source, panel, onOffS, config) {
+	config = config || {};
+	config.transition = config.transition || "0.5s";
+	return layout(function ($el, ctx, source, panel) {
+		$el.addClass('dropdown-panel');
+		var panelCtx = ctx.child({
+			width: true,
+			height: true,
+			left: true,
+			top: true,
+		});
+		var sourceCtx = ctx.child();
+		var panelI = panel(panelCtx);
+		var sourceI = source(sourceCtx);
+		useMinWidth(panelCtx, panelI);
+		stream.combineInto([
+			sourceCtx.height,
+			windowHeight,
+		], function (sh, wh) {
+			return wh - sh;
+		}, panelCtx.height);
+		stream.pushAll(sourceCtx.height, panelCtx.top);
+		stream.combineInto([
+			sourceCtx.width,
+			panelI.minWidth,
+		], function (w, mw) {
+			return w - mw;
+		}, panelCtx.left);
+		return {
+			minWidth: stream.map(stream.combine([
+				panelI.minWidth,
+				sourceI.minWidth,
+			], Math.max), function (mw) {
+				return mw;
+			}),
+			minHeight: sourceI.minHeight,
+		};
+	})(source, layout(function ($el, ctx, panel) {
+		var i = panel(ctx.child({
+			left: stream.combine([
+				onOffS,
+				ctx.width,
+			], function (on, w) {
+				return on ? 0 : w;
+			})
+		}));
+		$el.css('overflow', 'hidden');
+		i.$el.css('transition', 'left ' + config.transition)
+			.css('z-index', 1000);
+		return i;
+	})(panel));
+};
 
 // // var fixedHeaderBody = function (config, header, body) {
 // // 	config.transition = config.transition || "0.5s";
@@ -2538,197 +2753,207 @@ var promiseComponent = function (cP) {
 // // 	]);
 // // };
 
+var useNthMinHeight = function (n) {
+	return function (cells, mhs) {
+		var index = Math.min(n, cells.length - 1);
+		return mhs[index](cells[index].width);
+	};
+};
 
-// // var grid = function (config, cs) {
-// // 	config.padding = config.padding || 0;
-// // 	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
-// // 	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
-// // 	config.maxPerRow = config.maxPerRow || 0;
+var grid = function (config) {
+	config = config || {};
+	config.padding = config.padding || 0;
+	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
+	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
+	config.rowHeight = config.rowHeight || function (cells, mhs) {
+		return cells.reduce(function (a, cell, i) {
+			return Math.max(a, mhs[i](cell.width));
+		}, 0);
+	};
+	config.maxPerRow = config.maxPerRow || 0;
 
-// // 	return padding(config.outerGutter ? config.padding : 0, div.all([
-// // 		componentName('grid'),
-// // 		children(cs),
-// // 		wireChildren(function (instance, context, is) {
-// // 			if (is.length === 0) {
-// // 				stream.push(instance.minWidth, 0);
-// // 				stream.push(instance.minHeight, 0);
-// // 			}
-// // 			var minWidthsS = stream.combine(is.map(function (i) {
-// // 				return i.minWidth;
-// // 			}), function () {
-// // 				return Array.prototype.slice.call(arguments);
-// // 			});
-// // 			var minHeightsS = stream.combine(is.map(function (i) {
-// // 				return i.minHeight;
-// // 			}), function () {
-// // 				return Array.prototype.slice.call(arguments);
-// // 			});
+	return function (cs) {
+		return layout(function ($el, ctx, cs) {
+			$el.addClass('grid');
+			var minWidth = stream.create();
+			var minHeight = stream.create();
+			if (cs.length === 0) {
+				stream.push(minWidth, 0);
+				stream.push(minHeight, constant(0));
+			}
+			var contexts = [];
+			var is = cs.map(function (c) {
+				var context = ctx.child({
+					top: true,
+					left: true,
+					width: true,
+					height: true,
+				});
+				contexts.push(context);
+				return c(context);
+			});
 
-// // 			// todo: fix interaction of allSameWidth and useFullWidth
-// // 			stream.pushAll(stream.map(minWidthsS, function (mws) {
-// // 				return mws.reduce(function (a, mw) {
-// // 					return config.useFullWidth ? a + mw + config.padding : Math.max(a, mw) + config.padding;
-// // 				}, -config.padding);
-// // 			}), instance.minWidth);
+			var minWidthsS = stream.combine(is.map(function (i) {
+				return i.minWidth;
+			}), function () {
+				return Array.prototype.slice.call(arguments);
+			});
+			var minHeightsS = stream.combine(is.map(function (i) {
+				return i.minHeight;
+			}), function () {
+				return Array.prototype.slice.call(arguments);
+			});
 
-// // 			var contexts = is.map(function (i) {
-// // 				return {
-// // 					top: stream.create(),
-// // 					left: stream.create(),
-// // 					width: stream.create(),
-// // 					height: stream.create(),
-// // 				};
-// // 			});
+			var computeRows = function (gridWidth, mws) {
+				if (config.allSameWidth) {
+					var maxMW = mws.reduce(mathMax, 0);
+					// thank you, keenan simons
+					for (var ii = 0; ii < mws.length; ii++) {
+						mws[ii] = maxMW;
+					}
+				}
+				var left;
+				var blankRow = function () {
+					left = 0;
+					return {
+						cells: [],
+						contexts: [],
+						height: 0,
+					};
+				};
 
-// // 			var rowsStream = stream.combine([
-// // 				context.width,
-// // 				minWidthsS], function (gridWidth, mws) {
-// // 					if (config.allSameWidth) {
-// // 						var maxMW = mws.reduce(mathMax, 0);
-// // 						// thank you, keenan simons
-// // 						for (var ii = 0; ii < mws.length; ii++) {
-// // 							mws[ii] = maxMW;
-// // 						}
-// // 					}
-// // 					var blankRow = function () {
-// // 						return {
-// // 							cells: [],
-// // 							contexts: [],
-// // 							height: 0,
-// // 						};
-// // 					};
+				var rowsAndCurrentRow = mws.reduce(function (a, mw, index) {
+					var rows = a.rows;
+					var currentRow = a.currentRow;
 
-// // 					var rowsAndCurrentRow = is.reduce(function (a, i, index) {
-// // 						var rows = a.rows;
-// // 						var currentRow = a.currentRow;
+					var widthUsedThisRow = currentRow.cells.reduce(function (a, cell) {
+						return a + cell.width + config.padding;
+					}, 0);
+					var widthNeeded = Math.min(mw, gridWidth);
 
-// // 						var mw = mws[index];
-// // 						var widthUsedThisRow = currentRow.cells.reduce(function (a, b) {
-// // 							return a + b + config.padding;
-// // 						}, 0);
-// // 						var widthNeeded = Math.min(mw, gridWidth);
+					if ((config.maxPerRow > 0 &&
+						 currentRow.cells.length === config.maxPerRow) ||
+						(widthNeeded > 0 &&
+						 widthNeeded + widthUsedThisRow > gridWidth)) {
+						rows.push(currentRow);
+						currentRow = blankRow();
+					}
 
-// // 						if ((config.maxPerRow > 0 &&
-// // 							currentRow.cells.length === config.maxPerRow) ||
-// // 							(widthNeeded > 0 &&
-// // 							 widthNeeded + widthUsedThisRow > gridWidth)) {
-// // 							rows.push(currentRow);
-// // 							currentRow = blankRow();
-// // 						}
+					currentRow.cells.push({
+						width: widthNeeded,
+						left: left,
+					});
+					currentRow.contexts.push(contexts[index]);
 
-// // 						currentRow.cells.push(widthNeeded);
-// // 						currentRow.contexts.push(contexts[index]);
+					left += widthNeeded + config.padding;
+					return {
+						rows: rows,
+						currentRow: currentRow,
+					};
+				}, {
+					rows: [],
+					currentRow: blankRow(),
+				});
+				var rows = rowsAndCurrentRow.rows;
+				rows.push(rowsAndCurrentRow.currentRow);
 
-// // 						return {
-// // 							rows: rows,
-// // 							currentRow: currentRow,
-// // 						};
-// // 					}, {
-// // 						rows: [],
-// // 						currentRow: blankRow(),
-// // 					});
-// // 					var rows = rowsAndCurrentRow.rows;
-// // 					rows.push(rowsAndCurrentRow.currentRow);
+				rows.map(function (row, i) {
+					row.cells = config.handleSurplusWidth(gridWidth, row.cells, config, i);
+				});
 
-// // 					rows.map(function (row, i) {
-// // 						var widthUsed = 0;
-// // 						var positions = row.cells.map(function (widthNeeded) {
-// // 							var position = {
-// // 								left: widthUsed,
-// // 								width: widthNeeded,
-// // 							};
-// // 							widthUsed += widthNeeded + config.padding;
-// // 							return position;
-// // 						});
-// // 						positions = config.handleSurplusWidth(gridWidth, positions, config, i);
-// // 						positions.map(function (position, index) {
-// // 							var ctx = row.contexts[index];
-// // 							stream.push(ctx.width, position.width);
-// // 						});
-// // 					});
+				return rows;
+			};
 
-// // 					return rows;
-// // 				});
+			// todo: fix interaction of allSameWidth and useFullWidth
+			stream.pushAll(stream.map(minWidthsS, function (mws) {
+				return mws.reduce(function (a, mw) {
+					return config.useFullWidth ? a + mw + config.padding : Math.max(a, mw) + config.padding;
+				}, -config.padding);
+			}), minWidth);
+			stream.combineInto([
+				minWidthsS,
+				minHeightsS,
+			], function (mws, mhs) {
+				return function (w) {
+					var rows = computeRows(w, mws);
+					var index = 0;
+					var h = rows.map(function (row) {
+						var h = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
+						index += row.cells.length;
+						return h + config.padding;
+					}).reduce(add, -config.padding);
+					return h;
+				};
+			}, minHeight);
 
-// // 			var rowsWithHeights = stream.combine([
-// // 				minHeightsS,
-// // 				rowsStream,
-// // 			], function (mhs, rows) {
-// // 				var index = 0;
-// // 				rows.map(function (row) {
-// // 					row.height = 0;
-// // 					row.cells.map(function (cell, i) {
-// // 						row.height = Math.max(row.height, mhs[index + i]);
-// // 					});
-// // 					index += row.cells.length;
-// // 				});
+			stream.all([
+				ctx.width,
+				ctx.height,
+				minWidthsS,
+				minHeightsS,
+			], function (gridWidth, gridHeight, mws, mhs) {
+				var rows = computeRows(gridWidth, mws);
+				var index = 0;
+				rows.map(function (row) {
+					row.height = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
+					index += row.cells.length;
+				});
+				if (config.bottomToTop) {
+					rows = rows.slice(0).reverse();
+				}
+				var top = 0;
+				rows = config.handleSurplusHeight(gridHeight, rows, config);
+				rows.map(function (row, i) {
+					var positions = row.cells.map(function (cell) {
+						var position = {
+							top: top,
+							left: cell.left,
+							width: cell.width,
+							height: row.height,
+						};
+						return position;
+					});
+					positions = config.handleSurplusWidth(gridWidth, positions, config, i);
+					positions.map(function (position, index) {
+						var context = row.contexts[index];
+						stream.push(context.top, position.top);
+						stream.push(context.left, position.left);
+						stream.push(context.width, position.width);
+						stream.push(context.height, position.height);
+					});
+					top += row.height + config.padding;
+				});
+			});
 
-// // 				stream.push(instance.minHeight, rows.map(function (r) {
-// // 					return r.height;
-// // 				}).reduce(function (a, b) { return a + b + config.padding; }, -config.padding));
-// // 				return rows;
-// // 			});
+			return {
+				minWidth: minWidth,
+				minHeight: minHeight,
+			};
+		})(cs);
+	};
+};
 
-
-// // 			stream.all([
-// // 				context.width,
-// // 				context.height,
-// // 				rowsWithHeights], function (gridWidth, gridHeight, rows) {
-// // 					if (config.bottomToTop) {
-// // 						rows = rows.slice(0).reverse();
-// // 					}
-// // 					var top = 0;
-// // 					rows = config.handleSurplusHeight(gridHeight, rows, config);
-// // 					rows.map(function (row, i) {
-// // 						var widthUsed = 0;
-// // 						var positions = row.cells.map(function (widthNeeded) {
-// // 							var position = {
-// // 								top: top,
-// // 								left: widthUsed,
-// // 								width: widthNeeded,
-// // 								height: row.height,
-// // 							};
-// // 							widthUsed += widthNeeded + config.padding;
-// // 							return position;
-// // 						});
-// // 						positions = config.handleSurplusWidth(gridWidth, positions, config, i);
-// // 						positions.map(function (position, index) {
-// // 							var ctx = row.contexts[index];
-// // 							stream.push(ctx.top, position.top);
-// // 							stream.push(ctx.left, position.left);
-// // 							stream.push(ctx.width, position.width);
-// // 							stream.push(ctx.height, position.height);
-// // 						});
-// // 						top += row.height + config.padding;
-// // 					});
-// // 				});
-
-// // 			return [contexts];
-// // 		}),
-// // 	]));
-// // };
-
-// // var withMinWidthStream = function (getMinWidthStream, c) {
-// // 	return div.all([
-// // 		componentName('with-min-width-stream'),
-// // 		child(c),
-// // 		wireChildren(function (instance, context, i) {
-// // 			if ($.isFunction(getMinWidthStream)) {
-// // 				stream.pushAll(getMinWidthStream(i, context), instance.minWidth);
-// // 			}
-// // 			else {
-// // 				stream.pushAll(getMinWidthStream, instance.minWidth);
-// // 			}
-// // 			stream.pushAll(i.minHeight, instance.minHeight);
-// // 			return [{
-// // 				top: stream.once(0),
-// // 				left: stream.once(0),
-// // 				width: context.width,
-// // 				height: context.height,
-// // 			}];
-// // 		}),
-// // 	]);
-// // };
+var withMinWidthStream = function (getMinWidthStream) {
+	return layout(function ($el, ctx, c) {
+		$el.addClass('withMinWidthStream');
+		var i = c(ctx.child());
+		return {
+			minWidth: $.isFunction(getMinWidthStream) ? getMinWidthStream(i) : getMinWidthStream,
+			minHeight: i.minHeight,
+		};
+	});
+};
+var minWidthAtLeast = function (number) {
+	if (!stream.isStream(number)) {
+		number = stream.once(number);
+	}
+	return withMinWidthStream(function (i) {
+		return stream.combine([
+			i.minWidth,
+			number,
+		], mathMax);
+	});
+};
 var withMinHeightStream = function (getMinHeightStream) {
 	return layout(function ($el, ctx, c) {
 		$el.addClass('withMinHeightStream');
@@ -2770,6 +2995,7 @@ var minHeightAtLeast = function (number) {
 
 var overlays = function (config) {
 	return layout(function ($el, ctx, cs) {
+		$el.addClass('overlays');
 		var is = cs.map(function (c) {
 			return c(ctx.child());
 		});
