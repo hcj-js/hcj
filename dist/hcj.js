@@ -311,6 +311,7 @@ var updateDomFunc = function ($el, prop, value) {
 
 var measureWidth = function ($el, w) {
 	var $sandbox = $('.sandbox');
+	var loginText = $el.text().indexOf('Log In') !== -1;
 	var $clone = $el.clone();
 	$clone.css('width', w ? px(w) : '')
 		.css('height', '')
@@ -318,6 +319,9 @@ var measureWidth = function ($el, w) {
 		.appendTo($sandbox);
 
 	var width = $clone[0].scrollWidth;
+	if (loginText) {
+		debugger;
+	}
 	$clone.remove();
 
 	return width;
@@ -1121,7 +1125,19 @@ var text = function (strs, config) {
 			if (c.color) {
 				$span.css('color', colorString(c.color));
 			}
-			$span.appendTo($el);
+			if (c.spanCSS) {
+				c.spanCSS.map(function (css) {
+					$span.css(css.name, css.value);
+				});
+			}
+			if (c.linkTo) {
+				var $a = $(document.createElement('a'));
+				$a.prop('href', c.linkTo).appendTo($el);
+				$span.appendTo($a);
+			}
+			else {
+				$span.appendTo($el);
+			}
 		});
 		if (config.size) {
 			$el.css('font-size', config.size);

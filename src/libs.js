@@ -686,7 +686,19 @@ var text = function (strs, config) {
 			if (c.color) {
 				$span.css('color', colorString(c.color));
 			}
-			$span.appendTo($el);
+			if (c.spanCSS) {
+				c.spanCSS.map(function (css) {
+					$span.css(css.name, css.value);
+				});
+			}
+			if (c.linkTo) {
+				var $a = $(document.createElement('a'));
+				$a.prop('href', c.linkTo).appendTo($el);
+				$span.appendTo($a);
+			}
+			else {
+				$span.appendTo($el);
+			}
 		});
 		if (config.size) {
 			$el.css('font-size', config.size);
