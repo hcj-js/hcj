@@ -319,9 +319,6 @@ var measureWidth = function ($el, w) {
 		.appendTo($sandbox);
 
 	var width = $clone[0].scrollWidth;
-	if (loginText) {
-		debugger;
-	}
 	$clone.remove();
 
 	return width;
