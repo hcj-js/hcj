@@ -521,6 +521,78 @@ var withBackgroundColor = function (s, arg2) {
 // 	});
 // };
 
+var crop = function (amount) {
+	var top = amount.all || 0,
+		bottom = amount.all || 0,
+		left = amount.all || 0,
+		right = amount.all || 0;
+
+	// amount may be a single number
+	if ($.isNumeric(amount)) {
+		top = bottom = left = right = amount;
+	}
+	// or an object with properties containing 'top', 'bottom', 'left', and 'right'
+	else {
+		for (var key in amount) {
+			var lcKey = key.toLowerCase();
+			if (amount[key] !== null) {
+				if (lcKey.indexOf('top') !== -1) {
+					top = amount[key];
+				}
+				if (lcKey.indexOf('bottom') !== -1) {
+					bottom = amount[key];
+				}
+				if (lcKey.indexOf('left') !== -1) {
+					left = amount[key];
+				}
+				if (lcKey.indexOf('right') !== -1) {
+					right = amount[key];
+				}
+			}
+		}
+	}
+	return layout(function ($el, ctx, c) {
+		$el.addClass('crop');
+		$el.css('overflow', 'hidden');
+		var props = stream.create();
+		var i = c(ctx.child({
+			top: stream.prop(props, 'top'),
+			left: stream.prop(props, 'left'),
+			width: stream.prop(props, 'width'),
+			height: stream.prop(props, 'height'),
+		}));
+		var minWidth = stream.create();
+		var minHeight = stream.create();
+		stream.combineInto([
+			i.minWidth,
+			i.minHeight,
+			ctx.width,
+			ctx.height,
+		], function (mw, mh, w, h) {
+			var width = w / (1 - left - right);
+			var height = h / (1 - top - bottom);
+			return {
+				top: -top * height,
+				left: -left * width,
+				width: width,
+				height: height,
+			};
+		}, props);
+		stream.combine([
+			i.minWidth,
+			i.minHeight,
+		], function (mw, mh) {
+			stream.push(minWidth, mw * (1 - left - right));
+			stream.push(minHeight, function (w) {
+				return mh(mw / (1 - left - right)) * (1 - top - bottom);
+			});
+		});
+		return {
+			minWidth: minWidth,
+			minHeight: minHeight,
+		};
+	});
+};
 var keepAspectRatio = function (config) {
 	config = config || {};
 	return layout(function ($el, ctx, c) {

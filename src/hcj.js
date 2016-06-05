@@ -142,6 +142,23 @@ var stream = {
 		});
 		return out;
 	},
+	debounce: function (s, amount) {
+		var out = stream.create();
+		var lastPushed = 0;
+		var running = false;
+		stream.map(s, function (v) {
+			if (!running) {
+				running = true;
+				var d = new Date().getTime();
+				setTimeout(function () {
+					running = false;
+					stream.push(out, s.lastValue);
+					lastPushed = Math.max(lastPushed + amount, d);
+				}, Math.max(0, (lastPushed + amount) - d));
+			}
+		});
+		return out;
+	},
 	pushAll: function (source, target) {
 		if (source.lastValue !== undefined) {
 			stream.push(target, source.lastValue);
