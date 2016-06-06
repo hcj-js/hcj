@@ -1,5 +1,5 @@
 .PHONY: docs
-all: css docs js
+all: css js
 
 css:
 # todo: minify
