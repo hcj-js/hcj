@@ -1875,7 +1875,6 @@ var stack = function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
 	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
-	var transition = config.transition + 's';
 	return layout(function ($el, ctx, cs) {
 		$el.addClass('stack');
 		if (cs.length === 0) {
@@ -1894,8 +1893,9 @@ var stack = function (config) {
 			return c(context);
 		});
 		if (config.transition) {
+			var transition = config.transition + 's';
 			is.map(function (i) {
-				i.$el.css('transition', 'height ' + config.transition + ', top ' + config.transition);
+				i.$el.css('transition', 'height ' + transition + ', top ' + transition);
 			});
 		}
 		var allMinWidths = mapMinWidths(is);
@@ -1995,7 +1995,14 @@ var stackStream = function (config) {
 			stream.onValue(ctx.height, tryPushContexts);
 			var cs = [];
 			var index = -1;
-			var insert = function (c) {
+			var insert = function (c, idx) {
+				for (var ii = cs.length; ii > idx; ii--) {
+					cs[ii+1] = cs[ii];
+					mwDeleteListeners[ii+1] = mwDeleteListeners[ii];
+					mhDeleteListeners[ii+1] = mhDeleteListeners[ii];
+					contexts[ii+1] = contexts[ii];
+					is[ii+1] = is[ii];
+				}
 				index += 1;
 				var context = ctx.child({
 					top: true,
@@ -2016,6 +2023,7 @@ var stackStream = function (config) {
 				is[index].destroy();
 				mwDeleteListeners[index]();
 				mhDeleteListeners[index]();
+				delete cs[index];
 				delete mwDeleteListeners[index];
 				delete mhDeleteListeners[index];
 				delete contexts[index];
@@ -2346,6 +2354,11 @@ var alignTop = function (c) {
 var alignBottom = function (c) {
 	return alignTBM()({
 		t: c,
+	});
+};
+var alignMiddleVertical = function (c) {
+	return alignTBM()({
+		m: c,
 	});
 };
 var alignAbsoluteCenter = function (c) {
