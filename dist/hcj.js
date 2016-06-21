@@ -658,7 +658,7 @@ var rootComponent = function (c) {
 		leftAccum: onceZeroS,
 		unbuild: unbuild.push,
 	});
-	i.$el.css('position', 'absolute');
+	i.$el.css('position', 'relative');
 	var destroy = i.destroy;
 	i.destroy = function () {
 		unbuild.map(apply());
@@ -1240,8 +1240,29 @@ var text = function (strs, config) {
 		if (config.align) {
 			$el.css('text-align', config.align);
 		}
+
+		// if (config.minWidth) {
+		// 	stream.push(mw, config.minWidth);
+		// }
+		// else if (config.measureWidth) {
+		// 	stream.push(mw, measureWidth($el));
+		// }
+		// else {
+		// 	stream.push(mw, 0);
+		// }
+
+		// if (config.minHeight) {
+		// 	stream.push(mh, config.minHeight);
+		// }
+		// else if (config.measureHeight) {
+		// 	stream.push(mh, measureHeight($el));
+		// }
+		// else {
+		// 	stream.push(mh, constant(0));
+		// }
 		stream.push(mw, config.hasOwnProperty('minWidth') ? config.minWidth : measureWidth($el));
 		stream.push(mh, config.hasOwnProperty('minHeight') ? constant(config.minHeight) : measureHeight($el));
+
 		return {
 			minWidth: mw,
 			minHeight: mh,
