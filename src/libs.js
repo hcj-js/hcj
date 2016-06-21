@@ -106,8 +106,7 @@ var layoutRecurse = function ($el, ctx, cs) {
 			}
 			ctx.unbuild(i.destroy);
 			i.$el.css('visibility', 'hidden')
-				.css('position', 'absolute')
-				.css('pointer-events', 'initial');
+				.css('position', 'absolute');
 			stream.onValue(context.widthCss || context.width, function (w) {
 				updateDomFunc(i.$el, 'width', w);
 			});
@@ -418,7 +417,10 @@ var adjustMinSize = function (config) {
 		};
 	});
 };
-var link = $css('cursor', 'pointer');
+var link = all([
+	$css('cursor', 'pointer'),
+	$css('pointer-events', 'initial'),
+]);
 
 // var componentName = function (name) {
 // 	return passthrough(function ($el) {

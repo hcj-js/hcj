@@ -359,6 +359,7 @@ var measureHeight = function ($el) {
 
 var el = function (name, build, context) {
 	var $el = $(document.createElement(name));
+	$el.css('pointer-events', 'initial');
 
 	if (name === 'textarea') {
 		// give textareas a resize event
