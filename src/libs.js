@@ -61,7 +61,7 @@ var onceZeroS = stream.once(0);
 var windowWidth = stream.create();
 var windowHeight = stream.create();
 var updateWindowWidth = function () {
-	stream.push(windowWidth, window.innerWidth);
+	stream.push(windowWidth, document.body.clientWidth);
 };
 var updateWindowHeight = function () {
 	stream.push(windowHeight, window.innerHeight);
@@ -100,7 +100,7 @@ var layoutRecurse = function ($el, ctx, cs) {
 		return function (context) {
 			var i = cs(context);
 			// todo: replace with some isInstance function
-			if (!i.minWidth || !i.minHeight) {
+			if (!i || !i.minWidth || !i.minHeight) {
 				console.log('not a component');
 				debugger;
 			}
@@ -313,6 +313,13 @@ var jqueryMethod = function (func) {
 	return function () {
 		var args = Array.prototype.slice.call(arguments);
 		return $$(function ($el) {
+			if (func === 'css') {
+				if (args[0] === 'position') {
+					if (args[1] === 'fixed') {
+						console.log($el);
+					}
+				}
+			}
 			$el[func].apply($el, args);
 		});
 	};
@@ -463,20 +470,20 @@ var hoverThis = function (cb) {
 	});
 };
 
-// var hoverStream = function (s, f) {
-// 	f = f || function (v) {
-// 		return v;
-// 	};
-// 	return passthrough(function ($el) {
-// 		$el.css('pointer-events', 'initial');
-// 		$el.on('mouseover', function (ev) {
-// 			stream.push(s, f(ev));
-// 		});
-// 		$el.on('mouseout', function (ev) {
-// 			stream.push(s, f(false));
-// 		});
-// 	});
-// };
+var hoverStream = function (s, f) {
+	f = f || function (v) {
+		return v;
+	};
+	return $$(function ($el) {
+		$el.css('pointer-events', 'initial');
+		$el.on('mouseover', function (ev) {
+			stream.push(s, f(ev));
+		});
+		$el.on('mouseout', function (ev) {
+			stream.push(s, f(false));
+		});
+	});
+};
 
 var cssStream = function (style, valueS) {
 	return passthrough(function ($el) {
@@ -507,11 +514,11 @@ var withBackgroundColor = function (s, arg2) {
 		});
 	});
 };
-// var withFontColor = function (fc) {
-// 	return passthrough(function ($el) {
-// 		$el.css('color', colorString(fc));
-// 	});
-// };
+var withFontColor = function (fc) {
+	return passthrough(function ($el) {
+		$el.css('color', colorString(fc));
+	});
+};
 // var hoverColor = function (backgroundColor, hoverBackgroundColor, fontColor, hoverFontColor) {
 // 	backgroundColor = colorString(backgroundColor || transparent);
 // 	hoverBackgroundColor = colorString(hoverBackgroundColor || backgroundColor);
@@ -720,12 +727,15 @@ var linkTo = function (href) {
 	});
 };
 
-var nothing = div(function ($el, ctx) {
-	return {
-		minWidth: onceZeroS,
-		minHeight: stream.once(constant(0)),
-	};
-});
+var empty = function (el) {
+	return el(function ($el, ctx) {
+		return {
+			minWidth: onceZeroS,
+			minHeight: stream.once(constant(0)),
+		};
+	});
+};
+var nothing = empty(div);
 
 var text = function (strs, config) {
 	strs = strs || '';
@@ -738,8 +748,8 @@ var text = function (strs, config) {
 	}
 	return (config.el || div)(function ($el, ctx) {
 		var didMH = false;
-		var mw = stream.create();
-		var mh = stream.create();
+		var mwS = stream.create();
+		var mhS = stream.create();
 		strs.map(function (c) {
 			if ($.type(c) === 'string') {
 				c = {
@@ -760,6 +770,9 @@ var text = function (strs, config) {
 			if (c.color) {
 				$span.css('color', colorString(c.color));
 			}
+			if (c.shadow) {
+				$span.css('text-shadow', c.shadow);
+			}
 			if (c.spanCSS) {
 				c.spanCSS.map(function (css) {
 					$span.css(css.name, css.value);
@@ -774,20 +787,82 @@ var text = function (strs, config) {
 				$span.appendTo($el);
 			}
 		});
+		var pushDimensions = function () {
+			setTimeout(function () {
+				var mw = config.minWidth || (config.measureWidth && measureWidth($el)) || 0;
+				var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) ||
+						(config.minHeight && constant(config.minHeight)) ||
+						(config.measureHeight && measureHeight($el)) ||
+						constant(0);
+				stream.push(mwS, mw);
+				stream.push(mhS, mh);
+			});
+		};
 		if (config.size) {
-			$el.css('font-size', config.size);
+			if (stream.isStream(config.size)) {
+				stream.map(config.size, function (size) {
+					$el.css('font-size', size);
+					pushDimensions();
+				});
+			}
+			else {
+				$el.css('font-size', config.size);
+			}
 		}
 		if (config.weight) {
-			$el.css('font-weight', config.weight);
+			if (stream.isStream(config.weight)) {
+				stream.map(config.weight, function (weight) {
+					$el.css('font-weight', weight);
+					pushDimensions();
+				});
+			}
+			else {
+				$el.css('font-weight', config.weight);
+			}
 		}
 		if (config.family) {
-			$el.css('font-family', config.family);
+			if (stream.isStream(config.family)) {
+				stream.map(config.family, function (family) {
+					$el.css('font-family', family);
+					pushDimensions();
+				});
+			}
+			else {
+				$el.css('font-family', config.family);
+			}
 		}
 		if (config.color) {
-			$el.css('color', colorString(config.color));
+			if (stream.isStream(config.color)) {
+				stream.map(config.color, function (color) {
+					$el.css('color', colorString(color));
+					pushDimensions();
+				});
+			}
+			else {
+				$el.css('color', colorString(config.color));
+			}
+		}
+		if (config.shadow) {
+			if (stream.isStream(config.shadow)) {
+				stream.map(config.shadow, function (shadow) {
+					$el.css('text-shadow', shadow);
+					pushDimensions();
+				});
+			}
+			else {
+				$el.css('text-shadow', config.shadow);
+			}
 		}
 		if (config.align) {
-			$el.css('text-align', config.align);
+			if (stream.isStream(config.align)) {
+				stream.map(config.align, function (align) {
+					$el.css('text-align', align);
+					pushDimensions();
+				});
+			}
+			else {
+				$el.css('text-align', config.align);
+			}
 		}
 
 		// if (config.minWidth) {
@@ -809,12 +884,12 @@ var text = function (strs, config) {
 		// else {
 		// 	stream.push(mh, constant(0));
 		// }
-		stream.push(mw, config.hasOwnProperty('minWidth') ? config.minWidth : measureWidth($el));
-		stream.push(mh, config.hasOwnProperty('minHeight') ? constant(config.minHeight) : measureHeight($el));
+
+		pushDimensions();
 
 		return {
-			minWidth: mw,
-			minHeight: mh,
+			minWidth: mwS,
+			minHeight: mhS,
 		};
 	});
 };
@@ -983,75 +1058,77 @@ var giveHeightToLast = function (totalHeight, positions) {
 	});
 	return positions;
 };
-// var slideshow = function (config, cs) {
-// 	config.padding = config.padding || 0;
-// 	config.leftTransition = config.leftTransition || 'none';
-// 	config.alwaysFullWidth = config.alwaysFullWidth || false;
-// 	return div.all([
-// 		$css('overflow', 'hidden'),
-// 		componentName('slideshow'),
-// 		children(cs.map(function (c) {
-// 			return c.all([
-// 				$css('transition', 'left ' + config.leftTransition),
-// 			]);
-// 		})),
-// 		wireChildren(function (instance, context, is) {
-// 			var allMinWidths = mapMinWidths(is);
-// 			var allMinHeights = mapMinHeights(is);
+var slideshow = function (config, cs) {
+	config.padding = config.padding || 0;
+	config.leftTransition = config.leftTransition || 'none';
+	config.alwaysFullWidth = config.alwaysFullWidth || false;
+	return layout(function ($el, ctx, cs) {
+		$el.css('overflow', 'hidden');
+		$el.addClass('slideshow');
 
-// 			stream.onValue(allMinWidths, function (mws) {
-// 				stream.push(instance.minWidth, mws.reduce(add, config.padding * (is.length - 1)));
-// 			});
+		var contexts = cs.map(function () {
+			return ctx.child({
+				left: true,
+				width: true,
+			});
+		});
+		var is = cs.map(function (c, index) {
+			return c(contexts[index]);
+		});
+		is.map(function (i) {
+			i.$el.css('transition', 'left ' + config.leftTransition);
+		});
 
-// 			var contexts = is.map(function () {
-// 				return {
-// 					top: stream.once(0),
-// 					left: stream.create(),
-// 					width: stream.create(),
-// 					height: context.height,};});
+		var allMinWidths = mapMinWidths(is);
+		var allMinHeights = mapMinHeights(is);
 
-// 			stream.all([
-// 				config.selectedS,
-// 				context.width,
-// 				allMinWidths,
-// 				allMinHeights,
-// 			], function (selected, width, mws, mhs) {
-// 				var selectedLeft = 0;
-// 				var selectedWidth = 0;
-// 				var left = 0;
-// 				var positions = mws.map(function (mw, index) {
-// 					mw = config.alwaysFullWidth ? width : mw;
-// 					if (selected === index) {
-// 						selectedLeft = left + config.padding * index;
-// 						selectedWidth = mw;
-// 					}
-// 					var position = {
-// 						left: left + config.padding * index,
-// 						width: mw,
-// 					};
-// 					left += mw;
-// 					return position;
-// 				});
-// 				var dLeft = (width - selectedWidth) / 2 - selectedLeft;
-// 				positions.map(function (position) {
-// 					position.left += dLeft;
-// 				});
+		var minHeight = stream.combine([
+			config.selectedS,
+			ctx.width,
+			allMinWidths,
+			allMinHeights,
+		], function (selected, width, mws, mhs) {
+			var selectedLeft = 0;
+			var selectedWidth = 0;
+			var left = 0;
+			var positions = mws.map(function (mw, index) {
+				mw = config.alwaysFullWidth ? width : mw;
+				if (selected === index) {
+					selectedLeft = left + config.padding * index;
+					selectedWidth = mw;
+				}
+				var position = {
+					left: left + config.padding * index,
+					width: mw,
+				};
+				left += mw;
+				return position;
+			});
+			var dLeft = (width - selectedWidth) / 2 - selectedLeft;
+			positions.map(function (position) {
+				position.left += dLeft;
+			});
 
-// 				positions.map(function (position, index) {
-// 					var ctx = contexts[index];
-// 					stream.push(ctx.left, position.left);
-// 					stream.push(ctx.width, position.width);
-// 				});
+			positions.map(function (position, index) {
+				var ctx = contexts[index];
+				stream.push(ctx.left, position.left);
+				stream.push(ctx.width, position.width);
+			});
 
-// 				stream.push(instance.minHeight, constant(mhs.map(function (mh, i) {
-// 					return mh(positions[i].width);
-// 				}).reduce(mathMax, 0)));
-// 			});
+			return constant(mhs.map(function (mh, i) {
+				return mh(positions[i].width);
+			}).reduce(mathMax, 0));
+		});
+		stream.push(minHeight, constant(0));
 
-// 			return [contexts];
-// 		}),
-// 	]);
-// };
+		return {
+			minWidth: stream.map(allMinWidths, function (mws) {
+				return mws.reduce(add, config.padding * (is.length - 1));
+			}),
+			minHeight: minHeight,
+		};
+	});
+};
 // var slideshowVertical = function (config, cs) {
 // 	config.padding = config.padding || 0;
 // 	config.topTransition = config.topTransition || 'none';
@@ -1155,11 +1232,12 @@ var sideBySide = function (config) {
 		var computePositions = function (width, mws) {
 			var left = 0;
 			var positions = mws.map(function (mw, index) {
+				var w = Math.min(width, mw);
 				var position = {
 					left: left + config.padding * index,
-					width: Math.min(width, mw),
+					width: w,
 				};
-				left += mw;
+				left += w + config.padding;
 				return position;
 			});
 			positions = config.handleSurplusWidth(width, positions);
@@ -1269,177 +1347,186 @@ var fadeIn = function (config) {
 	});
 };
 
-// var slider = function (config, cs) {
-// 	config = config || {};
-// 	config.leftTransition = config.leftTransition || '0s';
-// 	var grabbedS = stream.once(false);
-// 	var edge = {
-// 		left: 'left',
-// 		right: 'right',
-// 	};
-// 	var stateS = stream.once({
-// 		index: 0,
-// 		edge: 'left',
-// 	});
-// 	var xCoord = 0;
-// 	return div.all([
-// 		componentName('slider'),
-// 		$css('overflow-x', 'hidden'),
-// 		$css('cursor', 'move'),
-// 		children(cs),
-// 		wireChildren(function (instance, context, is) {
-// 			var allMinWidths = mapMinWidths(is);
-// 			var allMinHeights = mapMinHeights(is);
+var slider = function (config, cs) {
+	config = config || {};
+	config.leftTransition = config.leftTransition || '0s';
+	var grabbedS = stream.once(false);
+	var edge = {
+		left: 'left',
+		right: 'right',
+	};
+	var stateS = stream.once({
+		index: 0,
+		edge: 'left',
+	});
+	var xCoord = 0;
+	return layout(function ($el, ctx, cs) {
+		$el.addClass('slider')
+			.css('overflow-x', 'hidden')
+			.css('cursor', 'move');
 
-// 			var totalMinWidthS = stream.map(allMinWidths, function (mws) {
-// 				return mws.reduce(add, 0);
-// 			});
-// 			stream.onValue(allMinWidths, function (mws) {
-// 				stream.push(instance.minWidth, mws.reduce(mathMax, 0));
-// 			});
+		var allMinWidths = stream.create();
+		var allMinHeights = stream.create();
 
-// 			stream.combine([
-// 				allMinWidths,
-// 				allMinHeights,
-// 			], function (mws, mhs) {
-// 				stream.push(instance.minHeight, constant(mhs.map(function (mh, i) {
-// 					return mh(mws[i]);
-// 				}).reduce(mathMax, 0)));
-// 			});
+		var leftS = stream.combine([
+			ctx.width,
+			allMinWidths,
+			stateS,
+			grabbedS
+		], function (width, mws, state, grabbed) {
+			// configure left to be the left parameter of the first article in the slider
+			var left = state.edge === 'left' ? 0 : width; // would love to case split
+			mws.map(function (mw, index) {
+				if (index < state.index) {
+					left -= mw;
+				}
+				if (state.edge === 'right' && index === state.index) {
+					left -= mw;
+				}
+			});
+			if (grabbed !== false) {
+				left += grabbed;
+			}
+			return left;
+		});
 
-// 			var leftS = stream.combine([
-// 				context.width,
-// 				allMinWidths,
-// 				stateS,
-// 				grabbedS
-// 			], function (width, mws, state, grabbed) {
-// 				// configure left to be the left parameter of the first article in the slider
-// 				var left = state.edge === 'left' ? 0 : width; // would love to case split
-// 				mws.map(function (mw, index) {
-// 					if (index < state.index) {
-// 						left -= mw;
-// 					}
-// 					if (state.edge === 'right' && index === state.index) {
-// 						left -= mw;
-// 					}
-// 				});
-// 				if (grabbed !== false) {
-// 					left += grabbed;
-// 				}
-// 				return left;
-// 			});
+		var leftsS = stream.combine([
+			allMinWidths,
+			leftS,
+		], function (mws, left) {
+			return mws.reduce(function (acc, v) {
+				acc.arr.push(acc.lastValue);
+				acc.lastValue += v;
+				return acc;
+			}, {
+				arr: [],
+				lastValue: left,
+			}).arr;
+		});
 
-// 			var leftsS = stream.combine([
-// 				allMinWidths,
-// 				leftS,
-// 			], function (mws, left) {
-// 				return mws.reduce(function (acc, v) {
-// 					acc.arr.push(acc.lastValue);
-// 					acc.lastValue += v;
-// 					return acc;
-// 				}, {
-// 					arr: [],
-// 					lastValue: left,
-// 				}).arr;
-// 			});
+		var ctxs = cs.map(function (_, index) {
+			return ctx.child({
+				top: stream.once(0),
+				left: stream.map(leftsS, function (lefts) {
+					return lefts[index];
+				}),
+				width: true,
+				height: ctx.height,
+			});
+		});
+		var is = cs.map(function (c, index) {
+			var ctx = ctxs[index];
+			var i = c(ctx);
+			stream.pushAll(i.minWidth, ctx.width);
+			return i;
+		});
+		stream.pushAll(mapMinWidths(is), allMinWidths);
+		stream.pushAll(mapMinHeights(is), allMinHeights);
 
-// 			instance.$el.css('user-select', 'none');
-// 			instance.$el.on('mousedown', function (ev) {
-// 				ev.preventDefault();
-// 				stream.push(grabbedS, 0);
-// 				is.map(function (i) {
-// 					i.$el.css('transition', 'left 0s');
-// 				});
-// 			});
-// 			var release = function (ev) {
-// 				is.map(function (i) {
-// 					i.$el.css('transition', 'left ' + config.leftTransition);
-// 				});
-// 				var mws = allMinWidths.lastValue;
-// 				var width = context.width.lastValue;
-// 				var grabbed = grabbedS.lastValue;
-// 				if (!grabbed) {
-// 					return;
-// 				}
-// 				var left = leftS.lastValue;
-// 				// array of sums of min widths
-// 				var edgeScrollPoints = mws.reduce(function (a, mw) {
-// 					var last = a[a.length - 1];
-// 					a.push(last - mw);
-// 					return a;
-// 				}, [0]);
-// 				var closest = edgeScrollPoints.reduce(function (a, scrollPoint, index) {
-// 					var leftDistanceHere = Math.abs(scrollPoint - left);
-// 					var rightDistanceHere = Math.abs(scrollPoint - (left - width));
-// 					return {
-// 						left: leftDistanceHere < a.left.distance ? {
-// 							distance: leftDistanceHere,
-// 							index: index,
-// 						} : a.left,
-// 						right: rightDistanceHere < a.right.distance ? {
-// 							distance: rightDistanceHere,
-// 							index: index - 1,
-// 						} : a.right,
-// 					};
-// 				}, {
-// 					left: {
-// 						distance: Number.MAX_VALUE,
-// 						index: -1,
-// 					},
-// 					right: {
-// 						distance: Number.MAX_VALUE,
-// 						index: -1,
-// 					},
-// 				});
-// 				if (closest.left.distance <= closest.right.distance) {
-// 					stream.push(stateS, {
-// 						index: closest.left.index,
-// 						edge: 'left',
-// 					});
-// 				}
-// 				else {
-// 					stream.push(stateS, {
-// 						index: closest.right.index,
-// 						edge: 'right',
-// 					});
-// 				}
-// 				stream.push(grabbedS, false);
-// 				ev.preventDefault();
-// 			};
-// 			instance.$el.on('mouseup', release);
-// 			instance.$el.on('mouseout', release);
-// 			instance.$el.on('mousemove', function (ev) {
-// 				var grabbed = grabbedS.lastValue;
-// 				var totalMinWidth = totalMinWidthS.lastValue;
-// 				var width = context.width.lastValue;
-// 				var left = leftS.lastValue;
-// 				if (grabbed !== false) {
-// 					var dx = ev.clientX - xCoord;
-// 					var left2 = left + dx;
-// 					left2 = Math.min(0, left2);
-// 					if (totalMinWidth > width) {
-// 						left2 = Math.max(width - totalMinWidth, left2);
-// 					}
-// 					dx = left2 - left;
-// 					grabbed = grabbed + dx;
-// 					stream.push(grabbedS, grabbed);
-// 				}
-// 				xCoord = ev.clientX;
-// 			});
+		var totalMinWidthS = stream.map(allMinWidths, function (mws) {
+			return mws.reduce(add, 0);
+		});
 
-// 			return [is.map(function (i, index) {
-// 				return {
-// 					top: stream.once(0),
-// 					left: stream.map(leftsS, function (lefts) {
-// 						return lefts[index];
-// 					}),
-// 					width: i.minWidth,
-// 					height: context.height,
-// 				};
-// 			})];
-// 		}),
-// 	]);
-// };
+		$el.css('user-select', 'none');
+		$el.on('mousedown', function (ev) {
+			ev.preventDefault();
+			stream.push(grabbedS, 0);
+			is.map(function (i) {
+				i.$el.css('transition', 'left 0s');
+			});
+		});
+
+		var release = function (ev) {
+			is.map(function (i) {
+				i.$el.css('transition', 'left ' + config.leftTransition);
+			});
+			var mws = allMinWidths.lastValue;
+			var width = ctx.width.lastValue;
+			var grabbed = grabbedS.lastValue;
+			if (!grabbed) {
+				return;
+			}
+			var left = leftS.lastValue;
+			// array of sums of min widths
+			var edgeScrollPoints = mws.reduce(function (a, mw) {
+				var last = a[a.length - 1];
+				a.push(last - mw);
+				return a;
+			}, [0]);
+			var closest = edgeScrollPoints.reduce(function (a, scrollPoint, index) {
+				var leftDistanceHere = Math.abs(scrollPoint - left);
+				var rightDistanceHere = Math.abs(scrollPoint - (left - width));
+				return {
+					left: leftDistanceHere < a.left.distance ? {
+						distance: leftDistanceHere,
+						index: index,
+					} : a.left,
+					right: rightDistanceHere < a.right.distance ? {
+				 		distance: rightDistanceHere,
+						index: index - 1,
+					} : a.right,
+				};
+			}, {
+				left: {
+					distance: Number.MAX_VALUE,
+					index: -1,
+				},
+				right: {
+					distance: Number.MAX_VALUE,
+					index: -1,
+				},
+			});
+			if (closest.left.distance <= closest.right.distance) {
+				stream.push(stateS, {
+					index: closest.left.index,
+					edge: 'left',
+				});
+			}
+			else {
+				stream.push(stateS, {
+					index: closest.right.index,
+					edge: 'right',
+				});
+			}
+			stream.push(grabbedS, false);
+			ev.preventDefault();
+		};
+		$el.on('mouseup', release);
+		$el.on('mouseout', release);
+		$el.on('mousemove', function (ev) {
+			var grabbed = grabbedS.lastValue;
+			var totalMinWidth = totalMinWidthS.lastValue;
+			var width = ctx.width.lastValue;
+			var left = leftS.lastValue;
+			if (grabbed !== false) {
+				var dx = ev.clientX - xCoord;
+				var left2 = left + dx;
+				left2 = Math.min(0, left2);
+				if (totalMinWidth > width) {
+					left2 = Math.max(width - totalMinWidth, left2);
+				}
+				dx = left2 - left;
+				grabbed = grabbed + dx;
+				stream.push(grabbedS, grabbed);
+			}
+			xCoord = ev.clientX;
+		});
+
+		return {
+			minWidth: stream.map(allMinWidths, function (mws) {
+				return mws.reduce(mathMax, 0);
+			}),
+			minHeight: stream.combine([
+				allMinWidths,
+				allMinHeights,
+			], function (mws, mhs) {
+				return constant(mhs.map(function (mh, i) {
+					return mh(mws[i]);
+				}).reduce(mathMax, 0));
+			}),
+		};
+	});
+};
 
 var stack = function (config) {
 	config = config || {};
@@ -1456,6 +1543,7 @@ var stack = function (config) {
 		var contexts = [];
 		var is = cs.map(function (c) {
 			var context = ctx.child({
+				widthCss: stream.once('100%'),
 				top: true,
 				height: true,
 			});
@@ -1703,85 +1791,87 @@ var margin = function (amount) {
 	});
 };
 
-// // TODO: change this name quick, before there are too many
-// // dependencies on it
-// var expandoStream = function (amountS) {
-// 	var topS = stream.create();
-// 	var bottomS = stream.create();
-// 	var leftS = stream.create();
-// 	var rightS = stream.create();
-// 	stream.map(amountS, function (amount) {
-// 		var top = amount.all || 0,
-// 			bottom = amount.all || 0,
-// 			left = amount.all || 0,
-// 			right = amount.all || 0;
+// TODO: change this name quick, before there are too many
+// dependencies on it
+var expandoStream = function (amountS) {
+	var topS = stream.create();
+	var bottomS = stream.create();
+	var leftS = stream.create();
+	var rightS = stream.create();
+	stream.map(amountS, function (amount) {
+		var top = amount.all || 0,
+			bottom = amount.all || 0,
+			left = amount.all || 0,
+			right = amount.all || 0;
 
-// 		// amount may be a single number
-// 		if ($.isNumeric(amount)) {
-// 			top = bottom = left = right = amount;
-// 		}
-// 		// or an object with properties containing 'top', 'bottom', 'left', and 'right'
-// 		else {
-// 			for (var key in amount) {
-// 				var lcKey = key.toLowerCase();
-// 				if (amount[key] !== null) {
-// 					if (lcKey.indexOf('top') !== -1) {
-// 						top = amount[key];
-// 					}
-// 					if (lcKey.indexOf('bottom') !== -1) {
-// 						bottom = amount[key];
-// 					}
-// 					if (lcKey.indexOf('left') !== -1) {
-// 						left = amount[key];
-// 					}
-// 					if (lcKey.indexOf('right') !== -1) {
-// 						right = amount[key];
-// 					}
-// 				}
-// 			}
-// 		}
-// 		stream.push(topS, top);
-// 		stream.push(bottomS, bottom);
-// 		stream.push(leftS, left);
-// 		stream.push(rightS, right);
-// 	});
-// 	return layout(function ($el, ctx, i) {
-// 		return {
-// 			minWidth: stream.combine([
-// 				i.minWidth,
-// 				leftS,
-// 				rightS,
-// 			], function (mw, l, r) {
-// 				return mw + l + r;
-// 			}),
-// 			minHeight: stream.combine([
-// 				i.minHeight,
-// 				topS,
-// 				bottomS,
-// 			], function (mh, t, b) {
-// 				return function (w) {
-// 					return mh(w) + t + b;
-// 				};
-// 			}),
-// 			width: stream.combine([
-// 				ctx.width,
-// 				leftS,
-// 				rightS,
-// 			], function (w, l, r) {
-// 				return w - l - r;
-// 			}),
-// 			height: stream.combine([
-// 				ctx.height,
-// 				topS,
-// 				bottomS,
-// 			], function (h, t, b) {
-// 				return h - t - b;
-// 			}),
-// 			top: topS,
-// 			left: leftS,
-// 		};
-// 	});
-// };
+		// amount may be a single number
+		if ($.isNumeric(amount)) {
+			top = bottom = left = right = amount;
+		}
+		// or an object with properties containing 'top', 'bottom', 'left', and 'right'
+		else {
+			for (var key in amount) {
+				var lcKey = key.toLowerCase();
+				if (amount[key] !== null) {
+					if (lcKey.indexOf('top') !== -1) {
+						top = amount[key];
+					}
+					if (lcKey.indexOf('bottom') !== -1) {
+						bottom = amount[key];
+					}
+					if (lcKey.indexOf('left') !== -1) {
+						left = amount[key];
+					}
+					if (lcKey.indexOf('right') !== -1) {
+						right = amount[key];
+					}
+				}
+			}
+		}
+		stream.push(topS, top);
+		stream.push(bottomS, bottom);
+		stream.push(leftS, left);
+		stream.push(rightS, right);
+	});
+	return layout(function ($el, ctx, c) {
+		var i = c(ctx.child({
+			top: topS,
+			left: leftS,
+			height: stream.combine([
+				ctx.height,
+				topS,
+				bottomS,
+			], function (h, t, b) {
+				return h - t - b;
+			}),
+			width: stream.combine([
+				ctx.width,
+				leftS,
+				rightS,
+			], function (w, l, r) {
+				return w - l - r;
+			}),
+		}));
+		return {
+			minWidth: stream.combine([
+				i.minWidth,
+				leftS,
+				rightS,
+			], function (mw, l, r) {
+				return mw + l + r;
+			}),
+			minHeight: stream.combine([
+				i.minHeight,
+				topS,
+				bottomS,
+			], function (mh, t, b) {
+				return function (w) {
+					return mh(w) + t + b;
+				};
+			}),
+		};
+	});
+};
 
 var alignLRM = function (config) {
 	config = config || {};
@@ -2064,56 +2154,47 @@ var componentStream = function (cStream) {
 	});
 };
 
-// // var componentStreamWithExit = function (cStream, exit) {
-// // 	var i;
-// // 	return div.all([
-// // 		componentName('component-stream'),
-// // 		function (instance, context) {
-// // 			var localCStream = stream.create();
-// // 			stream.pushAll(cStream, localCStream);
-// // 			stream.map(localCStream, function (c) {
-// // 				var ctx = instance.newCtx();
-// // 				stream.push(ctx.top, 0);
-// // 				stream.push(ctx.left, 0);
-// // 				stream.pushAll(context.width, ctx.width);
-// // 				stream.pushAll(context.height, ctx.height);
-
-// // 				var instanceC = function (c) {
-// // 					if (i) {
-// // 						(function (i) {
-// // 							setTimeout(function () {
-// // 								exit(i).then(function () {
-// // 									i.destroy();
-// // 								});
-// // 							});
-// // 						})(i);
-// // 					}
-// // 					i = c.create(ctx);
-// // 					i.$el.css('transition', 'inherit');
-// // 					stream.pushAll(i.minWidth, instance.minWidth);
-// // 					stream.pushAll(i.minHeight, instance.minHeight);
-// // 				};
-// // 				if (c.then) {
-// // 					c.then(function (c) {
-// // 						instanceC(c);
-// // 					}, function (error) {
-// // 						console.error('child components failed to load');
-// // 						console.log(error);
-// // 					});
-// // 				}
-// // 				else {
-// // 					instanceC(c);
-// // 				}
-// // 			});
-// // 			return function () {
-// // 				stream.end(localCstream);
-// // 				if (i) {
-// // 					i.destroy();
-// // 				}
-// // 			};
-// // 		},
-// // 	]);
-// // };
+var componentStreamWithExit = function (cStream, exit) {
+	var i;
+	return container(function ($el, context, child) {
+		$el.addClass('component-stream-with-exit');
+		var localCStream = stream.create();
+		stream.pushAll(cStream, localCStream);
+		var minWidthS = stream.create();
+		var minHeightS = stream.create();
+		var instanceC = function (c) {
+			if (i) {
+				(function (i) {
+					setTimeout(function () {
+						exit(i).then(function () {
+							i.destroy();
+						});
+					});
+				})(i);
+			}
+			i = child(c)(context.child({
+				widthCss: stream.once('100%'),
+				heightCss: stream.once('100%'),
+			}));
+			i.$el.css('transition', 'inherit');
+			stream.pushAll(i.minWidth, minWidthS);
+			stream.pushAll(i.minHeight, minHeightS);
+		};
+		stream.map(localCStream, function (c) {
+			instanceC(c);
+		});
+		context.unbuild(function () {
+			stream.end(localCStream);
+			if (i) {
+				i.destroy();
+			}
+		});
+		return {
+			minWidth: minWidthS,
+			minHeight: minHeightS,
+		};
+	});
+};
 
 var promiseComponent = function (cP) {
 	// var s = stream.once(nothing);
@@ -2128,60 +2209,62 @@ var promiseComponent = function (cP) {
 	return componentStream(s);
 };
 
-// var toggleComponent = function (cs, indexStream) {
-// 	return componentStream(stream.map(indexStream, function (i) {
-// 		return cs[i];
-// 	}));
-// };
+var toggleComponent = function (cs, indexStream) {
+	return componentStream(stream.map(indexStream, function (i) {
+		return cs[i];
+	}));
+};
 
-// // var modalDialog = function (c) {
-// // 	return function (s, transition) {
-// // 		var open = stream.once(false);
-// // 		stream.pushAll(s, open);
+var modalDialog = function (c) {
+	return function (s, transition) {
+		var open = stream.once(false);
+		stream.pushAll(s, open);
 
-// // 		transition = transition || 0;
+		transition = transition || 0;
 
-// // 		return div.all([
-// // 			$css('z-index', 100),
-// // 			componentName('toggle-height'),
-// // 			child(c),
-// // 			wireChildren(function (instance, context, i) {
-// // 				stream.push(instance.minWidth, 0);
-// // 				stream.push(instance.minHeight, 0);
+		return layout(function ($el, context, c) {
+			$el.addClass('modalDialog');
 
-// // 				var $el = i.$el;
-// // 				$el.css('position', 'fixed');
-// // 				$el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
-// // 				$el.css('display', 'none');
-// // 				$el.css('pointer-events', 'initial');
+			var i = c(context.child({
+				top: stream.once(0),
+				left: stream.once(0),
+				width: stream.map(windowWidth, function (ww) {
+					return document.body.clientWidth;
+				}),
+				height: windowHeight,
+			}));
 
-// // 				stream.onValue(open, function (on) {
-// // 					if (on) {
-// // 						$el.css('display', '');
-// // 						setTimeout(function () {
-// // 							$el.css('opacity', 1);
-// // 						}, 100);
-// // 					}
-// // 					else {
-// // 						$el.css('opacity', 0);
-// // 						setTimeout(function () {
-// // 							$el.css('display', 'none');
-// // 						}, transition * 1000);
-// // 					}
-// // 				});
+			$el = i.$el;
+			$el.css('z-index', 100);
+			$el.appendTo($('body'));
+			$el.css('position', 'fixed');
+			$el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
+			$el.css('display', 'none');
+			$el.css('pointer-events', 'initial');
 
-// // 				return [{
-// // 					width: stream.map(windowWidth, function () {
-// // 						return window.innerWidth;
-// // 					}),
-// // 					height: windowHeight,
-// // 					left: stream.once(0),
-// // 					top: stream.once(0),
-// // 				}];
-// // 			}),
-// // 		]);
-// // 	};
-// // };
+			stream.onValue(open, function (on) {
+				console.log(on);
+				if (on) {
+					$el.css('display', '');
+					setTimeout(function () {
+						$el.css('opacity', 1);
+					}, 100);
+				}
+				else {
+					$el.css('opacity', 0);
+					setTimeout(function () {
+						$el.css('display', 'none');
+					}, transition * 1000);
+				}
+			});
+
+			return {
+				minWidth: onceZeroS,
+				minHeight: stream.once(constant(0)),
+			};
+		})(c);
+	};
+};
 
 var toggleHeight = function (open) {
 	return layout(function ($el, ctx, c) {
@@ -2227,14 +2310,18 @@ var dropdownPanel = function (source, panel, onOffS, config) {
 			minHeight: sourceI.minHeight,
 		};
 	})(source, layout(function ($el, ctx, panel) {
-		var i = panel(ctx.child({
+		var context = ctx.child({
 			top: stream.combine([
 				onOffS,
 				ctx.height,
 			], function (on, h) {
 				return on ? 0 : -h;
 			})
-		}));
+		});
+		if (config.panelHeightS) {
+			stream.pushAll(context.height, config.panelHeightS);
+		}
+		var i = panel(context);
 		$el.css('overflow', 'hidden');
 		i.$el.css('transition', 'top ' + config.transition)
 			.css('z-index', 1000);
@@ -2339,45 +2426,42 @@ var sideSlidingPanel = function (source, panel, onOffS, config) {
 // // 	]);
 // // };
 
-// // var makeSticky = function (c) {
-// // 	return div.all([
-// // 		componentName('stickyHeaderBody'),
-// // 		child(c),
-// // 		wireChildren(function (instance, context, i) {
-// // 			stream.pushAll(i.minWidth, instance.minWidth);
-// // 			stream.pushAll(i.minHeight, instance.minHeight);
+var makeSticky = function (str) {
+	str = str || onceZeroS;
+	return layout(function ($el, context, c) {
+		$el.addClass('makeSticky');
 
-// // 			return [{
-// // 				top: stream.once(0),
-// // 				left: stream.combine([
-// // 					i.minHeight,
-// // 					context.scroll,
-// // 					context.top,
-// // 					context.left,
-// // 					context.leftAccum,
-// // 				], function (mh, scroll, top, left, leftAccum) {
-// // 					var $el = i.$el;
-// // 					if (top > scroll) {
-// // 						$el.css('position', 'absolute');
-// // 						$el.css('transition', '');
-// // 						return 0;
-// // 					}
-// // 					else if (top < scroll) {
-// // 						var leftPosition = left + leftAccum;
-// // 						$el.css('position', 'fixed');
-// // 						$el.css('left', px(leftPosition));
-// // 						setTimeout(function () {
-// // 							$el.css('transition', 'inherit');
-// // 						}, 20);
-// // 						return leftPosition;
-// // 					}
-// // 				}),
-// // 				width: context.width,
-// // 				height: context.height,
-// // 			}];
-// // 		}),
-// // 	]);
-// // };
+		var ctx = context.child({
+			widthCss: stream.once('100%'),
+			heightCss: stream.once('100%'),
+		});
+		var i = c(ctx);
+		stream.all([
+			windowScroll,
+			str,
+			context.top,
+			context.topAccum,
+			context.left,
+			context.leftAccum,
+		], function (scroll, diffAmount, top, topAccum, left, leftAccum) {
+			if (top + topAccum > scroll + diffAmount) {
+				$el.css('position', 'absolute');
+				$el.css('transition', '');
+				$el.css('left', px(left));
+			}
+			else if (top + topAccum < scroll + diffAmount) {
+				var leftPosition = left + leftAccum;
+				$el.css('position', 'fixed');
+				$el.css('left', px(leftPosition));
+				$el.css('top', px(diffAmount));
+				setTimeout(function () {
+					$el.css('transition', 'inherit');
+				}, 20);
+			}
+		});
+		return i;
+	});
+};
 
 // // var stickyHeaderBody = function (body1, header, body2) {
 // // 	return div.all([
@@ -2598,7 +2682,6 @@ var grid = function (config) {
 						};
 						return position;
 					});
-					positions = config.handleSurplusWidth(gridWidth, positions, config, i);
 					positions.map(function (position, index) {
 						var context = row.contexts[index];
 						stream.push(context.top, position.top);
@@ -2621,9 +2704,10 @@ var grid = function (config) {
 var withMinWidthStream = function (getMinWidthStream) {
 	return layout(function ($el, ctx, c) {
 		$el.addClass('withMinWidthStream');
-		var i = c(ctx.child());
+		var context = ctx.child();
+		var i = c(context);
 		return {
-			minWidth: $.isFunction(getMinWidthStream) ? getMinWidthStream(i) : getMinWidthStream,
+			minWidth: $.isFunction(getMinWidthStream) ? getMinWidthStream(i, context) : getMinWidthStream,
 			minHeight: i.minHeight,
 		};
 	});
@@ -2642,10 +2726,11 @@ var minWidthAtLeast = function (number) {
 var withMinHeightStream = function (getMinHeightStream) {
 	return layout(function ($el, ctx, c) {
 		$el.addClass('withMinHeightStream');
-		var i = c(ctx.child());
+		var context = ctx.child();
+		var i = c(context);
 		return {
 			minWidth: i.minWidth,
-			minHeight: $.isFunction(getMinHeightStream) ? getMinHeightStream(i) : getMinHeightStream,
+			minHeight: $.isFunction(getMinHeightStream) ? getMinHeightStream(i, context) : getMinHeightStream,
 		};
 	});
 };
