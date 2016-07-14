@@ -515,7 +515,7 @@ var onceZeroS = stream.once(0);
 var windowWidth = stream.create();
 var windowHeight = stream.create();
 var updateWindowWidth = function () {
-	stream.push(windowWidth, document.body.clientWidth);
+	stream.push(windowWidth, window.innerWidth);
 };
 var updateWindowHeight = function () {
 	stream.push(windowHeight, window.innerHeight);
