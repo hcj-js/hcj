@@ -658,7 +658,11 @@ var rootComponent = function (c) {
 		leftAccum: onceZeroS,
 		unbuild: unbuild.push,
 	});
-	i.$el.css('position', 'relative');
+	i.$el
+		.css('position', 'relative')
+		.css('top', '0px')
+		.css('left', '0px')
+	;
 	var destroy = i.destroy;
 	i.destroy = function () {
 		unbuild.map(apply());
@@ -1200,6 +1204,7 @@ var text = function (strs, config) {
 	if ($.isArray(config)) {
 		config = config.reduce($.extend, {});
 	}
+
 	return (config.el || div)(function ($el, ctx) {
 		var didMH = false;
 		var mwS = stream.create();
@@ -1708,7 +1713,7 @@ var sideBySide = function (config) {
 					left: left + config.padding * index,
 					width: w,
 				};
-				left += w + config.padding;
+				left += w;
 				return position;
 			});
 			positions = config.handleSurplusWidth(width, positions);
