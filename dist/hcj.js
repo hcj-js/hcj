@@ -411,10 +411,10 @@ var el = function (name, build, context) {
 	}) || {};
 	instance.minWidth = streams.minWidth ? streams.minWidth : stream.create();
 	instance.minHeight = streams.minHeight ? streams.minHeight : stream.create();
-	if (instance.initialMinWidth) {
+	if (instance.hasOwnProperty('initialMinWidth')) {
 		stream.push(instance.minWidth, instance.initialMinWidth);
 	}
-	if (instance.initialMinHeight) {
+	if (instance.hasOwnProperty('initialMinHeight')) {
 		stream.push(instance.minHeight, instance.initialMinHeight);
 	}
 
@@ -1372,6 +1372,23 @@ var evenSplitSurplusWidth = function (gridWidth, positions) {
 		position.left += i * widthPerCol;
 	});
 	return positions;
+};
+var centerAllSameSurplusWidth = function () {
+	var w = 0;
+	return function (gridWidth, positions, _, i) {
+		if (i === 0) {
+			positions = evenSplitSurplusWidth(gridWidth, positions);
+			w = positions[0].width;
+			return positions;
+		}
+		else {
+			positions.map(function (position, i) {
+				position.width = w;
+				position.left = w * i;
+			});
+			return centerSurplusWidth(gridWidth, positions);
+		}
+	};
 };
 // don't read this function, please
 var evenSplitSurplusWidthWithMinPerRow = function (minPerRow) {

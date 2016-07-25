@@ -411,10 +411,10 @@ var el = function (name, build, context) {
 	}) || {};
 	instance.minWidth = streams.minWidth ? streams.minWidth : stream.create();
 	instance.minHeight = streams.minHeight ? streams.minHeight : stream.create();
-	if (instance.initialMinWidth) {
+	if (instance.hasOwnProperty('initialMinWidth')) {
 		stream.push(instance.minWidth, instance.initialMinWidth);
 	}
-	if (instance.initialMinHeight) {
+	if (instance.hasOwnProperty('initialMinHeight')) {
 		stream.push(instance.minHeight, instance.initialMinHeight);
 	}
 
