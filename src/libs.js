@@ -204,7 +204,11 @@ var rootComponent = function (c) {
 		leftAccum: onceZeroS,
 		unbuild: unbuild.push,
 	});
-	i.$el.css('position', 'relative');
+	i.$el
+		.css('position', 'relative')
+		.css('top', '0px')
+		.css('left', '0px')
+	;
 	var destroy = i.destroy;
 	i.destroy = function () {
 		unbuild.map(apply());
