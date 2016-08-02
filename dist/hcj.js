@@ -327,7 +327,6 @@ var updateDomFunc = function ($el, prop, value) {
 };
 
 var measureWidth = function ($el, w) {
-	console.log($el.html());
 	var $sandbox = $('.sandbox');
 	var loginText = $el.text().indexOf('Log In') !== -1;
 	var $clone = $el.clone();
@@ -343,7 +342,6 @@ var measureWidth = function ($el, w) {
 };
 
 var measureHeight = function ($el) {
-	console.log($el.html());
 	return function (w) {
 		var $sandbox = $('.sandbox');
 		var $clone = $el.clone();
