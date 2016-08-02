@@ -327,6 +327,7 @@ var updateDomFunc = function ($el, prop, value) {
 };
 
 var measureWidth = function ($el, w) {
+	console.log($el.html());
 	var $sandbox = $('.sandbox');
 	var loginText = $el.text().indexOf('Log In') !== -1;
 	var $clone = $el.clone();
@@ -342,6 +343,7 @@ var measureWidth = function ($el, w) {
 };
 
 var measureHeight = function ($el) {
+	console.log($el.html());
 	return function (w) {
 		var $sandbox = $('.sandbox');
 		var $clone = $el.clone();
@@ -3335,38 +3337,26 @@ var overlays = function (config) {
 // // 	]);
 // // };
 
-// // var tabs = function (list, stream) {
-// // 	var whichTab = stream || stream.once(0);
-// // 	return stack({}, [
-// // 		sideBySide({
-// // 			handleSurplusWidth: centerSurplusWidth,
-// // 		}, stream.map(list, function (item, index) {
-// // 			return alignTBM({
-// // 				bottom: toggleComponent([
-// // 					item.tab.left,
-// // 					item.tab.right,
-// // 					item.tab.selected,
-// // 				], stream.map(whichTab, function (i) {
-// // 					if (index < i) {
-// // 						return 0;
-// // 					}
-// // 					if (index > i) {
-// // 						return 1;
-// // 					}
-// // 					return 2;
-// // 				})).all([
-// // 					link,
-// // 					clickThis(function () {
-// // 						stream.push(whichTab, index);
-// // 					}),
-// // 				]),
-// // 			});
-// // 		})),
-// // 		componentStream(stream.map(whichTab, function (i) {
-// // 			return list[i].content;
-// // 		})),
-// // 	]);
-// // };
+var tabs = function (list, tabIndexS) {
+	tabIndexS = tabIndexS || stream.once(0);
+	return stack({})([
+		sideBySide({
+			handleSurplusWidth: centerSurplusWidth,
+		})(list.map(function (item, index) {
+			return alignTBM()({
+				b: all([
+					link,
+					clickThis(function () {
+						stream.push(tabIndexS, index);
+					}),
+				])(item.tab(tabIndexS, index)),
+			});
+		})),
+		componentStream(stream.map(tabIndexS, function (i) {
+			return list[i].content;
+		})),
+	]);
+};
 
 var matchStrings = function (stringsAndRouters) {
 	return function (str) {
