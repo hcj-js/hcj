@@ -924,6 +924,23 @@ var evenSplitSurplusWidth = function (gridWidth, positions) {
 	});
 	return positions;
 };
+var centerAllSameSurplusWidth = function () {
+	var w = 0;
+	return function (gridWidth, positions, _, i) {
+		if (i === 0) {
+			positions = evenSplitSurplusWidth(gridWidth, positions);
+			w = positions[0].width;
+			return positions;
+		}
+		else {
+			positions.map(function (position, i) {
+				position.width = w;
+				position.left = w * i;
+			});
+			return centerSurplusWidth(gridWidth, positions);
+		}
+	};
+};
 // don't read this function, please
 var evenSplitSurplusWidthWithMinPerRow = function (minPerRow) {
 	return function (gridWidth, positions) {
