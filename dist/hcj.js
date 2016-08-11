@@ -658,7 +658,19 @@ var rootComponent = function (c) {
 		leftAccum: onceZeroS,
 		unbuild: unbuild.push,
 	});
-	i.$el.css('position', 'relative');
+	i.$el.css('position', 'absolute')
+		.css('top', '0px')
+		.css('background-color', 'white')
+		.css('z-index', '-1');
+	var elHeight = i.$el.css('height');
+	var interval = setInterval(function () {
+		if (i.$el.css('height') === elHeight) {
+			clearInterval(interval);
+			i.$el.css('z-index', '0');
+			console.log('did it');
+		}
+		elHeight = i.$el.css('height');
+	}, 100);
 	var destroy = i.destroy;
 	i.destroy = function () {
 		unbuild.map(apply());
