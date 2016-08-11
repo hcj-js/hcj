@@ -206,6 +206,7 @@ var rootComponent = function (c) {
 	});
 	i.$el.css('position', 'absolute')
 		.css('top', '0px')
+		.css('left', '0px')
 		.css('background-color', 'white')
 		.css('z-index', '-1');
 	var elHeight = i.$el.css('height');
@@ -758,6 +759,7 @@ var text = function (strs, config) {
 	if ($.isArray(config)) {
 		config = config.reduce($.extend, {});
 	}
+
 	return (config.el || div)(function ($el, ctx) {
 		var didMH = false;
 		var mwS = stream.create();
@@ -930,6 +932,23 @@ var evenSplitSurplusWidth = function (gridWidth, positions) {
 		position.left += i * widthPerCol;
 	});
 	return positions;
+};
+var centerAllSameSurplusWidth = function () {
+	var w = 0;
+	return function (gridWidth, positions, _, i) {
+		if (i === 0) {
+			positions = evenSplitSurplusWidth(gridWidth, positions);
+			w = positions[0].width;
+			return positions;
+		}
+		else {
+			positions.map(function (position, i) {
+				position.width = w;
+				position.left = w * i;
+			});
+			return centerSurplusWidth(gridWidth, positions);
+		}
+	};
 };
 // don't read this function, please
 var evenSplitSurplusWidthWithMinPerRow = function (minPerRow) {
@@ -1249,7 +1268,7 @@ var sideBySide = function (config) {
 					left: left + config.padding * index,
 					width: w,
 				};
-				left += w + config.padding;
+				left += w;
 				return position;
 			});
 			positions = config.handleSurplusWidth(width, positions);
@@ -2888,38 +2907,26 @@ var overlays = function (config) {
 // // 	]);
 // // };
 
-// // var tabs = function (list, stream) {
-// // 	var whichTab = stream || stream.once(0);
-// // 	return stack({}, [
-// // 		sideBySide({
-// // 			handleSurplusWidth: centerSurplusWidth,
-// // 		}, stream.map(list, function (item, index) {
-// // 			return alignTBM({
-// // 				bottom: toggleComponent([
-// // 					item.tab.left,
-// // 					item.tab.right,
-// // 					item.tab.selected,
-// // 				], stream.map(whichTab, function (i) {
-// // 					if (index < i) {
-// // 						return 0;
-// // 					}
-// // 					if (index > i) {
-// // 						return 1;
-// // 					}
-// // 					return 2;
-// // 				})).all([
-// // 					link,
-// // 					clickThis(function () {
-// // 						stream.push(whichTab, index);
-// // 					}),
-// // 				]),
-// // 			});
-// // 		})),
-// // 		componentStream(stream.map(whichTab, function (i) {
-// // 			return list[i].content;
-// // 		})),
-// // 	]);
-// // };
+var tabs = function (list, tabIndexS) {
+	tabIndexS = tabIndexS || stream.once(0);
+	return stack({})([
+		sideBySide({
+			handleSurplusWidth: centerSurplusWidth,
+		})(list.map(function (item, index) {
+			return alignTBM()({
+				b: all([
+					link,
+					clickThis(function () {
+						stream.push(tabIndexS, index);
+					}),
+				])(item.tab(tabIndexS, index)),
+			});
+		})),
+		componentStream(stream.map(tabIndexS, function (i) {
+			return list[i].content;
+		})),
+	]);
+};
 
 var matchStrings = function (stringsAndRouters) {
 	return function (str) {
