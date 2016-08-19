@@ -373,20 +373,25 @@ var el = function (name, build, context) {
 				ctx[prop] = stream.create();
 			}
 		});
-		return {
-			$el: $el,
-			width: ctx.width || context.width,
-			height: ctx.height || context.height,
-			top: ctx.top || onceZeroS,
-			left: ctx.left || onceZeroS,
-			widthCss: ctx.widthCss,
-			heightCss: ctx.heightCss,
-			topCss: ctx.topCss,
-			leftCss: ctx.leftCss,
-			topAccum: stream.combine([context.topAccum, context.top], add),
-			leftAccum: stream.combine([context.leftAccum, context.left], add),
-			unbuild: unbuild.push,
-		};
+		try {
+			return {
+				$el: $el,
+				width: ctx.width || context.width,
+				height: ctx.height || context.height,
+				top: ctx.top || onceZeroS,
+				left: ctx.left || onceZeroS,
+				widthCss: ctx.widthCss,
+				heightCss: ctx.heightCss,
+				topCss: ctx.topCss,
+				leftCss: ctx.leftCss,
+				topAccum: stream.combine([context.topAccum, context.top], add),
+				leftAccum: stream.combine([context.leftAccum, context.left], add),
+				unbuild: unbuild.push,
+			};
+		}
+		catch (e) {
+			debugger;
+		}
 	};
 
 	var instance = {
