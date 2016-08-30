@@ -3055,6 +3055,7 @@ var grid = function (config) {
   config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
   config.rowHeight = config.rowHeight || useMaxHeight;
   config.maxPerRow = config.maxPerRow || 0;
+	config.rowOrColumn = config.rowOrColumn || false;
 
   return function (cs) {
 		return layout(function ($el, ctx, cs) {
@@ -3140,6 +3141,18 @@ var grid = function (config) {
 				});
 				var rows = rowsAndCurrentRow.rows;
 				rows.push(rowsAndCurrentRow.currentRow);
+				if (config.rowOrColumn && rowsAndCurrentRow.rows.length > 1) {
+					rows = mws.map(function (mw, index) {
+						return {
+							cells: [{
+								width: mw,
+								left: 0,
+							}],
+							contexts: [contexts[index]],
+							height: 0,
+						};
+					});
+				}
 
 				rows.map(function (row, i) {
 					row.cells = config.handleSurplusWidth(gridWidth, row.cells, config, i);
