@@ -191,8 +191,14 @@ var rootComponent = function (c) {
 		minHeight,
   ], function (ww, wh, mh) {
 		var mhAtWW = mh(ww);
+		var mhAtScrollbarWW = mh(ww - scrollbarWidth);
+		if (document.body.scrollHeight > window.innerHeight) {
+			// this if statement does not work, document.body.scrollHeight should actually be a stream
+			stream.push(width, ww - scrollbarWidth);
+			stream.push(height, mhAtScrollbarWW);
+			return;
+		}
 		if (mhAtWW > wh) {
-			var mhAtScrollbarWW = mh(ww - scrollbarWidth);
 			if (mhAtScrollbarWW > wh) {
 				$('body').css('overflow-y', 'initial');
 				stream.push(width, ww - scrollbarWidth);
@@ -2972,7 +2978,7 @@ var routeToComponentF = function (componentF) {
 };
 
 var routeToFirst = function (routers) {
-  return function (str) {
+	return function (str) {
 		for (var i = 0; i < routers.length; i++) {
 			var result = routers[i](str);
 			if (result) {
