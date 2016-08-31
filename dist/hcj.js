@@ -559,6 +559,10 @@ var layoutRecurse = function ($el, ctx, cs) {
 		});
   }
   else {
+		if (!$.isFunction (cs)) {
+			console.log('cs is not a function');
+			debugger;
+		}
 		return function (context) {
 			var i = cs(context);
 			// todo: replace with some isInstance function
