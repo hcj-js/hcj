@@ -407,10 +407,10 @@ var withDimensions = function (mw, mh) {
 		};
   });
 };
-var passthrough = function (f) {
-  return layout(function ($el, ctx, c) {
+var passthrough = function (f, el) {
+  return layout(el || div, function ($el, ctx, c) {
 		$el.addClass('passthrough');
-		f($el);
+		f && f($el);
 		return c(ctx.child());
   });
 };
@@ -1779,15 +1779,15 @@ var tree = function (config, index) {
   };
 };
 
-// var intersperse = function (arr, v) {
-// 	var result = [];
-// 	stream.map(arr, function (el) {
-// 		stream.push(result, el);
-// 		stream.push(result, v);
-// 	});
-// 	result.pop();
-// 	return result;
-// };
+var intersperse = function (arr, v) {
+	var result = [];
+	arr.map(function (el) {
+		result.push(el);
+		result.push(v);
+	});
+	result.pop();
+	return result;
+};
 
 
 var margin = function (amount) {
@@ -2439,48 +2439,56 @@ var sideSlidingPanel = function (source, panel, onOffS, config) {
   })(panel));
 };
 
-// // var fixedHeaderBody = function (config, header, body) {
-// // 	config.transition = config.transition || "0.5s";
-// // 	return div.all([
-// // 		componentName('fixedHeaderBody'),
-// // 		child(body),
-// // 		child(header),
-// // 		wireChildren(function (instance, ctx, bodyI, headerI) {
-// // 			headerI.$el.css('position', 'fixed');
+var fixedHeaderBody = function (config) {
+	config.transition = config.transition || "0.5s";
+	return layout(function ($el, ctx, bodyC, headerC) {
+		var headerHeightS = stream.create();
+		var headerI = headerC({
+			width: ctx.width,
+			height: headerHeightS,
+		});
+		stream.pushAll(stream.combine([
+			ctx.width,
+			headerI.minHeight,
+		], function (w, mh) {
+			return mh(w);
+		}), headerHeightS);
+		var bodyHeightS = stream.create();
+		var bodyI = bodyC({
+			top: headerHeightS,
+			width: ctx.width,
+			height: bodyHeightS,
+		});
+		stream.pushAll(stream.combine([
+			ctx.width,
+			bodyI.minHeight,
+		], function (w, mh) {
+			return mh(w);
+		}), bodyHeightS);
 
-// // 			setTimeout(function () {
-// // 				headerI.$el.css('transition', 'height ' + config.transition);
-// // 				bodyI.$el.css('transition', 'top ' + config.transition);
-// // 			});
+		headerI.$el.css('position', 'fixed');
 
-// // 			stream.pushAll(stream.map(stream.combine([bodyI, headerI], function (i) {
-// // 				return i.minHeight;
-// // 			}), function () {
-// // 				var args = Array.prototype.slice.call(arguments);
-// // 				return args.reduce(add, 0);
-// // 			}), instance.minHeight);
+		setTimeout(function () {
+			headerI.$el.css('transition', 'height ' + config.transition);
+			bodyI.$el.css('transition', 'top ' + config.transition);
+		});
 
-// // 			stream.pushAll(stream.map(stream.combine([bodyI, headerI], function (i) {
-// // 				return i.minWidth;
-// // 			}), function () {
-// // 				var args = Array.prototype.slice.call(arguments);
-// // 				return args.reduce(mathMax, 0);
-// // 			}), instance.minWidth);
-
-// // 			return [{
-// // 				top: headerI.minHeight,
-// // 				left: stream.once(0),
-// // 				width: ctx.width,
-// // 				height: bodyI.minHeight,
-// // 			}, {
-// // 				top: stream.once(0),
-// // 				left: stream.once(0),
-// // 				width: ctx.width,
-// // 				height: headerI.minHeight,
-// // 			}];
-// // 		}),
-// // 	]);
-// // };
+		return {
+			minWidth: stream.map(stream.combine([bodyI, headerI].map(function (i) {
+				return i.minWidth;
+			})), function (hw, bw) {
+				return hw + bw;
+			}),
+			minHeight: stream.map(stream.combine([bodyI, headerI].map(function (i) {
+				return i.minHeight;
+			})), function (hh, bh) {
+				return function (w) {
+					return hh(w) + bh(w);
+				};
+			}),
+		};
+	});
+};
 
 var makeSticky = function (str) {
   str = str || onceZeroS;
