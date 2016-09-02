@@ -184,7 +184,8 @@ var rootLayout = layout(function (el, ctx, c) {
 	return c(ctx.child());
 });
 
-var rootComponent = function (c) {
+var rootComponent = function (c, config) {
+	config = config || {};
   var scrollbarWidth = _scrollbarWidth();
   var width = stream.create();
   var height = stream.create();
@@ -234,7 +235,7 @@ var rootComponent = function (c) {
   i.$el.css('position', 'absolute')
 		.css('top', '0px')
 		.css('left', '0px')
-		.css('background-color', 'white');
+		.css('background-color', config.noBackground ? '' : 'white');
   var elHeight = i.$el.css('height');
 	stream.map(displayedS, function (displayed) {
 		if (displayed) {
@@ -2073,7 +2074,7 @@ var alignTop = function (c) {
 };
 var alignBottom = function (c) {
   return alignTBM()({
-		t: c,
+		b: c,
   });
 };
 var alignMiddleVertical = function (c) {
