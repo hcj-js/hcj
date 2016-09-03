@@ -263,12 +263,12 @@ var rootComponent = function (c, config) {
 };
 
 var color = function (c) {
-  return $.extend({
-		r: 0,
-		g: 0,
-		b: 0,
-		a: 1,
-  }, c);
+  return {
+		r: c.r || 0,
+		g: c.g || 0,
+		b: c.b || 0,
+		a: c.a || 1,
+	};
 };
 var multiplyColor = function (amount) {
   return function (c) {
@@ -354,13 +354,6 @@ var jqueryMethod = function (func) {
   return function () {
 		var args = Array.prototype.slice.call(arguments);
 		return $$(function ($el) {
-			if (func === 'css') {
-				if (args[0] === 'position') {
-					if (args[1] === 'fixed') {
-						console.log($el);
-					}
-				}
-			}
 			$el[func].apply($el, args);
 		});
   };
@@ -831,11 +824,10 @@ var text = function (strs, config) {
 		});
 		var pushDimensions = function () {
 			setTimeout(function () {
-				var mw = config.minWidth || (config.measureWidth && measureWidth($el)) || 0;
+				var mw = config.minWidth || (measureWidth($el));
 				var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) ||
 							(config.minHeight && constant(config.minHeight)) ||
-							(config.measureHeight && measureHeight($el)) ||
-							constant(0);
+							(measureHeight($el));
 				stream.push(mwS, mw);
 				stream.push(mhS, mh);
 			});
