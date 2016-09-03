@@ -356,7 +356,7 @@ var measureHeight = function ($el) {
 	};
 };
 
-var el = function (name, build, context) {
+var component = function (name, build, context) {
 	var $el = $(document.createElement(name));
 	$el.css('pointer-events', 'initial');
 
@@ -423,8 +423,6 @@ var el = function (name, build, context) {
 	}
 
 	$el.appendTo(context.$el);
-	$el.before(' ');
-	$el.after(' ');
 
 	instance.destroy = function () {
 		unbuild.map(apply());
@@ -434,28 +432,28 @@ var el = function (name, build, context) {
 	return instance;
 };
 
-var callEl = function (name) {
+var curryComponent = function (name) {
 	return function (build) {
 		return function (context) {
-			return el(name, build, context);
+			return component(name, build, context);
 		};
 	};
 };
 
-var a = callEl('a');
-var button = callEl('button');
-var div = callEl('div');
-var form = callEl('form');
-var iframe = callEl('iframe');
-var img = callEl('img');
-var input = callEl('input');
-var label = callEl('label');
-var li = callEl('li');
-var option = callEl('option');
-var p = callEl('p');
-var select = callEl('select');
-var textarea = callEl('textarea');
-var ul = callEl('ul');
+var a = curryComponent('a');
+var button = curryComponent('button');
+var div = curryComponent('div');
+var form = curryComponent('form');
+var iframe = curryComponent('iframe');
+var img = curryComponent('img');
+var input = curryComponent('input');
+var label = curryComponent('label');
+var li = curryComponent('li');
+var option = curryComponent('option');
+var p = curryComponent('p');
+var select = curryComponent('select');
+var textarea = curryComponent('textarea');
+var ul = curryComponent('ul');
 var stream = stream;
 var apply = apply;
 var constant = constant;
@@ -721,12 +719,12 @@ var rootComponent = function (c, config) {
 };
 
 var color = function (c) {
-  return $.extend({
-		r: 0,
-		g: 0,
-		b: 0,
-		a: 1,
-  }, c);
+  return {
+		r: c.r || 0,
+		g: c.g || 0,
+		b: c.b || 0,
+		a: c.a || 1,
+	};
 };
 var multiplyColor = function (amount) {
   return function (c) {
@@ -812,13 +810,6 @@ var jqueryMethod = function (func) {
   return function () {
 		var args = Array.prototype.slice.call(arguments);
 		return $$(function ($el) {
-			if (func === 'css') {
-				if (args[0] === 'position') {
-					if (args[1] === 'fixed') {
-						console.log($el);
-					}
-				}
-			}
 			$el[func].apply($el, args);
 		});
   };
@@ -1289,11 +1280,10 @@ var text = function (strs, config) {
 		});
 		var pushDimensions = function () {
 			setTimeout(function () {
-				var mw = config.minWidth || (config.measureWidth && measureWidth($el)) || 0;
+				var mw = config.minWidth || (measureWidth($el));
 				var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) ||
 							(config.minHeight && constant(config.minHeight)) ||
-							(config.measureHeight && measureHeight($el)) ||
-							constant(0);
+							(measureHeight($el));
 				stream.push(mwS, mw);
 				stream.push(mhS, mh);
 			});

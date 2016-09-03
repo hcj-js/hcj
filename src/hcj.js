@@ -423,8 +423,6 @@ var component = function (name, build, context) {
 	}
 
 	$el.appendTo(context.$el);
-	$el.before(' ');
-	$el.after(' ');
 
 	instance.destroy = function () {
 		unbuild.map(apply());
