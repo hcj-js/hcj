@@ -356,7 +356,7 @@ var measureHeight = function ($el) {
 	};
 };
 
-var component = function (name, build, context) {
+var componentFunc = function (name, build, context) {
 	var $el = $(document.createElement(name));
 	$el.css('pointer-events', 'initial');
 
@@ -432,25 +432,25 @@ var component = function (name, build, context) {
 	return instance;
 };
 
-var curryComponent = function (name) {
+var component = function (name) {
 	return function (build) {
 		return function (context) {
-			return component(name, build, context);
+			return componentFunc(name, build, context);
 		};
 	};
 };
 
-var a = curryComponent('a');
-var button = curryComponent('button');
-var div = curryComponent('div');
-var form = curryComponent('form');
-var iframe = curryComponent('iframe');
-var img = curryComponent('img');
-var input = curryComponent('input');
-var label = curryComponent('label');
-var li = curryComponent('li');
-var option = curryComponent('option');
-var p = curryComponent('p');
-var select = curryComponent('select');
-var textarea = curryComponent('textarea');
-var ul = curryComponent('ul');
+var a = component('a');
+var button = component('button');
+var div = component('div');
+var form = component('form');
+var iframe = component('iframe');
+var img = component('img');
+var input = component('input');
+var label = component('label');
+var li = component('li');
+var option = component('option');
+var p = component('p');
+var select = component('select');
+var textarea = component('textarea');
+var ul = component('ul');
