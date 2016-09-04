@@ -373,25 +373,43 @@ var componentFunc = function (name, build, context) {
 			}
 		});
 		try {
-			return {
-				$el: $el,
-				width: ctx.width || context.width,
-				height: ctx.height || context.height,
-				top: ctx.top || onceZeroS,
-				left: ctx.left || onceZeroS,
-				widthCss: ctx.widthCss,
-				heightCss: ctx.heightCss,
-				topCss: ctx.topCss,
-				leftCss: ctx.leftCss,
-				topAccum: stream.combine([context.topAccum, context.top], add),
-				leftAccum: stream.combine([context.leftAccum, context.left], add),
-				unbuild: unbuild.push,
-			};
+			ctx.$el = $el;
+			ctx.width = ctx.width || context.width;
+			ctx.height = ctx.height || context.height;
+			ctx.top = ctx.top || onceZeroS;
+			ctx.left = ctx.left || onceZeroS;
+			ctx.topAccum = stream.combine([context.topAccum, context.top], add);
+			ctx.leftAccum = stream.combine([context.leftAccum, context.left], add);
+			ctx.unbuild = unbuild.push;
+			return ctx;
 		}
 		catch (e) {
 			debugger;
 		}
 	};
+
+	$el.css('visibility', 'hidden')
+		.css('position', 'absolute');
+	stream.onValue(context.widthCss || context.width, function (w) {
+		updateDomFunc($el, 'width', w);
+	});
+	stream.onValue(context.heightCss || context.height, function (h) {
+		updateDomFunc($el, 'height', h);
+	});
+	stream.onValue(context.topCss || context.top, function (t) {
+		updateDomFunc($el, 'top', t);
+	});
+	stream.onValue(context.leftCss || context.left, function (l) {
+		updateDomFunc($el, 'left', l);
+	});
+	stream.combine([
+		context.width,
+		context.height,
+		context.top,
+		context.left,
+	], function () {
+		updateDomFunc($el, 'visibility', 'initial');
+	});
 
 	var instance = {
 		$el: $el,

@@ -113,28 +113,6 @@ var layoutRecurse = function ($el, ctx, cs) {
 				debugger;
 			}
 			ctx.unbuild(i.destroy);
-			i.$el.css('visibility', 'hidden')
-				.css('position', 'absolute');
-			stream.onValue(context.widthCss || context.width, function (w) {
-				updateDomFunc(i.$el, 'width', w);
-			});
-			stream.onValue(context.heightCss || context.height, function (h) {
-				updateDomFunc(i.$el, 'height', h);
-			});
-			stream.onValue(context.topCss || context.top, function (t) {
-				updateDomFunc(i.$el, 'top', t);
-			});
-			stream.onValue(context.leftCss || context.left, function (l) {
-				updateDomFunc(i.$el, 'left', l);
-			});
-			stream.combine([
-				context.width,
-				context.height,
-				context.top,
-				context.left,
-			], function () {
-				updateDomFunc(i.$el, 'visibility', 'initial');
-			});
 			return i;
 		};
   }
@@ -346,8 +324,8 @@ var and = function (f) {
   };
 };
 var $$ = function (f) {
-  return and(function (i) {
-		return f(i.$el);
+  return and(function (i, ctx) {
+		return f(i.$el, ctx);
   });
 };
 var jqueryMethod = function (func) {
