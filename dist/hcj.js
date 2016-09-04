@@ -389,6 +389,7 @@ var componentFunc = function (name, build, context) {
 	};
 
 	$el.css('visibility', 'hidden')
+		.css('pointer-events', 'initial')
 		.css('position', 'absolute');
 	stream.onValue(context.widthCss || context.width, function (w) {
 		updateDomFunc($el, 'width', w);
@@ -598,8 +599,7 @@ var layout = function (elArg, buildLayoutArg) {
   return function () {
 		var args = Array.prototype.slice.call(arguments);
 		return el(function ($el, ctx) {
-			$el.css('pointer-events', 'none')
-				.css('position', 'relative');
+			$el.css('pointer-events', 'none');
 			return buildLayout.apply(null, [$el, ctx].concat(layoutRecurse($el, ctx, args)));
 		});
   };

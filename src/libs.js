@@ -124,8 +124,7 @@ var layout = function (elArg, buildLayoutArg) {
   return function () {
 		var args = Array.prototype.slice.call(arguments);
 		return el(function ($el, ctx) {
-			$el.css('pointer-events', 'none')
-				.css('position', 'relative');
+			$el.css('pointer-events', 'none');
 			return buildLayout.apply(null, [$el, ctx].concat(layoutRecurse($el, ctx, args)));
 		});
   };

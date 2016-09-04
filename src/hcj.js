@@ -389,6 +389,7 @@ var componentFunc = function (name, build, context) {
 	};
 
 	$el.css('visibility', 'hidden')
+		.css('pointer-events', 'initial')
 		.css('position', 'absolute');
 	stream.onValue(context.widthCss || context.width, function (w) {
 		updateDomFunc($el, 'width', w);
