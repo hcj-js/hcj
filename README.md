@@ -2,13 +2,9 @@
 
 Javascript library for web app frontend templating
 
-## Getting Started ##
+## Install ##
 
-The `example/example.js` file shows what typical HCJ code looks like.  Open `example.html` in a browser and see what happens.
-
-Read the last part of this readme to see what kinds of components and layouts there are.
-
-Edit `example.js` or compose your own components - and bootstrap them onto your pages with `rootComponent`.  It's really that simple.
+`git clone https://github.com/jeffersoncarpenter/hcj.git`
 
 ## What's it like ##
 
@@ -16,111 +12,446 @@ Edit `example.js` or compose your own components - and bootstrap them onto your 
 2. Layer Components.
 3. Profit!
 
-Components are the building blocks of this library.  Layouts glue components together to form new components.  A single piece of text can be a component; so can an entire web page.
+Components are the building blocks of this library.  A single piece of text is a component; so is an entire web page.  Components' sizes are measured, and they are positioned using javascript.  This gives us a relatively clean, turing-complete API to use for element positioning, rather than the application of css styles.
 
-This leads to modular code that's very easy to edit, test, and rearrange.  Components you've defined can be moved around wherever you want, put into any context.
+Positioning of child components within parent components happens thusly:  First, the child sends the parent its minimum dimensions.  Second, the parent sends the child its actual dimensions.
 
-## How it works ##
+All of this leads to functional, modular code where components can be shuffled and re-shuffled however you want.
 
-A `Component` is part of a page.  When you render a component, it can run any code.  It can attach nodes to the page, sign up event handlers, even make network requests.  Importantly, a component's render function returns an "undo" function that, when called, reverts everything done by the render function.
+## Width !== Height ##
 
-One component can be instanced many times, and each instance can be removed from the page independently using its undo function.
+Most elements have a roughly constant area (excepting images, which scale).  When the width changes, the height must change.  Thus, the minimum dimensions send from child to parent cannot simply be two numbers.
 
+The minimum width sent from child to parent is a number.  The "minimum height" sent from child to parent is actually a function which takes a hypothetical width, and returns the required height at that width.
 
-Basically two things happen when you render a component:
+## Defining Components ##
 
-First, minimum dimensions bubble up.  The innermost components (text and images) measure themselves, and report their dimensions to their layouts.  The layouts use these to calculate their own minimum dimensions, and report these to their own parents.  This continues until the root component is reached.
+The function `component` is used to define components.  It is a curried function.  The argument that it takes first is the component's intended tag name.  You usually won't need to call component directly; in the standard library we have defined `var a = component('a')`, `var div = component('div')`, etc.
 
-Second, actual dimensions bubble down.  You provide a size to the root component.  It gives its children positions and sizes based on their minimum dimensions and its own actual size.  This repeats until the innermost components are reached.
+Second, a `build` method is passed in.  This function is run each time the component is rendered.
 
+The build method takes four arguments.  The first, commonly called `$el`, is a jquery selector of the created DOM element, the root element of the component.  The second, commonly called `context`, is the component is being rendered into, described below.  The third and fourth are commonly called `pushMeasureWidth` and `pushMeasureHeight`.  They may be used optionally at your leisure, and they imperatively push values into the instance's minWidth and minHeight streams.
 
-To render a component, you need two things: a parent element, and a way to come up with actual dimensions, taking into account minimum dimensions.
+The build method returns an object with two properties: `minWidth` and `minHeight`.  The minWidth property must be a stream of numbers, and the minHeight property must again be a stream of functions which take a hypothetical width and return the required height at that width.  These properties are optional (and not recommended) if you choose to call the pushMeasureWidth and pushMeasureHeight functions as above.
 
-The function `rootComponent` does this.  By default, it uses `body` as the parent element.  Your component's minimum width is ignored; it is given the width of its parent element.  It is given exactly its own minimum height, and the parent element is resized to match.
+Technically, the pushMeasureWidth and pushMeasureHeight functions are implemented in terms of the `measureWidth` and `measureHeight` functions.  The measureWidth function takes an element, and measures and returns the width it requires.  The measureHeight function takes an element, and returns a function which takes a hypothetical width and measures and returns the height required by the element at that width.  Again, the pushMeasureWidth and pushMeasureHeight simply call measureWidth and measureHeight, and push the resulting value into the stream.
 
-## Layouts ##
+This returns a component.  For example:
 
-Layouts are functions that take components and return a component.
+```
+// an example custom component
 
-Layouts can do anything to their child components: shuffle them around, change their sizes on the fly, fade them in and out, and more.
+var captcha = div(function ($el, context, pushMeasureWidth, pushMeasureHeight) {
+  captcha.render($el, {
+    onSuccess: function () {
+      // re-measure the width once the captcha is rendered
+      pushMeasureWidth();
+      
+      // when the component is removed, destroy the captcha
+      context.unbuild(function () {
+        captcha.destroy();
+      });
+    },
+  });
+  pushMeasureWidth();
+  pushMeasureHeight();
+});
+```
 
-Child components report their minimum dimensions to you; it's your responsibility as a layout to give them enough space.
+## Rendering Components ##
 
+A component is a function that takes a context and returns an instance.  Contexts should not be constructed by hand.  Contexts are constructed internally as part of the `rootComponent` function, and returned to you from the `context.child` function described in the the Defining Layouts section.  A context is an object with the following properties:
 
-Minimum dimensions bubble up repeatedly, not just once.  One image can be swapped out for another, or text can change.  Any time this happens, new minimum dimensions are bubbled up.
+* $el: Element to append the instance to.
+* width: Stream of numbers, width available to the component.
+* height: Stream of numbers, height available to the component.
+* left: Stream of numbers, left coordinate of the component.
+* top: Stream of numbers, top coordinate of the component.
+* leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.
+* topAccum: Stream of numbers, parent top coordinate relative to top edge of page.
+* onDestroy: Hook to run callbacks when the instance is destroyed.  (A context should only be passed into a component once).
+* child: Function to create child contexts (see Defining Layouts section) 
 
-Actual dimensions bubble down repeatedly too.  When a component's minimum dimensions change, its actual dimensions usually get adjusted.  And whenever the root component's container is resized, a new set of actual dimensions must be computed.
+When applied to a context, a component returns an instance.  An instance is an object with the following properties:
 
-## Broken Symmetry, "oops" ##
+* $el: Root element of the instance.
+* minWidth: stream of numbers giving the min width of the instance
+* minHeight: stream of functions that, given a width, return the min height of the instance at that width
+* destroy: function that, when called, runs all of the context's onDestroy callbacks and removes the instance from the dom
 
-Width and Height are treated differently from each other.
+Currently, the only way to actually render a component onto a web page is to append it to `body`, and use the window width and window height as its dimensions.  This is done using the `rootComponent` function.
 
-Think of a paragraph of text (or of your favorite website).  How tall it is depends on the width you're viewing it at.  This is true of all components.  Heights can depend on widths.
+(When this is done, the minimum width of the root instance is ignored; the window width is used instead.  The actual height of the component is set to be its minimum height at that width.  (If it so happens that the minimum height of the root component at the window width is greater than the window height, but the minimum height of the root component at the window width minus the width of the scrollbar is smaller than the window height, then 'overflow-y: scroll' is added to the body so that the page can render in a sensical way.))
 
-A "minimum dimensions" does not consist of two numbers `width` and `height`.  It consists of a number `width`, and a function `height` that takes a width and returns the height that would be required at that width.
+### Rendering a Page ###
 
-## Standard Library ##
+To render a page, simply call the rootComponent function.
 
-HCJ comes "batteries-included", with a standard library of components and layouts that match or exceed HTML and CSS in both function and brevity.
+```
+var page = all([
+  margin(10),
+  backgroundColor(color({
+    r: 200,
+    g: 253,
+    b: 53,
+  }),
+])(text('Hello World'));
 
-That said, the HCJ standard library is still very much in flux.  As of the writing of this readme, here are some of the most common components and layouts:
+var rootInstance = rootComponent(page);
+```
+
+## Defining Layouts ##
+
+A layout is a function that takes components as arguments and returns a component.  The `layout` function is for making layouts.  You pass it one argument, the layout's `buildLayout` function.
+
+The arguments to your `buildLayout` function are somewhat dynamic.  The first two arguments, $el and context, are passed through from the layout component's $el and context (see the Defining Components section above).  The remaining arguments are the child components, as they are passed in to the layout.
+
+The buildLayout function must return an object with `minWidth` and `minHeight` streams.  These streams are then returned from the layout component's build method.
+
+## Example - Purple Margin ##
+
+`purpleMargin :: Component -> Component`
+
+Let's say we want to define a layout that adds a 10px purple margin.
+
+Here we will quickly go over the `context.child` function mentioned earlier.  The child function takes one optional argument.  This object may be an object with the following properties:
+
+* width: stream of numbers that specify the width of the child component, used instead of the parent's own width if present
+* widthCSS: stream of string values to use for the width css property, used instead of mapping (+ "px") over the width stream if present
+* height: stream of numbers that specify the height of the child component, used instead of the parent's own height if present
+* heightCSS: stream of string values to use for the height css property, used instead of mapping (+ "px") over the height stream if present
+* top: stream of numbers specifying the top coordinate of the child component, used instead of `stream.once(0)` if present
+* topCSS: stream of string values used for the top css property, used instead of mapping (+ "px") over the top property if present
+* left: stream of numbers specifying the left coordinate of the child component, used instead of `stream.once(0)` if present
+* leftCSS: stream of string values used for the left css property, used instead of mapping (+ "px") over the left property if present
+
+These parameters may either be streams, or may be the boolean value `true`.  If a stream, the stream is used as described above.  If `true`, an empty stream is created and returned, and you must manually push values into it.  Thus, like the instance's `minWidth` and `minHeight` streams, these streams may be defined either declaratively or imperatively.
+
+The `context.child` function returns a context.  Now, here's the code for `purpleMargin` (for info on the stream api that's used, see the Streams section below).  First, the background color is set.  Second, the child instance is defined.  Third, the layout's min size info is returned.
+
+```
+var purpleMargin = layout(function ($el, context, c) {
+  $el.css('background-color', '#FF00FF');
+  
+  var instance = c(context.child({
+    width: stream.map(context.width, function (w) {
+      return w - 20;
+    }),
+    height: stream.map(context.height(function (h) {
+      return h - 20;
+    }),
+    top: stream.once(10),
+    left: stream.once(10),
+  });
+  
+  return {
+    minWidth: stream.map(instance.minWidth, function (mw) {
+      return mw + 20;
+    }),
+    minHeight: stream.map(instance.minHeight, function (mh) {
+      return function (w) {
+        return mh(w - 20) + 20;
+      };
+    }),
+  };
+});
+```
+
+## Example - Stack ##
+
+`stack :: [Component] -> Component`
+
+Say we want to put components into a vertical stack.  In this example, the `buildLayout` function is called with an array of components because the `stack` is called with an array of components.  Layouts can be called with one or more individual components, arrays, arrays of arrays, etc.
+
+In this code, first we map over the components argument to create an array of child contexts, and an array of instances.  Next, we create two variables - streams of all the min widths, and all the min heights, of the instances.
+
+Then we combine some streams together to give tops and heights to the instances.
+
+Last we return the min width and min height of the stack.  The min width of the stack is set to the maximum of the min widths of the instances, and the min height is set to be the sum of the min heights of the instances.
+
+```
+var stack = layout(function ($el, context, cs) {
+  var contexts = [];
+  var instances = cs.map(function (c, index) {
+    var context = context.child({
+      top: true,
+      height: true,
+    });
+    contexts.push(context);
+    return c(contexts[index]);
+  });
+
+  var minWidths = stream.all(instances.map(function (i) {
+    return i.minWidth;
+  }));
+  var minHeights = stream.all(instances.map(function (i) {
+    return i.minHeight;
+  }));
+
+  stream.combine([
+    ctx.width,
+    ctx.height,
+    minHeights,
+  ], function (w, h, minHeights) {
+    minHeights.reduce(function (top, minHeight, index) {
+      var context = contexts[index];
+      var height = minHeight(w);
+      stream.push(context.top, top);
+      stream.push(context.height, height);
+      return top + h;
+    }, 0);
+  });
+
+  return {
+    minWidth: stream.map(minWidths, function (mws) {
+      return mws.reduce(function (a, b) {
+		return Math.max(a, b);
+      }, 0);
+    }),
+    minHeight: stream.combine([
+      ctx.width,
+      minHeights,
+    ], function (w, mhs) {
+      return mhs.map(function (mh) {
+		return mh(w);
+      }).reduce(function (a, b) {
+		return a + b;
+      }, 0);
+    }),
+  };
+});
+```
+
+## Standard Library - Components ##
+
+HCJ comes with a standard library of components and layouts.
 
 
 ### text ###
 
-`text :: String -> Component`
+`text :: ([SpanConfig], TextConfig) -> Component`
 
-Single line of text.  Takes the string to display, returns a component.
+Text still has an incomplete and clunky API.
 
-* minWidth: The width of the line
-* minHeight(w): Always returns the height of the line.
+It is a two-argument function.  The first argument can either be one `SpanConfig` or an array of `SpanConfigs`.  The second argument is an optional `TextConfig`.
 
+A `SpanConfig` may be either a string, or an object with the following properties (all optional except `str` which is required):
 
-### paragraph ###
+* str: The string to show.
+* size: font size
+* weight: font weight
+* family: font family
+* color: font color as an object with `r`, `g`, `b`, and `a` properties
+* shadow: font shadow
 
-`paragraph :: Number -> String -> Component`
+The `TextConfig` parameter applies globally to all spans within the text component.  It can have all of the same properties as a `SpanConfig`, minus `str`, plus some additional properties:
 
-Multi-line text.  Takes a min-width and some text, returns a component.
+* align: text align
+* minWidth: causes the text's width not to be measured; this number is used instead
+* minHeight: causes the text's height not to be measured; this number is used instead
+* oneLine: causes the text's height not to be measured.  It is assumed to be one line tall.  Its min height value is calculated from its font size and line height.
 
-* minWidth: The value passed into `paragraph`.
-* minHeight(w): Returns the height used by the text at width w.
+Floating components inside text is currently not supported.  There are no technical barriers, it's only a matter of reworking the API.
+
+Examples:
+
+```
+var hello = text('Hello');
+
+var largeText = text('Large Text', {
+  size: '50px',
+});
+
+var spans = text([{
+  str: 'SANTIH',
+  weight: 'bold',
+}, {
+  str: '_OEFYCL_OE',
+  family: 'Lato',
+}]);
+```
 
 
 ### image ###
 
 `image :: ImageConfig -> Component`
 
-Image component.  At least one of the ImageConfig's useNativeSize, minWidth, or minHeight properties must be set.
+An `ImageConfig` may have the following properties, all optional except `src` which is required.  By default, an image's min width is set to its natural width, and its min height is set to maintain aspect ratio.
 
-* `src`: source, or stream of image sources
-* `useNativeSize`: if truthy, the component's minWidth and minHegiht are set to the image's native width and height
-* `minWidth`: if a number, component's minWidth is set to that number, and minHeight is set based on the image's aspect ratio
-* `minHeight`: if a number, component's minHeight always returns that number and its minWidth is set based on the image's aspect ratio
+* src: image source
+* minWidth: if present, min width is set to this number instead of the image's natural width
+* minHeight: if present, min width of image is set to the quotient of this number and the image's aspect ratio
+
+Caveat: The min width specified by an image is *decidedly not* the actual width and actual height that it displays in.  This means images on their own almost always... get stretched.  For this reason, in this pre-release version of this library it is highly recommended to use the `keepAspectRatio` layout with all images.
 
 
 ### keepAspectRatio ###
 
-`keepAspectRatio :: Component -> Component`
+`keepAspectRatio :: KeepAspectRatioConfig -> Component -> Component`
 
-Positions child component to simply be as large as possible within a space, keeping its aspect ratio.  Very useful with images.
+Roughly speaking, behaves much like the `background` CSS property.
 
-* minWidth and minHeight of the `keepAspectRatio` component are set to be the minWidth and minHeight of its child component.
-* child component remains centered within the `keepAspectRatio` layout
+Positions a component in a space, maintaining its aspect ratio.  The child component's aspect ratio is assumed to be constant, and so `keepAspectRatio` will exhibit strange behavior when used with anything but images.  In the future, `image` and `keepAspectRatio` probably be merged.
+
+A `KeepAspectRatioConfig` may have any of the following properties:
+
+* fill: If set, the child component covers the space and may be cropped.  If not set, the child component is contained within the space and there may be margins.
+* top: If set, the top of the child component is aligned with the top of the `keepAspectRatio`.
+* bottom: If set, the bottom of the child component is aligned with the bottom of the `keepAspectRatio`.
+* left: If set, the left of the child component is aligned with the left of the `keepAspectRatio`.
+* right: If set, the left of the child component is aligned with the left of the `keepAspectRatio`.
 
 
-### padding ###
+### stack ###
 
-`padding :: PaddingConfig -> Component -> Component`
+`stack :: StackConfig -> [Component] -> Component`
 
-Adds some empty space around a component.  `padding` takes an object with any of the following properties:
+Puts components in a stack, one on top of another.
 
-* `all`: padding to apply to all sides
-* `top`: padding to apply to the top
-* `bottom`: padding to apply to bottom
-* `left`: padding to apply to the left side
-* `right`: padding to apply to the right side
+A `StackConfig` may have the following properties:
 
-minWidth and minHeight of a `padding` component are equal to the minWidth and minHeight of its child component plus the padding amount.
+* `padding`: Padding amount between components.
+* `handleSurplusHeight`: There can be surplus height, i.e. the actual height of the stack can be greater than the minimim heights of all of the children.  A `handleSurplusHeight` function takes two arguments.  The first argument is the actual height of the stack (in pixels).  The second argument is an array of objects with `top` and `height` properties, giving the computed top coordinate and min height of each child within the stack (in pixels).  It returns a new array of objects with `top` and `height` properties.
+
+### sideBySide ###
+
+`sideBySide :: SideBySideConfig -> [Component] -> Component`
+
+Puts components directly side by side.
+
+A `SideBySideConfig` may have the following properties:
+
+* `padding`: Padding amount between components.
+* `handleSurplusWidth`: Similar to a `stack`, a `sideBySide` can have surplus width.  A `handleSurplusWidth` function takes two arguments.  The first is the actual width of the `sideBySide`.  The second is an array of objects with `left` and `width` properties, giving the computed left coordinate and min width of each child within the stack.  It returns a new array of objects with `left` and `width` coordinates.
+
+### alignLRM ###
+
+`alignLRM :: AlignLRMConfig -> LRMComponents -> Component`
+
+Takes up to three components.  Aligns them left, right, and middle within the space available.
+
+The `AlignLRMConfig` is not currently used.  However, don't forget to stick in those extra parentheses (see example) or you'll get a weird error!
+
+An `LRMComponents` is just an object with up to three properties:
+
+* l: component to align left
+* r: component to align right
+* m: component to align middle
+
+Example:
+
+```
+var header = alignLRM()({
+  l: logo,
+  r: menu,
+});
+```
+
+### alignTBM ###
+
+`alignTBM :: AlignTBMConfig -> TBMComponents -> Component`
+
+The `AlignTBMConfig` is not currently used.  However, like `alignLRM` you'll get a weird error if you forget to stick them in.
+
+A `TBMComponents` is an object with up to three properties:
+
+* t: component to align top
+* b: component to align bottom
+* m: component to align middle
+
+### grid ###
+
+`grid :: GridConfig -> [Component] -> Component`
+
+A mobile responsive grid layout.  Child components are placed into rows.
+
+* `padding`: padding amount between components
+* `handleSurplusWidth`: splits surplus width among components in each row; see `sideBySide`
+* `handleSurplusHeight`: splits surplus hegiht among grid rows; see `stack`
+* `useFullWidth`: if set, the grid's min width is computued as the sum of the min widths of the child components, rather than as the largest of the min widths of the child components
+
+### overlays ###
+
+`overlays :: OverlaysConfig -> [Component] -> Component`
+
+Places components one directly on top of another.
+
+The OverlaysConfig is not currently used.
+
+### componentStream ###
+
+`componentStream :: Stream(Component) -> Component`
+
+Takes a stream of components, returns a component.
+
+Typical uses include:
+
+* showing ajax spinners and replacing them with content
+* displaying a "live preview" as your user updates form fields.
+
+
+## Standard Library - Component Modifiers ##
+
+In addition to the layouts that take many components and return a component, there are many layouts that take only a single component and return a component.  Much styling and functionality can be added by applying these functions.
+
+
+### all ###
+
+`all :: [Component -> Component] -> Component -> Component`
+
+The `all` function is key.  It enables you to apply multiple functions to a component, one after another.
+
+Arguably, `all` should be renamed to `compose`.
+
+Example:
+
+```
+var button = all([
+  margin({
+    all: 10,
+  }),
+  border(color.white, {
+    all: 1,
+  }),
+])(text('Submit'));
+```
+
+Composition Example (notice that `all` applied to an array of functions is itself such a function):
+
+```
+var prettyBorder = all([
+  border(white, {
+    all: 1,
+  });
+  border(gray, {
+    all: 1,
+  });
+  border(black, {
+    all: 1,
+  });
+]);
+
+var button = all([
+  margin({
+    all: 10,
+  }),
+  prettyBorder,
+])(text('Submit'));
+```
+
+### margin ###
+
+`margin :: MarginConfig -> Component -> Component`
+
+Adds some space around a component.
+
+A `MarginConfig` may have any of the following properties:
+
+* all: margin to apply to all sides
+* top: margin to apply to the top
+* bottom: margin to apply to bottom
+* left: margin to apply to the left side
+* right: margin to apply to the right side
 
 
 ### border ###
@@ -129,95 +460,110 @@ minWidth and minHeight of a `padding` component are equal to the minWidth and mi
 
 Adds a colored border around a component.
 
-A `Color` is an object with `r`, `g`, `b`, and `a` properties.  A `BorderConfig` is the same kind of object as a `PaddingConfig`.
+A `Color` is an object with `r`, `g`, `b`, and `a` properties.  (see below)
 
-Like `padding`, minimum dimensions of a `border` component are equal to the minimum dimensions of its child plus the border thickness.
+A `BorderConfig` may have any of the following properties:
 
+* all: border to apply to all sides
+* top: border to apply to the top
+* bottom: border to apply to bottom
+* left: border to apply to the left side
+* right: border to apply to the right side
+* radius: border radius
 
-### stack ###
+### crop ###
 
-`stack :: StackConfig -> [Component] -> Component`
+Crops a component down to a proportion of its size.
 
-Places components one on top of another.
+`crop :: CropConfig -> Component -> Component`
 
-`StackConfig` may have the following properties:
+A `CropConfig` can either be a number - which is treated as an object with an 'all' property of that value - or an object with any of the following properties:
 
-* `gutterSize`: A margin to place between components in the stack.
-* `collapseGutters`: If truthy, adjacent gutters within the stack are collapsed.  Adjacent gutters only happen if a stack element has height 0.
+* all: crop percentage on all sides
+* top: crop percentage from the top
+* bottom: crop percentage from the bottom
+* left: crop percentage from the left
+* right: crop percentage from the right
 
-A stack's minimum dimensions are calculated:
+### linkTo ###
 
-* minWidth of a stack is the maximum of the minWidths of the stack's children
-* minHeight of a stack is the sum of the minHeights of its children, plus all the gutters
+`linkTo :: String -> Component -> Component`
 
+Takes a URL, then takes a component and wraps it in an `a` tag with that href.
 
-### sideBySide ###
+### $$ ###
 
-`sideBySide :: SideBySideConfig -> [Component] -> Component`
+`$$ :: ($ -> IO ()) -> Component -> Component`
 
-Places components side by side
+Takes a function which takes the JQuery selector of the component and performs arbitrary actions.  Returns a function from a component to a component.
 
-`SideBySideConfig` may have the following properties:
-* `gutterSize`: Same as in `stack`.
-* `collapseGutters`: Same as in `stack`.
-* `handleSurplusWidth`: Oftentimes, a `sideBySide` component has more than enough with for its children.  This function lets you configure your `sideBySide` component to divy out excess width how you see fit.
+Should not affect min width and min height of the element as rendered by the browser.
 
-Like `stack`, a sideBySide's minimum dimensions are calculated:
+### $addClass, $attr, $css, $on, $prop ###
 
-* minWidth of a sideBySide is the sum of the minWidths of its children, plus gutters
-* minHeight of a sideBySide returns the max of the minHeights of its children
+`$addClass :: String -> Component -> Component`
+`$attr :: (String, String) -> Component -> Component`
+`$css :: (String, String) -> Component -> Component`
+`$on :: (String, (Event -> IO ())) -> Component -> Component`
+`$prop :: (String, String) -> Component -> Component`
 
+All defined using `$$`, and simply mimic jquery methods.
 
-### alignLRM ###
+### withBackgroundColor ###
 
-`alignLRM :: [Component] -> Component`
+`withBackgroundColor :: BackgroundColorConfig -> Component -> Component`
 
-Takes up to three components.  Aligns them left, right, and middle within the space available.
+A `BackgroundColorConfig` is an object with any of the following properties:
 
-* minWidth of an `alignLRM` is the sum of the minWidths of its children
-* minHeight of an `alignLRM` is the max of the minHeights of its children
+* backgroundColor: background color
+* fontColor: font color
 
+## Standard Library - Streams ##
 
-### alignTBM ###
+So far only static pages are documented.  `componentStream` did hint at greater possibilities.
 
-`alignTBM :: [Component] -> Component`
+TODO: add stream documentation
 
-Takes up to three components.  Aligns them top, bottom, and middle within the space available.
+## Standard Library - Forms ##
 
-* minWidth of an `alignTBM` is the max of the minWidths of its children
-* minHeight of an `alignTBM` is the sum of the minHeights of its children
+TODO: add forms documentation
 
+## Standard Library - Colors ##
 
-### grid ###
+The standard library has a standard notation for colors.  A `Color` is an object with all of the following properties:
 
-`grid :: GridConfig -> [Component] -> Component`
+* r: red value from 0 to 255
+* g: green value from 0 to 255
+* b: blue value from 0 to 255
+* a: alpha value from 0 to 1
 
-A mobile responsive grid layout.  Child components are broken into rows.  GridConfig may have the following properties:
+### color ###
 
-* `gutterSize`: Margin between components in each row, and between rows in the grid.
-* `handleSurplusWidth`: Called for each row.  Like in `sideBySide`.
-* `handleSurplusHeight`: Adjusts heights of rows, in case the grid has more than enough height.
-* `useFullWidth`: Changes how grid's minWidth is computed (see below).
-* `bottomToTop`: If truthy, grid rows are displayed from bottom to top instead of top to bottom.  This option should be removed; a `handleSurplusHeight` function could do this.
+`Color` constructor.  Easier than describing further, is pasting the code:
 
+```
+var color = function (c) {
+  return {
+		r: c.r || 0,
+		g: c.g || 0,
+		b: c.b || 0,
+		a: c.a || 1,
+	};
+};
+```
 
-### componentStream ###
+### colorString ###
 
-`componentStream :: Stream Component -> Component`
+`Color` destructor.  Takes a color, returns string using rgba format.
 
-Takes a stream of components, returns a component.  Each time the stream yields a new component, the `componentStream` destroys the old component and instances the new one.
+## cs is not a function ##
 
-Useful for displaying ajax spinners and replacing them with content as it arrives.
-
-Minimum dimensions of a `componentStream` are always the minimum dimensions of the latest componment in the stream.
-
+The most common error message you're going to get using this library.  Very uninformative, sorry.
 
 ## Version 2 ##
 
-Version 2 is in progress in the v2 branch.  Improvements include:
+Version 2 is in progress, and larger in scope.  Really it is a specification system for web pages.  Pages will instead be represented as JSON data structures, which are evaluated as code like what's described above.
 
-Require.js is now being used for dependency management.  This library no longer pollutes the window object.
+Browsers can implement this specification as javascript code - again, based on actually measuring elements and positioning them through simple APIs.
 
-Pages are now represented as data structures.  This makes them easier to edit and render how you choose.  It will enable things like server-side rendering and drag & drop editors.
-
-Core library is more efficient.  Leaks far less memory.  Creates fewer closures.  The `Stream` interface has safer and faster implementations.
+Servers can implement the specification as an HTML and CSS approximation, which leads to easy SEO and can lend itself to a decent UX as the page loads in.
