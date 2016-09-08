@@ -3376,21 +3376,28 @@ var id = function (a) {
   var tabs = function (list, tabIndexS) {
 	tabIndexS = tabIndexS || stream.once(0);
 	return stack({})([
-	  sideBySide({
-		handleSurplusWidth: centerSurplusWidth,
-	  })(list.map(function (item, index) {
-		return alignTBM()({
-		  b: all([
-			link,
-			clickThis(function () {
-			  stream.push(tabIndexS, index);
-			}),
-		  ])(item.tab(tabIndexS, index)),
-		});
-	  })),
-	  componentStream(stream.map(tabIndexS, function (i) {
-		return list[i].content;
-	  })),
+	  all([
+		withMinWidth(0),
+		$css('overflow-x', 'scroll'),
+		$css('overflow-y', 'hidden'),
+		$css('pointer-events', 'initial'),
+	  ])(stack()([
+		sideBySide({
+		  handleSurplusWidth: centerSurplusWidth,
+		})(list.map(function (item, index) {
+		  return alignTBM()({
+			b: all([
+			  link,
+			  clickThis(function () {
+				stream.push(tabIndexS, index);
+			  }),
+			])(item.tab(tabIndexS, index)),
+		  });
+		})),
+		all([
+		  withMinHeight(_scrollbarWidth()) // cheater
+		])(nothing),
+	  ])),
 	]);
   };
 
