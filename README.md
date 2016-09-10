@@ -1,6 +1,8 @@
 # hcj.js #
 
-Javascript library for web app frontend templating
+Javascript library for web app frontend templating.
+
+Pre-Alpha.  Will be released ASAP.
 
 ## Install ##
 
