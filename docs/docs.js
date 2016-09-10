@@ -1,5 +1,6 @@
 $(function () {
   var c = window.hcj.component;
+  var casesplit = window.hcj.casesplit;
   var el = window.hcj.el;
 
   var stack = c.stack();
@@ -74,24 +75,43 @@ $(function () {
 	  p("2. Layer Components."),
 	  p("3. Profit!"),
 	]),
-	p("Components are the building blocks of this library.  A single piece of text is a component; so is an entire web page.  Components' sizes are measured, and they are positioned using javascript.  This gives us a relatively clean, turing-complete API to use for element positioning, rather than the application of css styles."),
-	p("Positioning of child components within parent components happens thusly:  First, the child sends the parent its minimum dimensions.  Second, the parent sends the child its actual dimensions."),
-	p("All of this leads to functional, modular code where components can be shuffled and re-shuffled however you want."),
-	p("One major thing that this library gives up compared to CSS is the ability to inline arbitrary content into paragraphs.  There is support for styling text using spans, and we do believe this leads to a much more useful layout system overall."),
+	p("Components are the building blocks of this library.  A single piece of text is a component; so is an entire web page.  Components' sizes are measured, and they are positioned using javascript.  This gives you a relatively clean, turing-complete API to use for element positioning, rather than the application of css styles."),
+	p("Positioning of child components within parent components roughly works like this:  First, the child sends the parent its minimum dimensions.  Second, the parent sends the child its actual dimensions."),
+	p("This leads to functional, modular code where components can be shuffled and re-shuffled however you want because layout and positioning are not just viewport-sensitive, but container-sensitive."),
+	p("One major thing that HCJ gives up is the ability to inline arbitrary content into paragraphs.  All the standard library supports is styling bits of text using spans.  You MAY embed arbitrary HTML into library code, but you may not embed HCJ components into that HTML."),
+	p("PhantomJS can be used to generate content for SEO purposes.  This can be done server-side, or made part of your build process."),
   ]);
 
-  var widthIsNotHeight = docStack([
-	h2("Width !== Height"),
-	p("Most elements have a roughly constant area (excepting images, which scale).  When the width changes, the height must change.  Thus, the minimum dimensions send from child to parent cannot simply be two numbers."),
-	p("The minimum width sent from child to parent is a number.  The \"minimum height\" sent from child to parent is actually a function which takes a hypothetical width, and returns the required height at that width."),
+  var components = docStack([
+	h2('A Little Vocab'),
+	p("A `component` is a function that takes a `context` and returns an `instance`."),
+	p("Contexts are objects that represent the page context that a component is rendered into.  They should not be constructed by hand; the root context is constructed as part of the `rootComponent` function, and child-component contexts are returned to you from the `context.child` function described in the the Defining Layouts section.  A context is an object with the following properties:"),
+	stack([
+	  p('* $el: Element to append the instance to.'),
+	  p('* width: Stream of numbers, width available to the component.'),
+	  p('* height: Stream of numbers, height available to the component.'),
+	  p('* left: Stream of numbers, left coordinate of the component.'),
+	  p('* top: Stream of numbers, top coordinate of the component.'),
+	  p('* leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.'),
+	  p('* topAccum: Stream of numbers, parent top coordinate relative to top edge of page.'),
+	  p('* onDestroy: Hook to run callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
+	  p('* child: Function that creates child contexts (see Defining Layouts section)'),
+	]),
+	p('An instance is returned when a component is applied to a context.  It is an object with the following properties:'),
+	stack([
+	  p('* $el: The created root element of the component instance.'),
+	  p('* minWidth: stream of numbers giving the min width of the instance'),
+	  p('* minHeight: stream of functions that, given a width, return the min height of the instance at that width'),
+	  p("* destroy: runs all onDestroy methods, removes $el from the dom"),
+	]),
   ]);
 
   var definingComponents = docStack([
 	h2('Defining Components'),
-	p("The function `component` is used to define components.  It is a curried function.  The argument that it takes first is the component's intended tag name.  You usually won't need to call component directly; in the standard library we have defined `var a = component('a')`, `var div = component('div')`, etc."),
+	p("The function `component` is used to define components.  It is a curried function.  The argument that it takes first is the component's intended tag name.  You usually won't need to call component directly; calls are made for you."),
 	p("Second, a `build` method is passed in.  This function is run each time the component is rendered."),
-	p("The build method takes four arguments.  The first, commonly called `$el`, is a jquery selector of the created DOM element, the root element of the component.  The second, commonly called `context`, is the component is being rendered into, described below.  The third and fourth are commonly called `pushMeasureWidth` and `pushMeasureHeight`.  They may be used optionally at your leisure, and they imperatively push values into the instance's minWidth and minHeight streams."),
-	p("The build method returns an object with two properties: `minWidth` and `minHeight`.  The minWidth property must be a stream of numbers, and the minHeight property must again be a stream of functions which take a hypothetical width and return the required height at that width.  These properties are optional (and not recommended) if you choose to call the pushMeasureWidth and pushMeasureHeight functions as above."),
+	p("The build method takes four arguments.  The first, commonly called `$el`, is a jquery selector of the created DOM element, the root element of the component.  The second, commonly called `context`, is the component is being rendered into, described below.  The third and fourth are commonly called `pushMeasureWidth` and `pushMeasureHeight`.  They may be used optionally, to imperatively push values into the instance's minWidth and minHeight streams."),
+	p("The build method may return an object with two properties: `minWidth` and `minHeight`.  The minWidth property is a stream of numbers, and the minHeight property is a stream of functions which take a width and return the required height at that width.  You should either return these properties OR call the pushMeasureWidth and pushMeasureHeight functions, not both."),
 	p("Technically, the pushMeasureWidth and pushMeasureHeight functions are implemented in terms of the `measureWidth` and `measureHeight` functions.  The measureWidth function takes an element, and measures and returns the width it requires.  The measureHeight function takes an element, and returns a function which takes a hypothetical width and measures and returns the height required by the element at that width.  Again, the pushMeasureWidth and pushMeasureHeight simply call measureWidth and measureHeight, and push the resulting value into the stream."),
 	p("This returns a component.  For example:"),
 	codeBlock([
@@ -113,29 +133,12 @@ $(function () {
 	  "  pushMeasureHeight();",
 	  "});",
 	]),
+	h2("Width is not Height"),
+	p("As mentioned, min width is given as a number, while min height is given as a function from a width to the height needed at that width.  Generally text elements have a roughly constant area (they get taller as they get narrower), while images scale.  Generally though, when the width changes, the height must also change.  Thus the minimum dimensions send from child to parent cannot simply be a pair of numbers.  The minimum width sent from child to parent is a number, but the \"minimum height\" sent from child to parent is a function which takes a hypothetical width, and returns the required height at that width."),
   ]);
 
   var renderingComponents = docStack([
 	h2('Rendering Components'),
-	p("A component is a function that takes a context and returns an instance.  Contexts should not be constructed by hand.  Contexts are constructed internally as part of the `rootComponent` function, and returned to you from the `context.child` function described in the the Defining Layouts section.  A context is an object with the following properties:"),
-	stack([
-	  p('* $el: Element to append the instance to.'),
-	  p('* width: Stream of numbers, width available to the component.'),
-	  p('* height: Stream of numbers, height available to the component.'),
-	  p('* left: Stream of numbers, left coordinate of the component.'),
-	  p('* top: Stream of numbers, top coordinate of the component.'),
-	  p('* leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.'),
-	  p('* topAccum: Stream of numbers, parent top coordinate relative to top edge of page.'),
-	  p('* onDestroy: Hook to run callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
-	  p('* child: Function to create child contexts (see Defining Layouts section)'),
-	]),
-	p('When applied to a context, a component returns an instance.  An instance is an object with the following properties:'),
-	stack([
-	  p('* $el: Root element of the instance.'),
-	  p('* minWidth: stream of numbers giving the min width of the instance'),
-	  p('* minHeight: stream of functions that, given a width, return the min height of the instance at that width'),
-	  p("* destroy: function that, when called, runs all of the context's onDestroy callbacks and removes the instance from the dom"),
-	]),
 	p("Currently, the only way to actually render a component onto a web page is to append it to `body`, and use the window width and window height as its dimensions.  This is done using the `rootComponent` function."),
 	p("(When this is done, the minimum width of the root instance is ignored; the window width is used instead.  The actual height of the component is set to be its minimum height at that width.  (If it so happens that the minimum height of the root component at the window width is greater than the window height, but the minimum height of the root component at the window width minus the width of the scrollbar is smaller than the window height, then 'overflow-y: scroll' is added to the body so that the page can render in a sensical way.))"),
 
@@ -263,6 +266,10 @@ $(function () {
 	  "  };",
 	  "});",
 	]),
+  ]);
+
+  var standardLibraryElements = docStack([
+	h2('Standard Library - Elements'),
   ]);
 
   var standardLibraryComponents = docStack([
@@ -511,21 +518,21 @@ $(function () {
   var standardLibraryStreams = docStack([
 	h2('Standard Library - Streams'),
 	p("All programming is asynchronous.  There is the code that's run when your computer boots, and then there are interrupts."),
-	p("The HCJ library provides its own slimy little stream implementation.  The reasons for choosing this over another implementation like Bacon or Reactive Extensions are speed and control over the stream semantics."),
-	p("In this implementation, a stream is nothing more than a way to get the most recent available data from point A into point B.  A stream is an object with two properties:"),
+	p("HCJ provides its own slimy little stream implementation.  The reasons for choosing this over another implementation like Bacon or Reactive Extensions are speed and control over the stream semantics.  You will only be forced to deal with it if you want to write components (or layouts); HCJ can interoperate with other stream libraries."),
+	p("An hcj stream (or just, stream) is nothing more than a way to get the most recent available data from point A into point B.  A stream is an object with two properties:"),
 	stack([
 	  p("* lastValue: the most recent data point"),
 	  p("* listeners: array of functions that are run when there is new data (private member, do not access)"),
 	]),
-	p('Streams can be defined both declaratively and imperatively in this library.  That is, you can let a stream be an operation applied to other streams, or you can let it be an empty stream and push to it.  Unlike in other stream implementations:'),
+	p('Streams can be defined both declaratively and imperatively.  That is, you can let a stream be an operation applied to other streams, or you can let it be an empty stream and push to it.  Unlike in other stream implementations:'),
 	stack([
-	  p("* The last value is accessible, and may be read off in an imperative manner at your leisure."),
+	  p("* The most recent data point is accessible through the `lastValue` property, and may be read off at your leisure."),
 	  p("* If you push one value through a stream multiple times, it will only be hanlded the first time."),
-	  p("* If you push multiple values through a stream quickly (synchronously), intermediate values may (and in the future, always will) be skipped."),
+	  p("* If you push multiple values through a stream quickly (synchronously), intermediate values may be skipped."),
 	]),
-	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state as lightly as possible.'),
+	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state in terms of input state as lightly as possible.'),
 	p('Other stream libraries that you use in your application code will interoperate with HCJ just fine.'),
-	p('TODO: finish stream documentation'),
+	p('Here are the stream methods:'),
   ]);
 
   var standardLibraryForms = docStack([
@@ -579,10 +586,10 @@ $(function () {
 	p('Pre-release.'),
 	install,
 	whatsItLike,
-	widthIsNotHeight,
 	definingComponents,
 	renderingComponents,
 	definingLayouts,
+	standardLibraryElements,
 	standardLibraryComponents,
 	standardLibraryComponentModifiers,
 	standardLibraryStreams,
