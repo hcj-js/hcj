@@ -525,6 +525,7 @@ $(function () {
 	]),
 	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state as lightly as possible.'),
 	p('Other stream libraries that you use in your application code will interoperate with HCJ just fine.'),
+	p('TODO: finish stream documentation'),
   ]);
 
   var standardLibraryForms = docStack([
@@ -569,11 +570,12 @@ $(function () {
 	p("Version 2 is in progress, and larger in scope.  Really it is a specification system for web pages.  Pages will instead be represented as JSON data structures, which are evaluated as code like what's described above."),
 	p('Browsers can implement this specification as javascript code - again, based on actually measuring elements and positioning them through simple APIs.'),
 	p('Servers can implement the specification as an HTML and CSS approximation, which leads to easy SEO and can lend itself to a decent UX as the page loads in.'),
+	p('Attaching to page using DHTML instead of JS calls'),
   ]);
 
   var docs = docStack([
 	h1('hcj.js'),
-	p('Javascript library for web app frontend templating'),
+	p('Javascript library for web app frontend templating.  Monolithic, like Angular.'),
 	install,
 	whatsItLike,
 	widthIsNotHeight,
