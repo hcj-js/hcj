@@ -1,43 +1,54 @@
-var caseSplit = function (cases, obj) {
-  // may curry
-  if (!obj) {
-	return function (obj) {
-	  for (var key in cases) {
-		if (cases.hasOwnProperty(key) && obj.hasOwnProperty(key)) {
-		  if (!$.isFunction(cases[key])) {
-			return cases[key];
-		  }
-		  return cases[key](obj[key]);
-		}
-	  }
-	};
-  }
-  for (var key in cases) {
-	if (cases.hasOwnProperty(key) && obj.hasOwnProperty(key)) {
-	  if (!$.isFunction(cases[key])) {
-		return cases[key];
-	  }
-	  return cases[key](obj[key]);
-	}
-  }
-};
-var apply = function (v) {
-  return function (f) {
-	return f(v);
-  };
-};
-var constant = function (b) {
-  return function (a) {
-	return b;
-  };
-};
-var curry = function (arr) {
-  throw('the venerable curry, we shall define at a later date');
-};
-var id = function (a) {
-  return a;
-};
 (function () {
+  var caseSplit = function (cases, obj) {
+	// may curry
+	if (!obj) {
+	  return function (obj) {
+		for (var key in cases) {
+		  if (cases.hasOwnProperty(key) && obj.hasOwnProperty(key)) {
+			if (!$.isFunction(cases[key])) {
+			  return cases[key];
+			}
+			return cases[key](obj[key]);
+		  }
+		}
+	  };
+	}
+	for (var key in cases) {
+	  if (cases.hasOwnProperty(key) && obj.hasOwnProperty(key)) {
+		if (!$.isFunction(cases[key])) {
+		  return cases[key];
+		}
+		return cases[key](obj[key]);
+	  }
+	}
+  };
+  var apply = function (v) {
+	return function (f) {
+	  return f(v);
+	};
+  };
+  var constant = function (b) {
+	return function (a) {
+	  return b;
+	};
+  };
+  var curry = function (arr) {
+	throw('the venerable curry, we shall define at a later date');
+  };
+  var uncurry = function (f, n) {
+	n = n || 1;
+	return function () {
+	  var args = Array.prototype.slice.call(arguments);
+	  var arg0 = [null];
+	  if (args.length > n) {
+		arg0 = args.splice(0, 1);
+	  }
+	  return f.apply(null, arg0).apply(null, args);
+	};
+  };
+  var id = function (a) {
+	return a;
+  };
   var add = function (a, b) {
 	return a + b;
   };
@@ -76,253 +87,314 @@ var id = function (a) {
 	}
   };
 
-  var stream = {
-	create: function () {
-	  return {
-		listeners: [],
-		lastValue: undefined,
-	  };
-	},
-	isStream: function (v) {
-	  return v &&
-		v.hasOwnProperty('listeners') &&
-		v.hasOwnProperty('lastValue');
-	},
-	once: function (v) {
-	  var s = stream.create();
-	  stream.push(s, v);
-	  return s;
-	},
-	push: function (s, v) {
-	  if (s.lastValue !== v) {
-		s.lastValue = v;
-		for (var i = 0; i < s.listeners.length; i++) {
-		  if (s.listeners[i]) {
-			s.listeners[i](v);
-		  }
-		}
-	  }
-	},
-	map: function (s, f) {
-	  var out = stream.create();
-	  if (s.lastValue !== undefined) {
-		stream.push(out, f(s.lastValue));
-	  }
-	  s.listeners.push(function (v) {
-		stream.push(out, f(v));
-	  });
-	  return out;
-	},
-	reduce: function (s, f, v1) {
-	  var out = stream.once(v1);
-	  if (s.lastValue !== undefined) {
-		stream.push(out, f(out.lastValue, s.lastValue));
-	  }
-	  s.listeners.push(function (v) {
-		stream.push(out, f(out.lastValue, v));
-	  });
-	  return out;
-	},
-	filter: function (s, f) {
-	  var out = stream.create();
-	  s.listeners.push(function (v) {
-		if (f(v)) {
-		  stream.push(out, v);
-		}
-	  });
-	  return stream;
-	},
-	onValue: function (s, f) {
-	  stream.map(s, function (v) {
-		f(v);
-		return true;
-	  });
-	  var index = s.listeners.length - 1;
-	  return function () {
-		delete s.listeners[index];
-	  };
-	},
-	promise: function (s) {
-	  var d = $.Deferred();
-	  stream.map(s, function (v) {
-		d.resolve(v);
-	  });
-	  return d.promise;
-	},
-	prop: function (s, str) {
-	  return stream.map(s, function (v) {
-		return v[str];
-	  });
-	},
-	delay: function (s, amount) {
-	  var out = stream.create();
-	  stream.map(s, function (v) {
-		setTimeout(function () {
-		  stream.push(out, v);
-		}, amount);
-	  });
-	  return out;
-	},
-	debounce: function (s, amount) {
-	  var out = stream.create();
-	  var lastPushed = 0;
-	  var running = false;
-	  stream.map(s, function (v) {
-		if (!running) {
-		  running = true;
-		  var d = new Date().getTime();
-		  setTimeout(function () {
-			running = false;
-			stream.push(out, s.lastValue);
-			lastPushed = Math.max(lastPushed + amount, d);
-		  }, Math.max(0, (lastPushed + amount) - d));
-		}
-	  });
-	  return out;
-	},
-	pushAll: function (source, target) {
-	  if (source.lastValue !== undefined) {
-		stream.push(target, source.lastValue);
-	  }
-	  return stream.onValue(source, function (v) {
-		stream.push(target, v);
-	  });
-	},
-	combine: function (streams, f) {
-	  var arr = [];
-	  var out = stream.create();
+  var deferFuncContext = function () {
+	/*
+	 WARNING:
 
-	  var running = false;
-	  var tryRunF = function () {
-		if (!running) {
-		  running = true;
-		  setTimeout(function () {
-			running = false;
-			for (var i = 0; i < streams.length; i++) {
-			  if (arr[i] === undefined) {
-				return;
-			  }
-			}
-			stream.push(out, f.apply(null, arr));
-		  });
-		}
-	  };
+	 This is a hacky implementation of something that already exists.  Do
+	 not use this library.  When I find out what it is that I'm crudely
+	 implementing here, I will find and use an existing library for it.
 
-	  streams.reduce(function (i, s) {
-		if (s.lastValue !== undefined) {
-		  arr[i] = s.lastValue;
-		  tryRunF();
-		}
-		stream.onValue(s, function (v) {
-		  arr[i] = v;
-		  tryRunF();
-		});
-		return i + 1;
-	  }, 0);
-
-	  return out;
-	},
-	combineInto: function (streams, f, out) {
-	  var arr = [];
-
-	  var running = false;
-	  var tryRunF = function () {
-		if (!running) {
-		  running = true;
-		  setTimeout(function () {
-			running = false;
-			for (var i = 0; i < streams.length; i++) {
-			  if (arr[i] === undefined) {
-				return;
-			  }
-			}
-			stream.push(out, f.apply(null, arr));
-		  });
-		}
-	  };
-
-	  streams.reduce(function (i, s) {
-		if (s.lastValue !== undefined) {
-		  arr[i] = s.lastValue;
-		  tryRunF();
-		}
-		stream.onValue(s, function (v) {
-		  arr[i] = v;
-		  tryRunF();
-		});
-		return i + 1;
-	  }, 0);
-	},
-	all: function (streams, f) {
-	  return stream.combine(streams, function () {
-		return Array.prototype.slice.call(arguments);
-	  });
-	},
-	combineObject: function (streamsObject) {
-	  var keys = Object.keys(streamsObject);
-	  var obj = {};
-	  var out = stream.create();
-
-	  var running = false;
-	  var tryRunF = function () {
-		if (!running) {
-		  running = true;
-		  setTimeout(function () {
-			running = false;
-			for (var i = 0; i < keys.length; i++) {
-			  var key = keys[i];
-			  if (obj[key] === undefined) {
-				return;
-			  }
-			}
-			stream.push(out, $.extend({}, obj));
-		  });
-		}
-	  };
-
-	  keys.map(function (key, i) {
-		stream.onValue(streamsObject[key], function (v) {
-		  obj[key] = v;
-		  tryRunF();
-		});
-	  });
-
-	  return out;
-	},
-	splitObject: function (obj) {
-	  var keys = Object.keys(obj);
-	  var streams = {};
-	  keys.map(function (key) {
-		streams[key] = stream.once(obj[key]);
-	  });
-	  return streams;
-	},
-	fromEvent: function ($el, event) {
-	  var s = stream.create();
-	  $el.on('event', function (ev) {
-		stream.push(s, ev);
-	  });
-	  return s;
-	},
-	fromPromise: function (p, initialValue) {
-	  var out = stream.create();
-	  if (initialValue) {
-		stream.push(out, initialValue);
-	  }
-	  p.then(function (v) {
-		stream.push(out, v);
-	  });
-	  return out;
-	},
-	cases: function (streams, indexS) {
-	  streams.push(indexS);
-	  return stream.combine(streams, function () {
-		var args = Array.prototype.slice.call(arguments);
-		var index = args.pop();
-		return args[index];
-	  });
-	},
+	 */
+    var nextFunctions = [];
+    var deferredFunctions = [];
+    var running = false;
+    var ensureRunning = function () {
+      if (running === false) {
+        running = true;
+        setTimeout(function () {
+          running = false;
+          // run nextFunctions now, allowing more next functions to be
+          // signed up
+          var nowFunctions = nextFunctions;
+          nextFunctions = [];
+          nowFunctions.map(function (f) {
+            f(deferFuncObj);
+          });
+          // if no next functions were signed up, then go ahead and
+          // run the deferred functions
+          if (running === false) {
+            nextFunctions = deferredFunctions;
+            deferredFunctions = [];
+            ensureRunning();
+          }
+        });
+      }
+    };
+    var deferFuncObj = {
+      next: function (f) {
+        nextFunctions.push(f);
+        ensureRunning();
+      },
+      defer: function (f) {
+        deferredFunctions.push(f);
+        ensureRunning();
+      },
+    };
+    return deferFuncObj;
   };
+
+  var streamNetwork = function (deferFunc) {
+	deferFunc = deferFunc || deferFuncContext();
+	var stream = {
+	  create: function () {
+		return {
+		  listeners: [],
+		  lastValue: undefined,
+		};
+	  },
+	  next: deferFunc.next,
+	  defer: deferFunc.defer,
+	  isStream: function (v) {
+		return v &&
+		  v.hasOwnProperty('listeners') &&
+		  v.hasOwnProperty('lastValue');
+	  },
+	  once: function (v) {
+		var s = stream.create();
+		stream.push(s, v);
+		return s;
+	  },
+	  push: function (s, v) {
+		deferFunc.next(function () {
+		  if (s.lastValue !== v) {
+			s.lastValue = v;
+			for (var i = 0; i < s.listeners.length; i++) {
+			  if (s.listeners[i]) {
+				s.listeners[i](v);
+			  }
+			}
+		  }
+		});
+	  },
+	  map: function (s, f) {
+		var out = stream.create();
+		if (s.lastValue !== undefined) {
+		  stream.push(out, f(s.lastValue));
+		}
+		s.listeners.push(function (v) {
+		  stream.push(out, f(v));
+		});
+		return out;
+	  },
+	  reduce: function (s, f, v1) {
+		var out = stream.once(v1);
+		if (s.lastValue !== undefined) {
+		  stream.push(out, f(out.lastValue, s.lastValue));
+		}
+		s.listeners.push(function (v) {
+		  stream.push(out, f(out.lastValue, v));
+		});
+		return out;
+	  },
+	  filter: function (s, f) {
+		var out = stream.create();
+		s.listeners.push(function (v) {
+		  if (f(v)) {
+			stream.push(out, v);
+		  }
+		});
+		return stream;
+	  },
+	  onValue: function (s, f) {
+		stream.map(s, function (v) {
+		  f(v);
+		  return true;
+		});
+		var index = s.listeners.length - 1;
+		return function () {
+		  delete s.listeners[index];
+		};
+	  },
+	  promise: function (s) {
+		var d = $.Deferred();
+		stream.map(s, function (v) {
+		  d.resolve(v);
+		});
+		return d.promise;
+	  },
+	  prop: function (s, str) {
+		return stream.map(s, function (v) {
+		  return v[str];
+		});
+	  },
+	  delay: function (s, amount) {
+		var out = stream.create();
+		stream.map(s, function (v) {
+		  setTimeout(function () {
+			stream.push(out, v);
+		  }, amount);
+		});
+		return out;
+	  },
+	  debounce: function (s, amount) {
+		var out = stream.create();
+		var lastPushed = 0;
+		var running = false;
+		stream.map(s, function (v) {
+		  if (!running) {
+			running = true;
+			var d = new Date().getTime();
+			setTimeout(function () {
+			  running = false;
+			  stream.push(out, s.lastValue);
+			  lastPushed = Math.max(lastPushed + amount, d);
+			}, Math.max(0, (lastPushed + amount) - d));
+		  }
+		});
+		return out;
+	  },
+	  pushAll: function (source, target) {
+		if (source.lastValue !== undefined) {
+		  stream.push(target, source.lastValue);
+		}
+		return stream.onValue(source, function (v) {
+		  stream.push(target, v);
+		});
+	  },
+	  clone: function (s) {
+		var out = stream.create();
+		stream.pushAll(s, out);
+		return out;
+	  },
+	  combine: function (streams, f) {
+		var arr = [];
+		var out = stream.create();
+
+		var running = false;
+		var tryRunF = function () {
+		  if (!running) {
+			running = true;
+			deferFunc.next(function () {
+			  running = false;
+			  for (var i = 0; i < streams.length; i++) {
+				if (arr[i] === undefined) {
+				  return;
+				}
+			  }
+			  stream.push(out, f.apply(null, arr));
+			});
+		  }
+		};
+
+		streams.reduce(function (i, s) {
+		  if (s.lastValue !== undefined) {
+			arr[i] = s.lastValue;
+			tryRunF();
+		  }
+		  stream.onValue(s, function (v) {
+			arr[i] = v;
+			tryRunF();
+		  });
+		  return i + 1;
+		}, 0);
+
+		return out;
+	  },
+	  combineInto: function (streams, f, out) {
+		var arr = [];
+
+		var running = false;
+		var tryRunF = function () {
+		  if (!running) {
+			running = true;
+			deferFunc.next(function () {
+			  running = false;
+			  for (var i = 0; i < streams.length; i++) {
+				if (arr[i] === undefined) {
+				  return;
+				}
+			  }
+			  stream.push(out, f.apply(null, arr));
+			});
+		  }
+		};
+
+		streams.reduce(function (i, s) {
+		  if (s.lastValue !== undefined) {
+			arr[i] = s.lastValue;
+			tryRunF();
+		  }
+		  stream.onValue(s, function (v) {
+			arr[i] = v;
+			tryRunF();
+		  });
+		  return i + 1;
+		}, 0);
+	  },
+	  all: function (streams, f) {
+		return stream.combine(streams, function () {
+		  return Array.prototype.slice.call(arguments);
+		});
+	  },
+	  combineObject: function (streamsObject) {
+		var keys = Object.keys(streamsObject);
+		var obj = {};
+		var out = stream.create();
+
+		var running = false;
+		var tryRunF = function () {
+		  if (!running) {
+			running = true;
+			setTimeout(function () {
+			  running = false;
+			  for (var i = 0; i < keys.length; i++) {
+				var key = keys[i];
+				if (obj[key] === undefined) {
+				  return;
+				}
+			  }
+			  stream.push(out, $.extend({}, obj));
+			});
+		  }
+		};
+
+		keys.map(function (key, i) {
+		  stream.onValue(streamsObject[key], function (v) {
+			obj[key] = v;
+			tryRunF();
+		  });
+		});
+
+		return out;
+	  },
+	  splitObject: function (obj) {
+		var keys = Object.keys(obj);
+		var streams = {};
+		keys.map(function (key) {
+		  streams[key] = stream.once(obj[key]);
+		});
+		return streams;
+	  },
+	  fromEvent: function ($el, event) {
+		var s = stream.create();
+		$el.on('event', function (ev) {
+		  stream.push(s, ev);
+		});
+		return s;
+	  },
+	  fromPromise: function (p, initialValue) {
+		var out = stream.create();
+		if (initialValue) {
+		  stream.push(out, initialValue);
+		}
+		p.then(function (v) {
+		  stream.push(out, v);
+		});
+		return out;
+	  },
+	  cases: function (streams, indexS) {
+		streams.push(indexS);
+		return stream.combine(streams, function () {
+		  var args = Array.prototype.slice.call(arguments);
+		  var index = args.pop();
+		  return args[index];
+		});
+	  },
+	};
+	return stream;
+  };
+  var stream = streamNetwork();
 
 
   var unit = function (unit) {
@@ -381,9 +453,9 @@ var id = function (a) {
 	updateDomProps = [];
 	updateDomValues = [];
   };
-  var updateDomFunc = function ($el, prop, value) {
+  var updateDomFunc = function ($el, ctx, prop, value) {
 	if (updateDomEls.length === 0) {
-	  setTimeout(runDomFuncs);
+	  ctx.stream.defer(runDomFuncs);
 	}
 	updateDomEls.push($el);
 	updateDomProps.push(prop);
@@ -405,7 +477,11 @@ var id = function (a) {
   };
 
   var measureHeight = function ($el) {
+	var ws = {};
 	return function (w) {
+	  if (ws[w]) {
+		return ws[w];
+	  }
 	  var $sandbox = $('.sandbox');
 	  var $clone = $el.clone();
 	  $clone.css('width', px(w))
@@ -413,6 +489,7 @@ var id = function (a) {
 		.appendTo($sandbox);
 
 	  var height = parseFloat($clone.css('height'));
+	  ws[w] = height;
 
 	  $clone.remove();
 
@@ -421,6 +498,7 @@ var id = function (a) {
   };
 
   var componentFunc = function (name, build, context) {
+	var stream = context.stream;
 	var $el = $(document.createElement(name));
 	$el.css('pointer-events', 'initial');
 
@@ -435,6 +513,9 @@ var id = function (a) {
 		if (ctx[prop] === true) {
 		  ctx[prop] = stream.create();
 		}
+		else if (ctx[prop]) {
+		  ctx[prop] = stream.clone(ctx[prop]);
+		}
 	  });
 	  try {
 		ctx.$el = $el;
@@ -445,6 +526,7 @@ var id = function (a) {
 		ctx.topAccum = stream.combine([context.topAccum, context.top], add);
 		ctx.leftAccum = stream.combine([context.leftAccum, context.left], add);
 		ctx.onDestroy = onDestroy.push;
+		ctx.stream = stream;
 		return ctx;
 	  }
 	  catch (e) {
@@ -456,16 +538,16 @@ var id = function (a) {
 	  .css('pointer-events', 'initial')
 	  .css('position', 'absolute');
 	stream.onValue(context.widthCss || context.width, function (w) {
-	  updateDomFunc($el, 'width', w);
+	  updateDomFunc($el, context, 'width', w);
 	});
 	stream.onValue(context.heightCss || context.height, function (h) {
-	  updateDomFunc($el, 'height', h);
+	  updateDomFunc($el, context, 'height', h);
 	});
 	stream.onValue(context.topCss || context.top, function (t) {
-	  updateDomFunc($el, 'top', t);
+	  updateDomFunc($el, context, 'top', t);
 	});
 	stream.onValue(context.leftCss || context.left, function (l) {
-	  updateDomFunc($el, 'left', l);
+	  updateDomFunc($el, context, 'left', l);
 	});
 	stream.combine([
 	  context.width,
@@ -473,7 +555,7 @@ var id = function (a) {
 	  context.top,
 	  context.left,
 	], function () {
-	  updateDomFunc($el, 'visibility', 'initial');
+	  updateDomFunc($el, context, 'visibility', 'initial');
 	});
 
 	var instance = {
@@ -522,6 +604,21 @@ var id = function (a) {
 	  };
 	};
   };
+  var a = component('a');
+  var button = component('button');
+  var div = component('div');
+  var form = component('form');
+  var iframe = component('iframe');
+  var img = component('img');
+  var input = component('input');
+  var label = component('label');
+  var li = component('li');
+  var option = component('option');
+  var p = component('p');
+  var pre = component('pre');
+  var select = component('select');
+  var textarea = component('textarea');
+  var ul = component('ul');
 
   var _scrollbarWidth = function () {
 	var parent, child, width;
@@ -596,14 +693,29 @@ var id = function (a) {
 	  ctx.top,
 	  ctx.left,
 	], function () {
-	  console.log('aoeu');
 	  stream.push(displayedS, true);
 	});
 	return c(ctx.child());
   });
 
+  var ensureSandbox = function () {
+	if ($('.sandbox').length > 0) {
+	  return;
+	}
+	$(document.createElement('div'))
+	  .addClass('sandbox')
+	  .css('z-index', -1)
+	  .appendTo($('body'));
+  };
   var rootComponent = function (c, config) {
+	var stream = streamNetwork();
+	// var debugAndRepeat = function () {
+	//   debugger;
+	//   stream.defer(debugAndRepeat);
+	// };
+	// stream.defer(debugAndRepeat);
 	config = config || {};
+	ensureSandbox();
 	var scrollbarWidth = _scrollbarWidth();
 	var width = stream.create();
 	var height = stream.create();
@@ -649,6 +761,7 @@ var id = function (a) {
 	  topAccum: onceZeroS,
 	  leftAccum: onceZeroS,
 	  onDestroy: onDestroy.push,
+	  stream: stream,
 	});
 	i.$el.css('position', 'absolute')
 	  .css('top', '0px')
@@ -733,13 +846,13 @@ var id = function (a) {
 	b: 255,
   });
 
-  var mapMinWidths = function (is) {
-	return stream.all(is.map(function (i) {
+  var mapMinWidths = function (is, ctx) {
+	return ctx.stream.all(is.map(function (i) {
 	  return i.minWidth;
 	}));
   };
-  var mapMinHeights = function (is) {
-	return stream.all(is.map(function (i) {
+  var mapMinHeights = function (is, ctx) {
+	return ctx.stream.all(is.map(function (i) {
 	  return i.minHeight;
 	}));
   };
@@ -825,6 +938,9 @@ var id = function (a) {
 	  }
 	  return c(ctx.child());
 	});
+  };
+  var wrap = function (el) {
+	return passthrough(null, el);
   };
 
   var adjustPosition = function (minSize, position) {
@@ -1177,6 +1293,7 @@ var id = function (a) {
 
   var empty = function (el) {
 	return el(function ($el, ctx) {
+	  $el.addClass('empty');
 	  return {
 		minWidth: onceZeroS,
 		minHeight: stream.once(constant(0)),
@@ -1199,11 +1316,20 @@ var id = function (a) {
 	  var didMH = false;
 	  var mwS = stream.create();
 	  var mhS = stream.create();
+	  $el.addClass('text');
 	  strs.map(function (c) {
 		if ($.type(c) === 'string') {
 		  c = {
 			str: ' ' + c + ' ',
 		  };
+		}
+		if (c.font) {
+		  c = $.extend(c, c.font);
+		}
+		if (c.fonts) {
+		  c.fonts.map(function (font) {
+			c = $.extend(c, font);
+		  });
 		}
 		var $span = $(document.createElement('span'));
 		$span.html(c.str);
@@ -1236,14 +1362,27 @@ var id = function (a) {
 		  $span.appendTo($el);
 		}
 	  });
+	  var firstPush = true;
 	  var pushDimensions = function () {
-		setTimeout(function () {
-		  var mw = config.minWidth || (measureWidth($el));
-		  var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) ||
-				(config.minHeight && constant(config.minHeight)) ||
-				(measureHeight($el));
-		  stream.push(mwS, mw);
-		  stream.push(mhS, mh);
+		ctx.stream.next(function () {
+		  var mw = config.minWidth ||
+				(config.measureWidth && measureWidth($el)) ||
+				300;
+		  var mh = function (w) {
+			var fontSize = parseInt($el.css('font-size'));
+			var str = $el.text();
+			var lineHeight = ($el.css('line-height').indexOf('px') !== -1 && parseFloat($el.css('line-height')));
+			return Math.ceil(fontSize * str.length * 0.5 / w) * lineHeight;
+		  };
+		  ctx.stream.defer(function () {
+			var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) ||
+				  (config.minHeight && constant(config.minHeight)) ||
+				  (measureHeight($el));
+			ctx.stream.push(mhS, mh);
+		  });
+		  ctx.stream.push(mwS, mw);
+		  ctx.stream.push(mhS, mh);
+		  firstPush = false;
 		});
 	  };
 	  if (config.size) {
@@ -1544,8 +1683,8 @@ var id = function (a) {
 		i.$el.css('transition', 'left ' + config.leftTransition);
 	  });
 
-	  var allMinWidths = mapMinWidths(is);
-	  var allMinHeights = mapMinHeights(is);
+	  var allMinWidths = mapMinWidths(is, ctx);
+	  var allMinHeights = mapMinHeights(is, ctx);
 
 	  var minHeight = stream.combine([
 		config.selectedS,
@@ -1607,8 +1746,8 @@ var id = function (a) {
   // 			]);
   // 		})),
   // 		wireChildren(function (instance, context, is) {
-  // 			var allMinWidths = mapMinWidths(is);
-  // 			var allMinHeights = mapMinHeights(is);
+  // 			var allMinWidths = mapMinWidths(is, ctx);
+  // 			var allMinHeights = mapMinHeights(is, ctx);
 
   // 			allMinWidths.map(function (mws) {
   // 				return mws.reduce(mathMax, 0);
@@ -1691,8 +1830,8 @@ var id = function (a) {
 		contexts.push(context);
 		return c(context);
 	  });
-	  var allMinWidths = mapMinWidths(is);
-	  var allMinHeights = mapMinHeights(is);
+	  var allMinWidths = mapMinWidths(is, ctx);
+	  var allMinHeights = mapMinHeights(is, ctx);
 	  var minHeightStreams = [allMinHeights];
 	  var computePositions = function (width, mws) {
 		var left = 0;
@@ -1887,8 +2026,8 @@ var id = function (a) {
 		stream.pushAll(i.minWidth, ctx.width);
 		return i;
 	  });
-	  stream.pushAll(mapMinWidths(is), allMinWidths);
-	  stream.pushAll(mapMinHeights(is), allMinHeights);
+	  stream.pushAll(mapMinWidths(is, ctx), allMinWidths);
+	  stream.pushAll(mapMinHeights(is, ctx), allMinHeights);
 
 	  var totalMinWidthS = stream.map(allMinWidths, function (mws) {
 		return mws.reduce(add, 0);
@@ -2023,9 +2162,9 @@ var id = function (a) {
 		  i.$el.css('transition', 'height ' + transition + ', top ' + transition);
 		});
 	  }
-	  var allMinWidths = mapMinWidths(is);
-	  var allMinHeights = mapMinHeights(is);
-	  stream.combine([
+	  var allMinWidths = mapMinWidths(is, ctx);
+	  var allMinHeights = mapMinHeights(is, ctx);
+	  ctx.stream.combine([
 		ctx.width,
 		ctx.height,
 		allMinHeights,
@@ -2042,15 +2181,15 @@ var id = function (a) {
 		positions = config.handleSurplusHeight(height, positions);
 		positions.map(function (position, index) {
 		  var context = contexts[index];
-		  stream.push(context.top, position.top);
-		  stream.push(context.height, position.height);
+		  ctx.stream.push(context.top, position.top);
+		  ctx.stream.push(context.height, position.height);
 		});
 	  });
 	  return {
-		minWidth: stream.map(allMinWidths, function (mws) {
+		minWidth: ctx.stream.map(allMinWidths, function (mws) {
 		  return mws.reduce(mathMax, 0);
 		}),
-		minHeight: stream.map(allMinHeights, function (mhs) {
+		minHeight: ctx.stream.map(allMinHeights, function (mhs) {
 		  return function (w) {
 			return mhs.map(apply(w)).reduce(add, config.padding * (is.length - 1));
 		  };
@@ -3450,23 +3589,7 @@ var id = function (a) {
 
 
   var hcj = {
-	el: {
-	  a: component('a'),
-	  button: component('button'),
-	  div: component('div'),
-	  form: component('form'),
-	  iframe: component('iframe'),
-	  img: component('img'),
-	  input: component('input'),
-	  label: component('label'),
-	  li: component('li'),
-	  option: component('option'),
-	  p: component('p'),
-	  select: component('select'),
-	  textarea: component('textarea'),
-	  ul: component('ul'),
-	},
-	libs: {
+	component: {
 	  alignHLeft: alignHLeft,
 	  alignHMiddle: alignHMiddle,
 	  alignHRight: alignHRight,
@@ -3477,16 +3600,41 @@ var id = function (a) {
 	  alignVTop: alignVTop,
 	  border: border,
 	  componentStream: componentStream,
+	  empty: empty,
 	  grid: grid,
 	  image: image,
 	  margin: margin,
+	  nothing: nothing,
 	  sideBySide: sideBySide,
 	  slider: slider,
 	  slideshow: slideshow,
 	  stack: stack,
 	  tabs: tabs,
 	  text: text,
+	  wrap: wrap,
 	},
+	// Remember, elements are not components.  This is why they are
+	// under 'el' and not 'c.'  If you want an empty component, use
+	// 'c.empty'.
+	el: {
+	  a: a,
+	  button: button,
+	  div: div,
+	  form: form,
+	  iframe: iframe,
+	  img: img,
+	  input: input,
+	  label: label,
+	  li: li,
+	  option: option,
+	  p: p,
+	  pre: pre,
+	  select: select,
+	  textarea: textarea,
+	  ul: ul,
+	},
+	stream: stream,
+	rootComponent: rootComponent,
   };
 
   window.hcj = hcj;
