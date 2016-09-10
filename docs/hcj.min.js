@@ -2396,7 +2396,7 @@ function waitForWebfonts(fonts, callback) {
 	  strs.map(function (c) {
 		if ($.type(c) === 'string') {
 		  c = {
-			str: ' ' + c + ' ',
+			str: c,
 		  };
 		}
 		if (c.font) {
@@ -2408,7 +2408,7 @@ function waitForWebfonts(fonts, callback) {
 		  });
 		}
 		var $span = $(document.createElement('span'));
-		$span.html(c.str);
+		$span.html(' ' + c.str + ' ');
 		if (c.size || config.size) {
 		  $span.css('font-size', c.size);
 		}

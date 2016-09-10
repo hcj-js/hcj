@@ -1320,7 +1320,7 @@
 	  strs.map(function (c) {
 		if ($.type(c) === 'string') {
 		  c = {
-			str: ' ' + c + ' ',
+			str: c,
 		  };
 		}
 		if (c.font) {
@@ -1332,7 +1332,7 @@
 		  });
 		}
 		var $span = $(document.createElement('span'));
-		$span.html(c.str);
+		$span.html(' ' + c.str + ' ');
 		if (c.size || config.size) {
 		  $span.css('font-size', c.size);
 		}
