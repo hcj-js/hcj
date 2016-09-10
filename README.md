@@ -2,7 +2,7 @@
 
 Javascript library for web app frontend templating.
 
-Pre-alpha.  No timeline but under heavy delevopment.
+Pre-release.  No timeline but under heavy delevopment.
 
 ## Install ##
 
