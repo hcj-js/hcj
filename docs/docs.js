@@ -576,7 +576,7 @@ $(function () {
   var docs = docStack([
 	h1('hcj.js'),
 	p('Javascript library for web app frontend templating.'),
-	p('Pre-release.  No timeline but under heavy delevopment.'),
+	p('Pre-release.'),
 	install,
 	whatsItLike,
 	widthIsNotHeight,
