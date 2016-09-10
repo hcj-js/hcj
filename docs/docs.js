@@ -575,7 +575,7 @@ $(function () {
 
   var docs = docStack([
 	h1('hcj.js'),
-	p('Javascript library for web app frontend templating.  Monolithic, like Angular.'),
+	p('Javascript library for web app frontend templating.'),
 	install,
 	whatsItLike,
 	widthIsNotHeight,
