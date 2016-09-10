@@ -686,7 +686,7 @@
 	};
   };
 
-  var rootLayout = layout(function (el, ctx, c) {
+  var rootLayout = layout(function ($el, ctx, c) {
 	stream.combine([
 	  ctx.width,
 	  ctx.height,
@@ -694,6 +694,7 @@
 	  ctx.left,
 	], function () {
 	  stream.push(displayedS, true);
+	  updateDomFunc($('body'), ctx, 'height', 'auto');
 	});
 	return c(ctx.child());
   });

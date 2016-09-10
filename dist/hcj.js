@@ -1762,7 +1762,7 @@ function waitForWebfonts(fonts, callback) {
 	};
   };
 
-  var rootLayout = layout(function (el, ctx, c) {
+  var rootLayout = layout(function ($el, ctx, c) {
 	stream.combine([
 	  ctx.width,
 	  ctx.height,
@@ -1770,6 +1770,7 @@ function waitForWebfonts(fonts, callback) {
 	  ctx.left,
 	], function () {
 	  stream.push(displayedS, true);
+	  updateDomFunc($('body'), ctx, 'height', 'auto');
 	});
 	return c(ctx.child());
   });
