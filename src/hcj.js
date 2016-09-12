@@ -134,267 +134,263 @@
     return deferFuncObj;
   };
 
-  var streamNetwork = function (deferFunc) {
-	deferFunc = deferFunc || deferFuncContext();
-	var stream = {
-	  create: function () {
-		return {
-		  listeners: [],
-		  lastValue: undefined,
-		};
-	  },
-	  next: deferFunc.next,
-	  defer: deferFunc.defer,
-	  isStream: function (v) {
-		return v &&
-		  v.hasOwnProperty('listeners') &&
-		  v.hasOwnProperty('lastValue');
-	  },
-	  once: function (v) {
-		var s = stream.create();
-		stream.push(s, v);
-		return s;
-	  },
-	  push: function (s, v) {
-		deferFunc.next(function () {
-		  if (s.lastValue !== v) {
-			s.lastValue = v;
-			for (var i = 0; i < s.listeners.length; i++) {
-			  if (s.listeners[i]) {
-				s.listeners[i](v);
-			  }
+  var streamDeferFunc = deferFuncContext();
+  var stream = {
+	create: function () {
+	  return {
+		listeners: [],
+		lastValue: undefined,
+	  };
+	},
+	next: streamDeferFunc.next,
+	defer: streamDeferFunc.defer,
+	isStream: function (v) {
+	  return v &&
+		v.hasOwnProperty('listeners') &&
+		v.hasOwnProperty('lastValue');
+	},
+	once: function (v) {
+	  var s = stream.create();
+	  stream.push(s, v);
+	  return s;
+	},
+	push: function (s, v) {
+	  streamDeferFunc.next(function () {
+		if (s.lastValue !== v) {
+		  s.lastValue = v;
+		  for (var i = 0; i < s.listeners.length; i++) {
+			if (s.listeners[i]) {
+			  s.listeners[i](v);
 			}
 		  }
-		});
-	  },
-	  map: function (s, f) {
-		var out = stream.create();
-		if (s.lastValue !== undefined) {
-		  stream.push(out, f(s.lastValue));
 		}
-		s.listeners.push(function (v) {
-		  stream.push(out, f(v));
-		});
-		return out;
-	  },
-	  reduce: function (s, f, v1) {
-		var out = stream.once(v1);
-		if (s.lastValue !== undefined) {
-		  stream.push(out, f(out.lastValue, s.lastValue));
-		}
-		s.listeners.push(function (v) {
-		  stream.push(out, f(out.lastValue, v));
-		});
-		return out;
-	  },
-	  filter: function (s, f) {
-		var out = stream.create();
-		s.listeners.push(function (v) {
-		  if (f(v)) {
-			stream.push(out, v);
-		  }
-		});
-		return stream;
-	  },
-	  onValue: function (s, f) {
-		stream.map(s, function (v) {
-		  f(v);
-		  return true;
-		});
-		var index = s.listeners.length - 1;
-		return function () {
-		  delete s.listeners[index];
-		};
-	  },
-	  promise: function (s) {
-		var d = $.Deferred();
-		stream.map(s, function (v) {
-		  d.resolve(v);
-		});
-		return d.promise;
-	  },
-	  prop: function (s, str) {
-		return stream.map(s, function (v) {
-		  return v[str];
-		});
-	  },
-	  delay: function (s, amount) {
-		var out = stream.create();
-		stream.map(s, function (v) {
-		  setTimeout(function () {
-			stream.push(out, v);
-		  }, amount);
-		});
-		return out;
-	  },
-	  debounce: function (s, amount) {
-		var out = stream.create();
-		var lastPushed = 0;
-		var running = false;
-		stream.map(s, function (v) {
-		  if (!running) {
-			running = true;
-			var d = new Date().getTime();
-			setTimeout(function () {
-			  running = false;
-			  stream.push(out, s.lastValue);
-			  lastPushed = Math.max(lastPushed + amount, d);
-			}, Math.max(0, (lastPushed + amount) - d));
-		  }
-		});
-		return out;
-	  },
-	  pushAll: function (source, target) {
-		if (source.lastValue !== undefined) {
-		  stream.push(target, source.lastValue);
-		}
-		return stream.onValue(source, function (v) {
-		  stream.push(target, v);
-		});
-	  },
-	  clone: function (s) {
-		var out = stream.create();
-		stream.pushAll(s, out);
-		return out;
-	  },
-	  combine: function (streams, f) {
-		var arr = [];
-		var out = stream.create();
-
-		var running = false;
-		var tryRunF = function () {
-		  if (!running) {
-			running = true;
-			deferFunc.next(function () {
-			  running = false;
-			  for (var i = 0; i < streams.length; i++) {
-				if (arr[i] === undefined) {
-				  return;
-				}
-			  }
-			  stream.push(out, f.apply(null, arr));
-			});
-		  }
-		};
-
-		streams.reduce(function (i, s) {
-		  if (s.lastValue !== undefined) {
-			arr[i] = s.lastValue;
-			tryRunF();
-		  }
-		  stream.onValue(s, function (v) {
-			arr[i] = v;
-			tryRunF();
-		  });
-		  return i + 1;
-		}, 0);
-
-		return out;
-	  },
-	  combineInto: function (streams, f, out) {
-		var arr = [];
-
-		var running = false;
-		var tryRunF = function () {
-		  if (!running) {
-			running = true;
-			deferFunc.next(function () {
-			  running = false;
-			  for (var i = 0; i < streams.length; i++) {
-				if (arr[i] === undefined) {
-				  return;
-				}
-			  }
-			  stream.push(out, f.apply(null, arr));
-			});
-		  }
-		};
-
-		streams.reduce(function (i, s) {
-		  if (s.lastValue !== undefined) {
-			arr[i] = s.lastValue;
-			tryRunF();
-		  }
-		  stream.onValue(s, function (v) {
-			arr[i] = v;
-			tryRunF();
-		  });
-		  return i + 1;
-		}, 0);
-	  },
-	  all: function (streams, f) {
-		return stream.combine(streams, function () {
-		  return Array.prototype.slice.call(arguments);
-		});
-	  },
-	  combineObject: function (streamsObject) {
-		var keys = Object.keys(streamsObject);
-		var obj = {};
-		var out = stream.create();
-
-		var running = false;
-		var tryRunF = function () {
-		  if (!running) {
-			running = true;
-			setTimeout(function () {
-			  running = false;
-			  for (var i = 0; i < keys.length; i++) {
-				var key = keys[i];
-				if (obj[key] === undefined) {
-				  return;
-				}
-			  }
-			  stream.push(out, $.extend({}, obj));
-			});
-		  }
-		};
-
-		keys.map(function (key, i) {
-		  stream.onValue(streamsObject[key], function (v) {
-			obj[key] = v;
-			tryRunF();
-		  });
-		});
-
-		return out;
-	  },
-	  splitObject: function (obj) {
-		var keys = Object.keys(obj);
-		var streams = {};
-		keys.map(function (key) {
-		  streams[key] = stream.once(obj[key]);
-		});
-		return streams;
-	  },
-	  fromEvent: function ($el, event) {
-		var s = stream.create();
-		$el.on('event', function (ev) {
-		  stream.push(s, ev);
-		});
-		return s;
-	  },
-	  fromPromise: function (p, initialValue) {
-		var out = stream.create();
-		if (initialValue) {
-		  stream.push(out, initialValue);
-		}
-		p.then(function (v) {
+	  });
+	},
+	map: function (s, f) {
+	  var out = stream.create();
+	  if (s.lastValue !== undefined) {
+		stream.push(out, f(s.lastValue));
+	  }
+	  s.listeners.push(function (v) {
+		stream.push(out, f(v));
+	  });
+	  return out;
+	},
+	reduce: function (s, f, v1) {
+	  var out = stream.once(v1);
+	  if (s.lastValue !== undefined) {
+		stream.push(out, f(out.lastValue, s.lastValue));
+	  }
+	  s.listeners.push(function (v) {
+		stream.push(out, f(out.lastValue, v));
+	  });
+	  return out;
+	},
+	filter: function (s, f) {
+	  var out = stream.create();
+	  s.listeners.push(function (v) {
+		if (f(v)) {
 		  stream.push(out, v);
+		}
+	  });
+	  return stream;
+	},
+	onValue: function (s, f) {
+	  stream.map(s, function (v) {
+		f(v);
+		return true;
+	  });
+	  var index = s.listeners.length - 1;
+	  return function () {
+		delete s.listeners[index];
+	  };
+	},
+	promise: function (s) {
+	  var d = $.Deferred();
+	  stream.map(s, function (v) {
+		d.resolve(v);
+	  });
+	  return d.promise;
+	},
+	prop: function (s, str) {
+	  return stream.map(s, function (v) {
+		return v[str];
+	  });
+	},
+	delay: function (s, amount) {
+	  var out = stream.create();
+	  stream.map(s, function (v) {
+		setTimeout(function () {
+		  stream.push(out, v);
+		}, amount);
+	  });
+	  return out;
+	},
+	debounce: function (s, amount) {
+	  var out = stream.create();
+	  var lastPushed = 0;
+	  var running = false;
+	  stream.map(s, function (v) {
+		if (!running) {
+		  running = true;
+		  var d = new Date().getTime();
+		  setTimeout(function () {
+			running = false;
+			stream.push(out, s.lastValue);
+			lastPushed = Math.max(lastPushed + amount, d);
+		  }, Math.max(0, (lastPushed + amount) - d));
+		}
+	  });
+	  return out;
+	},
+	pushAll: function (source, target) {
+	  if (source.lastValue !== undefined) {
+		stream.push(target, source.lastValue);
+	  }
+	  return stream.onValue(source, function (v) {
+		stream.push(target, v);
+	  });
+	},
+	clone: function (s) {
+	  var out = stream.create();
+	  stream.pushAll(s, out);
+	  return out;
+	},
+	combine: function (streams, f) {
+	  var arr = [];
+	  var out = stream.create();
+
+	  var running = false;
+	  var tryRunF = function () {
+		if (!running) {
+		  running = true;
+		  streamDeferFunc.next(function () {
+			running = false;
+			for (var i = 0; i < streams.length; i++) {
+			  if (arr[i] === undefined) {
+				return;
+			  }
+			}
+			stream.push(out, f.apply(null, arr));
+		  });
+		}
+	  };
+
+	  streams.reduce(function (i, s) {
+		if (s.lastValue !== undefined) {
+		  arr[i] = s.lastValue;
+		  tryRunF();
+		}
+		stream.onValue(s, function (v) {
+		  arr[i] = v;
+		  tryRunF();
 		});
-		return out;
-	  },
-	  cases: function (streams, indexS) {
-		streams.push(indexS);
-		return stream.combine(streams, function () {
-		  var args = Array.prototype.slice.call(arguments);
-		  var index = args.pop();
-		  return args[index];
+		return i + 1;
+	  }, 0);
+
+	  return out;
+	},
+	combineInto: function (streams, f, out) {
+	  var arr = [];
+
+	  var running = false;
+	  var tryRunF = function () {
+		if (!running) {
+		  running = true;
+		  streamDeferFunc.next(function () {
+			running = false;
+			for (var i = 0; i < streams.length; i++) {
+			  if (arr[i] === undefined) {
+				return;
+			  }
+			}
+			stream.push(out, f.apply(null, arr));
+		  });
+		}
+	  };
+
+	  streams.reduce(function (i, s) {
+		if (s.lastValue !== undefined) {
+		  arr[i] = s.lastValue;
+		  tryRunF();
+		}
+		stream.onValue(s, function (v) {
+		  arr[i] = v;
+		  tryRunF();
 		});
-	  },
-	};
-	return stream;
+		return i + 1;
+	  }, 0);
+	},
+	all: function (streams, f) {
+	  return stream.combine(streams, function () {
+		return Array.prototype.slice.call(arguments);
+	  });
+	},
+	combineObject: function (streamsObject) {
+	  var keys = Object.keys(streamsObject);
+	  var obj = {};
+	  var out = stream.create();
+
+	  var running = false;
+	  var tryRunF = function () {
+		if (!running) {
+		  running = true;
+		  setTimeout(function () {
+			running = false;
+			for (var i = 0; i < keys.length; i++) {
+			  var key = keys[i];
+			  if (obj[key] === undefined) {
+				return;
+			  }
+			}
+			stream.push(out, $.extend({}, obj));
+		  });
+		}
+	  };
+
+	  keys.map(function (key, i) {
+		stream.onValue(streamsObject[key], function (v) {
+		  obj[key] = v;
+		  tryRunF();
+		});
+	  });
+
+	  return out;
+	},
+	splitObject: function (obj) {
+	  var keys = Object.keys(obj);
+	  var streams = {};
+	  keys.map(function (key) {
+		streams[key] = stream.once(obj[key]);
+	  });
+	  return streams;
+	},
+	fromEvent: function ($el, event) {
+	  var s = stream.create();
+	  $el.on('event', function (ev) {
+		stream.push(s, ev);
+	  });
+	  return s;
+	},
+	fromPromise: function (p, initialValue) {
+	  var out = stream.create();
+	  if (initialValue) {
+		stream.push(out, initialValue);
+	  }
+	  p.then(function (v) {
+		stream.push(out, v);
+	  });
+	  return out;
+	},
+	cases: function (streams, indexS) {
+	  streams.push(indexS);
+	  return stream.combine(streams, function () {
+		var args = Array.prototype.slice.call(arguments);
+		var index = args.pop();
+		return args[index];
+	  });
+	},
   };
-  var stream = streamNetwork();
 
 
   var unit = function (unit) {
@@ -409,7 +405,9 @@
 
 
   var windowWidth = stream.create();
+  stream.windowWidth = windowWidth;
   var windowHeight = stream.create();
+  stream.windowHeight = windowHeight;
   var updateWindowWidth = function () {
 	stream.push(windowWidth, window.innerWidth);
   };
@@ -455,7 +453,7 @@
   };
   var updateDomFunc = function ($el, ctx, prop, value) {
 	if (updateDomEls.length === 0) {
-	  ctx.stream.defer(runDomFuncs);
+	  stream.defer(runDomFuncs);
 	}
 	updateDomEls.push($el);
 	updateDomProps.push(prop);
@@ -497,8 +495,7 @@
 	};
   };
 
-  var componentFunc = function (name, build, context) {
-	var stream = context.stream;
+  var elementFunc = function (name, build, context) {
 	var $el = $(document.createElement(name));
 	$el.css('pointer-events', 'initial');
 
@@ -526,7 +523,7 @@
 		ctx.topAccum = stream.combine([context.topAccum, context.top], add);
 		ctx.leftAccum = stream.combine([context.leftAccum, context.left], add);
 		ctx.onDestroy = onDestroy.push;
-		ctx.stream = stream;
+		stream = stream;
 		return ctx;
 	  }
 	  catch (e) {
@@ -597,28 +594,29 @@
 	return instance;
   };
 
-  var component = function (name) {
+  var element = function (name) {
 	return function (build) {
 	  return function (context) {
-		return componentFunc(name, build, context);
+		return elementFunc(name, build, context);
 	  };
 	};
   };
-  var a = component('a');
-  var button = component('button');
-  var div = component('div');
-  var form = component('form');
-  var iframe = component('iframe');
-  var img = component('img');
-  var input = component('input');
-  var label = component('label');
-  var li = component('li');
-  var option = component('option');
-  var p = component('p');
-  var pre = component('pre');
-  var select = component('select');
-  var textarea = component('textarea');
-  var ul = component('ul');
+
+  var a = element('a');
+  var button = element('button');
+  var div = element('div');
+  var form = element('form');
+  var iframe = element('iframe');
+  var img = element('img');
+  var input = element('input');
+  var label = element('label');
+  var li = element('li');
+  var option = element('option');
+  var p = element('p');
+  var pre = element('pre');
+  var select = element('select');
+  var textarea = element('textarea');
+  var ul = element('ul');
 
   var _scrollbarWidth = function () {
 	var parent, child, width;
@@ -709,7 +707,6 @@
 	  .appendTo($('body'));
   };
   var rootComponent = function (c, config) {
-	var stream = streamNetwork();
 	// var debugAndRepeat = function () {
 	//   debugger;
 	//   stream.defer(debugAndRepeat);
@@ -762,7 +759,6 @@
 	  topAccum: onceZeroS,
 	  leftAccum: onceZeroS,
 	  onDestroy: onDestroy.push,
-	  stream: stream,
 	});
 	i.$el.css('position', 'absolute')
 	  .css('top', '0px')
@@ -848,12 +844,12 @@
   });
 
   var mapMinWidths = function (is, ctx) {
-	return ctx.stream.all(is.map(function (i) {
+	return stream.all(is.map(function (i) {
 	  return i.minWidth;
 	}));
   };
   var mapMinHeights = function (is, ctx) {
-	return ctx.stream.all(is.map(function (i) {
+	return stream.all(is.map(function (i) {
 	  return i.minHeight;
 	}));
   };
@@ -901,9 +897,9 @@
 	  return mh(w);
 	}, ctx.height);
   };
-  var withMinWidth = function (mw) {
+  var minWidth = function (mw) {
 	return layout(function ($el, ctx, c) {
-	  $el.addClass('withMinWidth');
+	  $el.addClass('minWidth');
 	  var i = c(ctx.child());
 	  return {
 		minWidth: stream.once(mw),
@@ -911,9 +907,9 @@
 	  };
 	});
   };
-  var withMinHeight = function (mh) {
+  var minHeight = function (mh) {
 	return layout(function ($el, ctx, c) {
-	  $el.addClass('withMinHeight');
+	  $el.addClass('minHeight');
 	  var i = c(ctx.child());
 	  return {
 		minWidth: i.minWidth,
@@ -1058,24 +1054,55 @@
 	});
   };
 
-  var backgroundColor = function (s, arg2) {
+  var backgroundColor = function (s) {
 	// stream is an object
+	if (stream.isStream(s.background) ||
+		stream.isStream(s.font) ||
+		stream.isStream(s.backgroundHover) ||
+		stream.isStream(s.fontHover)) {
+	  if (s.background && !stream.isStream(s.background)) {
+		s.background = stream.once(s.background);
+	  }
+	  if (s.font && !stream.isStream(s.font)) {
+		s.font = stream.once(s.font);
+	  }
+	  if (s.backgroundHover && !stream.isStream(s.backgroundHover)) {
+		s.backgroundHover = stream.once(s.backgroundHover);
+	  }
+	  if (s.fontHover && !stream.isStream(s.fontHover)) {
+		s.fontHover = stream.once(s.fontHover);
+	  }
+	  s = stream.combineObject(s);
+	}
 	if (!stream.isStream(s)) {
-	  s = stream.once({
-		backgroundColor: s,
-		fontColor: arg2,
-	  });
+	  s = stream.once(s);
 	}
 	return $$(function ($el) {
+	  var bc, fc, bcHover, fcHover, hoverState = false;
+	  var applyColors = function () {
+		var applyBC = hoverState ? (bcHover || bc) : bc;
+		var applyFC = hoverState ? (fcHover || fc) : fc;
+		if (applyBC) {
+		  $el.css('background-color', colorString(applyBC));
+		}
+		if (applyFC) {
+		  $el.css('color', colorString(applyFC));
+		}
+	  };
 	  stream.map(s, function (colors) {
-		var bc = colors.backgroundColor;
-		var fc = colors.fontColor;
-		if (bc) {
-		  $el.css('background-color', colorString(bc));
-		}
-		if (fc) {
-		  $el.css('color', colorString(fc));
-		}
+		bc = colors.background;
+		fc = colors.font;
+		bcHover = colors.backgroundHover || bc;
+		fcHover = colors.fontHover || fc;
+		applyColors();
+	  });
+	  $el.on('mouseover', function () {
+		hoverState = true;
+		applyColors();
+	  });
+	  $el.on('mouseout', function () {
+		hoverState = false;
+		applyColors();
 	  });
 	});
   };
@@ -1317,6 +1344,7 @@
 	  var didMH = false;
 	  var mwS = stream.create();
 	  var mhS = stream.create();
+	  var spanStreams = [];
 	  $el.addClass('text');
 	  strs.map(function (c) {
 		if ($.type(c) === 'string') {
@@ -1334,20 +1362,56 @@
 		}
 		var $span = $(document.createElement('span'));
 		$span.html(' ' + c.str + ' ');
-		if (c.size || config.size) {
-		  $span.css('font-size', c.size);
+		c.size = c.size || config.size;
+		if (c.size) {
+		  if (stream.isStream(c.size)) {
+			spanStreams.push(stream.map(c.size, function (x) {
+			  $span.css('font-size', x);
+			}));
+		  }
+		  else {
+			$span.css('font-size', c.size);
+		  }
 		}
 		if (c.weight) {
-		  $span.css('font-weight', c.weight);
+		  if (stream.isStream(c.weight)) {
+			spanStreams.push(stream.map(c.weight, function (x) {
+			  $span.css('font-weight', c.x);
+			}));
+		  }
+		  else {
+			$span.css('font-weight', c.weight);
+		  }
 		}
 		if (c.family) {
-		  $span.css('font-family', c.family);
+		  if (stream.isStream(c.family)) {
+			spanStreams.push(stream.map(c.family, function (x) {
+			  $span.css('font-family', c.x);
+			}));
+		  }
+		  else {
+			$span.css('font-family', c.family);
+		  }
 		}
 		if (c.color) {
-		  $span.css('color', colorString(c.color));
+		  if (stream.isStream(c.color)) {
+			spanStreams.push(stream.map(c.color, function (x) {
+			  $span.css('color', colorString(x));
+			}));
+		  }
+		  else {
+			$span.css('color', colorString(c.color));
+		  }
 		}
 		if (c.shadow) {
-		  $span.css('text-shadow', c.shadow);
+		  if (stream.isStream(c.shadow)) {
+			spanStreams.push(stream.map(c.shadow, function (x) {
+			  $span.css('text-shadow', c.x);
+			}));
+		  }
+		  else {
+			$span.css('text-shadow', c.shadow);
+		  }
 		}
 		if (c.spanCSS) {
 		  c.spanCSS.map(function (css) {
@@ -1365,7 +1429,7 @@
 	  });
 	  var firstPush = true;
 	  var pushDimensions = function () {
-		ctx.stream.next(function () {
+		stream.next(function () {
 		  var mw = config.minWidth ||
 				(config.measureWidth && measureWidth($el)) ||
 				300;
@@ -1375,17 +1439,22 @@
 			var lineHeight = ($el.css('line-height').indexOf('px') !== -1 && parseFloat($el.css('line-height')));
 			return Math.ceil(fontSize * str.length * 0.5 / w) * lineHeight;
 		  };
-		  ctx.stream.defer(function () {
+		  stream.defer(function () {
 			var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) ||
 				  (config.minHeight && constant(config.minHeight)) ||
 				  (measureHeight($el));
-			ctx.stream.push(mhS, mh);
+			stream.push(mhS, mh);
 		  });
-		  ctx.stream.push(mwS, mw);
-		  ctx.stream.push(mhS, mh);
+		  stream.push(mwS, mw);
+		  stream.push(mhS, mh);
 		  firstPush = false;
 		});
 	  };
+	  if (spanStreams.length > 0) {
+		stream.combine(spanStreams, function () {
+		  pushDimensions();
+		});
+	  }
 	  if (config.size) {
 		if (stream.isStream(config.size)) {
 		  stream.map(config.size, function (size) {
@@ -1813,7 +1882,7 @@
   var sideBySide = function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
-	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
+	config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('sideBySide');
 	  if (cs.length === 0) {
@@ -1845,7 +1914,7 @@
 		  left += w;
 		  return position;
 		});
-		positions = config.handleSurplusWidth(width, positions);
+		positions = config.surplusWidthFunc(width, positions);
 		return positions;
 	  };
 	  stream.combine([
@@ -2138,7 +2207,7 @@
   var stack = function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
-	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
+	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('stack');
 	  if (cs.length === 0) {
@@ -2165,7 +2234,7 @@
 	  }
 	  var allMinWidths = mapMinWidths(is, ctx);
 	  var allMinHeights = mapMinHeights(is, ctx);
-	  ctx.stream.combine([
+	  stream.combine([
 		ctx.width,
 		ctx.height,
 		allMinHeights,
@@ -2179,18 +2248,18 @@
 		  top += mh(width);
 		  return position;
 		});
-		positions = config.handleSurplusHeight(height, positions);
+		positions = config.surplusHeightFunc(height, positions);
 		positions.map(function (position, index) {
 		  var context = contexts[index];
-		  ctx.stream.push(context.top, position.top);
-		  ctx.stream.push(context.height, position.height);
+		  stream.push(context.top, position.top);
+		  stream.push(context.height, position.height);
 		});
 	  });
 	  return {
-		minWidth: ctx.stream.map(allMinWidths, function (mws) {
+		minWidth: stream.map(allMinWidths, function (mws) {
 		  return mws.reduce(mathMax, 0);
 		}),
-		minHeight: ctx.stream.map(allMinHeights, function (mhs) {
+		minHeight: stream.map(allMinHeights, function (mhs) {
 		  return function (w) {
 			return mhs.map(apply(w)).reduce(add, config.padding * (is.length - 1));
 		  };
@@ -2202,7 +2271,7 @@
   var stackStream = function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
-	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
+	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
 	config.transition = config.transition || 0;
 	return function (actionS) {
 	  return container(function ($el, ctx, child) {
@@ -2249,7 +2318,7 @@
 			top += mh(width);
 			return position;
 		  });
-		  positions = config.handleSurplusHeight(height, positions);
+		  positions = config.surplusHeightFunc(height, positions);
 		  contexts.map(function (context, index) {
 			var position = positions[index];
 			stream.push(context.top, position.top);
@@ -2771,6 +2840,11 @@
 
   var componentStreamWithExit = function (cStream, exit) {
 	var i;
+	exit = exit || function () {
+	  var d = $.Deferred();
+	  d.resolve();
+	  return d.promise();
+	};
 	return container(function ($el, context, child) {
 	  $el.addClass('component-stream-with-exit');
 	  var localCStream = stream.create();
@@ -2814,7 +2888,7 @@
   var promiseComponent = function (cP) {
 	// var s = stream.once(nothing);
 	var s = stream.create();
-	Q(cP).then(function (c) {
+	cP.then(function (c) {
 	  stream.push(s, c);
 	}, function (error) {
 	  console.log(error);
@@ -3160,8 +3234,8 @@
   var grid = function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
-	config.handleSurplusWidth = config.handleSurplusWidth || ignoreSurplusWidth;
-	config.handleSurplusHeight = config.handleSurplusHeight || ignoreSurplusHeight;
+	config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
+	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
 	config.rowHeight = config.rowHeight || useMaxHeight;
 	config.maxPerRow = config.maxPerRow || 0;
 	config.rowOrColumn = config.rowOrColumn || false;
@@ -3264,7 +3338,7 @@
 		  }
 
 		  rows.map(function (row, i) {
-			row.cells = config.handleSurplusWidth(gridWidth, row.cells, config, i);
+			row.cells = config.surplusWidthFunc(gridWidth, row.cells, config, i);
 		  });
 
 		  return rows;
@@ -3300,19 +3374,21 @@
 		], function (gridWidth, gridHeight, mws, mhs) {
 		  var rows = computeRows(gridWidth, mws);
 		  var index = 0;
+		  var top = 0;
 		  rows.map(function (row) {
 			row.height = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
+			row.top = top;
 			index += row.cells.length;
+			top += row.height + config.padding;
 		  });
 		  if (config.bottomToTop) {
 			rows = rows.slice(0).reverse();
 		  }
-		  var top = 0;
-		  rows = config.handleSurplusHeight(gridHeight, rows, config);
+		  rows = config.surplusHeightFunc(gridHeight, rows, config);
 		  rows.map(function (row, i) {
 			var positions = row.cells.map(function (cell) {
 			  var position = {
-				top: top,
+				top: row.top,
 				left: cell.left,
 				width: cell.width,
 				height: row.height,
@@ -3326,7 +3402,6 @@
 			  stream.push(context.width, position.width);
 			  stream.push(context.height, position.height);
 			});
-			top += row.height + config.padding;
 		  });
 		});
 
@@ -3517,13 +3592,13 @@
 	tabIndexS = tabIndexS || stream.once(0);
 	return stack({})([
 	  all([
-		withMinWidth(0),
+		minWidth(0),
 		$css('overflow-x', 'scroll'),
 		$css('overflow-y', 'hidden'),
 		$css('pointer-events', 'initial'),
 	  ])(stack()([
 		sideBySide({
-		  handleSurplusWidth: centerSurplusWidth,
+		  surplusWidthFunc: centerSurplusWidth,
 		})(list.map(function (item, index) {
 		  return alignTBM()({
 			b: all([
@@ -3535,12 +3610,20 @@
 		  });
 		})),
 		all([
-		  withMinHeight(_scrollbarWidth()) // cheater
+		  minHeight(_scrollbarWidth()) // cheater
 		])(nothing),
 	  ])),
 	]);
   };
 
+  var bar = {
+	h: function (size) {
+	  return minHeight(size)(nothing);
+	},
+	v: function (size) {
+	  return minWidth(size)(nothing);
+	},
+  };
   var matchStrings = function (stringsAndRouters) {
 	return function (str) {
 	  for (var i = 0; i < stringsAndRouters.length; i++ ) {
@@ -3590,6 +3673,10 @@
 
 
   var hcj = {
+	color: {
+	  create: color,
+	  toString: colorString,
+	},
 	component: {
 	  alignHLeft: alignHLeft,
 	  alignHMiddle: alignHMiddle,
@@ -3599,17 +3686,35 @@
 	  alignVBottom: alignVBottom,
 	  alignVMiddle: alignVMiddle,
 	  alignVTop: alignVTop,
+	  all: all,
+	  backgroundColor: backgroundColor,
+	  bar: bar,
 	  border: border,
-	  componentStream: componentStream,
+	  changeThis: changeThis,
+	  clickThis: clickThis,
+	  componentStream: componentStreamWithExit,
+	  element: element,
 	  empty: empty,
 	  grid: grid,
+	  keydownThis: keydownThis,
+	  keyupThis: keyupThis,
 	  image: image,
+	  link: link,
+	  linkTo: linkTo,
 	  margin: margin,
+	  minHeightAtLeast: minHeightAtLeast,
+	  mousedownThis: mousedownThis,
+	  mousemoveThis: mousemoveThis,
+	  mouseoverThis: mouseoverThis,
+	  mouseoutThis: mouseoutThis,
+	  mouseupThis: mouseupThis,
 	  nothing: nothing,
+	  onThis: nothing,
 	  sideBySide: sideBySide,
 	  slider: slider,
 	  slideshow: slideshow,
 	  stack: stack,
+	  submitThis: submitThis,
 	  tabs: tabs,
 	  text: text,
 	  wrap: wrap,
@@ -3617,7 +3722,7 @@
 	// Remember, elements are not components.  This is why they are
 	// under 'el' and not 'c.'  If you want an empty component, use
 	// 'c.empty'.
-	el: {
+	element: {
 	  a: a,
 	  button: button,
 	  div: div,
@@ -3633,6 +3738,19 @@
 	  select: select,
 	  textarea: textarea,
 	  ul: ul,
+	},
+	funcs: {
+	  surplusWidth: {
+		ignore: ignoreSurplusWidth,
+		center: centerSurplusWidth,
+		justify: justifySurplusWidth,
+		giveToNth: giveToNth,
+	  },
+	  surplusHeight: {
+		ignore: ignoreSurplusHeight,
+		center: centerSurplusHeight,
+		giveToNth: giveHeightToNth,
+	  },
 	},
 	stream: stream,
 	rootComponent: rootComponent,

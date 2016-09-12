@@ -1,12 +1,33 @@
 $(function () {
-  var c = window.hcj.component;
-  var casesplit = window.hcj.casesplit;
-  var el = window.hcj.el;
+  var hcj = window.hcj;
+
+  var c = hcj.component;
+  var casesplit = hcj.casesplit;
+  var el = hcj.element;
+  var stream = hcj.stream;
 
   var stack = c.stack();
   var docStack = c.stack({
 	padding: 20,
   });
+
+  var color = {
+	lightGray: hcj.color.create({
+	  r: 220,
+	  g: 210,
+	  b: 220,
+	}),
+	lighterGray: hcj.color.create({
+	  r: 250,
+	  g: 240,
+	  b: 250,
+	}),
+	notBlack: hcj.color.create({
+	  r: 10,
+	  g: 0,
+	  b: 10,
+	}),
+  };
 
   var font = {
 	h1: {
@@ -64,28 +85,25 @@ $(function () {
   };
 
   var install = docStack([
-	h2("Install"),
 	p("`git clone https://github.com/jeffersoncarpenter/hcj.git`"),
   ]);
 
   var whatsItLike = docStack([
-	h2("What's It Like"),
 	stack([
 	  p("1. Define Components."),
-	  p("2. Layer Components."),
+	  p("2. Combine Components."),
 	  p("3. Profit!"),
 	]),
-	p("Components are the building blocks of this library.  A single piece of text is a component; so is an entire web page.  Components' sizes are measured, and they are positioned using javascript.  This gives you a relatively clean, turing-complete API to use for element positioning, rather than the application of css styles."),
-	p("Positioning of child components within parent components roughly works like this:  First, the child sends the parent its minimum dimensions.  Second, the parent sends the child its actual dimensions."),
-	p("This leads to functional, modular code where components can be shuffled and re-shuffled however you want because layout and positioning are not just viewport-sensitive, but container-sensitive."),
-	p("One major thing that HCJ gives up is the ability to inline arbitrary content into paragraphs.  All the standard library supports is styling bits of text using spans.  You MAY embed arbitrary HTML into library code, but you may not embed HCJ components into that HTML."),
-	p("PhantomJS can be used to generate content for SEO purposes.  This can be done server-side, or made part of your build process."),
+	p("CSS and HTML are venerable.  First engineered for simple document layout, today they are technically turing complete.  The eternal struggle of the web developer, is that CSS is so complicated that it's impossible to prove that a better system is needed."),
+	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child."),
+	p("That's all.  It's stream programming."),
+	p("One major thing that HCJ gives up, is the ability to inline arbitrary content into paragraphs.  All the standard library supports is styling and hyperlinking bits of text using spans.  You MAY embed arbitrary HTML into library code, but you may not embed HCJ components into that HTML.  Additionally, websites built with this library are slower ones that use CSS.  We hope that as browsers get faster and CSS approximation techniques improve, this situation will continue to improve as well."),
+	p("HCJ supports any and all semantic web features you may wish for.  We recommend PhantomJS to generate content for SEO.  This can be done server-side, or made part of your build process."),
   ]);
 
-  var components = docStack([
-	h2('A Little Vocab'),
-	p("A `component` is a function that takes a `context` and returns an `instance`."),
-	p("Contexts are objects that represent the page context that a component is rendered into.  They should not be constructed by hand; the root context is constructed as part of the `rootComponent` function, and child-component contexts are returned to you from the `context.child` function described in the the Defining Layouts section.  A context is an object with the following properties:"),
+  var aLittleVocab = docStack([
+	p("A `component` is a function that takes a `context` and returns an `instance`.  To `render` a component is to apply it to a context.  A `layout` is a function that takes components and returns a component."),
+	p("A context is an object with the following nine properties:"),
 	stack([
 	  p('* $el: Element to append the instance to.'),
 	  p('* width: Stream of numbers, width available to the component.'),
@@ -94,21 +112,30 @@ $(function () {
 	  p('* top: Stream of numbers, top coordinate of the component.'),
 	  p('* leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.'),
 	  p('* topAccum: Stream of numbers, parent top coordinate relative to top edge of page.'),
-	  p('* onDestroy: Hook to run callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
-	  p('* child: Function that creates child contexts (see Defining Layouts section)'),
+	  p('* onDestroy: Sign up callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
+	  p('* child: Returns a context for rendering a child component'),
 	]),
-	p('An instance is returned when a component is applied to a context.  It is an object with the following properties:'),
+	p('An instance is returned when you render a component.  It is an object with the following properties:'),
 	stack([
-	  p('* $el: The created root element of the component instance.'),
-	  p('* minWidth: stream of numbers giving the min width of the instance'),
-	  p('* minHeight: stream of functions that, given a width, return the min height of the instance at that width'),
+	  p('* $el: The created root element.'),
+	  p('* minWidth: stream of numbers giving the element\'s min width in pixels'),
+	  p('* minHeight: stream of functions that, given a width, return the min height of the element at that width'),
 	  p("* destroy: runs all onDestroy methods, removes $el from the dom"),
 	]),
   ]);
 
+  var libraryModules = docStack([
+	p('The HCJ library pollutes the global window object with the `hcj` object.  Each module is a property of this object.  HCJ modules include:'),
+	stack([
+	  p('* component: Functions that return components.'),
+	  p('* element: Some helper methods for creating custom components.'),
+	  p('* rootComponent: The function that bootstraps a component onto a page.'),
+	  p('* stream: The hcj stream library.'),
+	]),
+  ]);
+
   var definingComponents = docStack([
-	h2('Defining Components'),
-	p("The function `component` is used to define components.  It is a curried function.  The argument that it takes first is the component's intended tag name.  You usually won't need to call component directly; calls are made for you."),
+	p("The curried function `component.element` is used to define components.  The first argument that it takes is the component's intended tag name.  You usually won't need to call component with its first argument."),
 	p("Second, a `build` method is passed in.  This function is run each time the component is rendered."),
 	p("The build method takes four arguments.  The first, commonly called `$el`, is a jquery selector of the created DOM element, the root element of the component.  The second, commonly called `context`, is the component is being rendered into, described below.  The third and fourth are commonly called `pushMeasureWidth` and `pushMeasureHeight`.  They may be used optionally, to imperatively push values into the instance's minWidth and minHeight streams."),
 	p("The build method may return an object with two properties: `minWidth` and `minHeight`.  The minWidth property is a stream of numbers, and the minHeight property is a stream of functions which take a width and return the required height at that width.  You should either return these properties OR call the pushMeasureWidth and pushMeasureHeight functions, not both."),
@@ -133,12 +160,10 @@ $(function () {
 	  "  pushMeasureHeight();",
 	  "});",
 	]),
-	h2("Width is not Height"),
 	p("As mentioned, min width is given as a number, while min height is given as a function from a width to the height needed at that width.  Generally text elements have a roughly constant area (they get taller as they get narrower), while images scale.  Generally though, when the width changes, the height must also change.  Thus the minimum dimensions send from child to parent cannot simply be a pair of numbers.  The minimum width sent from child to parent is a number, but the \"minimum height\" sent from child to parent is a function which takes a hypothetical width, and returns the required height at that width."),
   ]);
 
   var renderingComponents = docStack([
-	h2('Rendering Components'),
 	p("Currently, the only way to actually render a component onto a web page is to append it to `body`, and use the window width and window height as its dimensions.  This is done using the `rootComponent` function."),
 	p("(When this is done, the minimum width of the root instance is ignored; the window width is used instead.  The actual height of the component is set to be its minimum height at that width.  (If it so happens that the minimum height of the root component at the window width is greater than the window height, but the minimum height of the root component at the window width minus the width of the scrollbar is smaller than the window height, then 'overflow-y: scroll' is added to the body so that the page can render in a sensical way.))"),
 
@@ -159,7 +184,6 @@ $(function () {
   ]);
 
   var definingLayouts = docStack([
-	h2('Defining Layouts'),
 	p("A layout is a function that takes components as arguments and returns a component.  The `layout` function is for making layouts.  You pass it one argument, the layout's `buildLayout` function."),
 	p("The arguments to your `buildLayout` function are somewhat dynamic.  The first two arguments, $el and context, are passed through from the layout component's $el and context (see the Defining Components section above).  The remaining arguments are the child components, as they are passed in to the layout."),
 	p("The buildLayout function must return an object with `minWidth` and `minHeight` streams.  These streams are then returned from the layout component's build method."),
@@ -269,11 +293,9 @@ $(function () {
   ]);
 
   var standardLibraryElements = docStack([
-	h2('Standard Library - Elements'),
   ]);
 
   var standardLibraryComponents = docStack([
-	h2('Standard Library - Components'),
 	p('HCJ comes with a standard library of components and layouts.'),
 
 	h3('text'),
@@ -343,7 +365,7 @@ $(function () {
 	p('A `StackConfig` may have the following properties:'),
 	stack([
 	  p("* `padding`: Padding amount between components."),
-	  p("* `handleSurplusHeight`: There can be surplus height, i.e. the actual height of the stack can be greater than the minimim heights of all of the children.  A `handleSurplusHeight` function takes two arguments.  The first argument is the actual height of the stack (in pixels).  The second argument is an array of objects with `top` and `height` properties, giving the computed top coordinate and min height of each child within the stack (in pixels).  It returns a new array of objects with `top` and `height` properties."),
+	  p("* `surplusHeightFunc`: There can be surplus height, i.e. the actual height of the stack can be greater than the minimim heights of all of the children.  A `surplusHeightFunc` function takes two arguments.  The first argument is the actual height of the stack (in pixels).  The second argument is an array of objects with `top` and `height` properties, giving the computed top coordinate and min height of each child within the stack (in pixels).  It returns a new array of objects with `top` and `height` properties."),
 	]),
 
 	h3('sideBySide'),
@@ -352,7 +374,7 @@ $(function () {
 	p('A `SideBySideConfig` may have the following properties:'),
 	stack([
 	  p("* `padding`: Padding amount between components."),
-	  p("* `handleSurplusWidth`: Similar to a `stack`, a `sideBySide` can have surplus width.  A `handleSurplusWidth` function takes two arguments.  The first is the actual width of the `sideBySide`.  The second is an array of objects with `left` and `width` properties, giving the computed left coordinate and min width of each child within the stack.  It returns a new array of objects with `left` and `width` coordinates."),
+	  p("* `surplusWidthFunc`: Similar to a `stack`, a `sideBySide` can have surplus width.  A `surplusWidthFunc` function takes two arguments.  The first is the actual width of the `sideBySide`.  The second is an array of objects with `left` and `width` properties, giving the computed left coordinate and min width of each child within the stack.  It returns a new array of objects with `left` and `width` coordinates."),
 	]),
 
 	h3('alignLRM'),
@@ -388,8 +410,8 @@ $(function () {
 	p('A mobile responsive grid layout.  Child components are placed into rows.'),
 	stack([
 	  p("* `padding`: padding amount between components"),
-	  p("* `handleSurplusWidth`: splits surplus width among components in each row; see `sideBySide`"),
-	  p("* `handleSurplusHeight`: splits surplus hegiht among grid rows; see `stack`"),
+	  p("* `surplusWidthFunc`: splits surplus width among components in each row; see `sideBySide`"),
+	  p("* `surplusHeightFunc`: splits surplus hegiht among grid rows; see `stack`"),
 	  p("* `useFullWidth`: if set, the grid's min width is computued as the sum of the min widths of the child components, rather than as the largest of the min widths of the child components"),
 	]),
 
@@ -409,7 +431,6 @@ $(function () {
   ]);
 
   var standardLibraryComponentModifiers = docStack([
-	h2('Standard Library - Component Modifiers'),
 	p('In addition to the layouts that take many components and return a component, there are many layouts that take only a single component and return a component.  Much styling and functionality can be added by applying these functions.'),
 
 	h3('all'),
@@ -516,7 +537,6 @@ $(function () {
   ]);
 
   var standardLibraryStreams = docStack([
-	h2('Standard Library - Streams'),
 	p("All programming is asynchronous.  There is the code that's run when your computer boots, and then there are interrupts."),
 	p("HCJ provides its own slimy little stream implementation.  The reasons for choosing this over another implementation like Bacon or Reactive Extensions are speed and control over the stream semantics.  You will only be forced to deal with it if you want to write components (or layouts); HCJ can interoperate with other stream libraries."),
 	p("An hcj stream (or just, stream) is nothing more than a way to get the most recent available data from point A into point B.  A stream is an object with two properties:"),
@@ -536,12 +556,10 @@ $(function () {
   ]);
 
   var standardLibraryForms = docStack([
-	h2('Standard Library - Forms'),
 	p('TODO: add forms documentation'),
   ]);
 
   var standardLibraryColors = docStack([
-	h2('Standard Library - Colors'),
 	p('The standard library has a standard notation for colors.  A `Color` is an object with all of the following properties:'),
 	stack([
 	  p("* r: red value from 0 to 255"),
@@ -568,36 +586,118 @@ $(function () {
   ]);
 
   var csIsNotAFunction = docStack([
-	h2('cs is not a function'),
 	p("The most common error message you're going to get using this library.  Very uninformative, sorry."),
   ]);
 
   var version2 = docStack([
-	h2('Version 2'),
-	p("Version 2 is in progress, and larger in scope.  Really it is a specification system for web pages.  Pages will instead be represented as JSON data structures, which are evaluated as code like what's described above."),
-	p('Browsers can implement this specification as javascript code - again, based on actually measuring elements and positioning them through simple APIs.'),
-	p('Servers can implement the specification as an HTML and CSS approximation, which leads to easy SEO and can lend itself to a decent UX as the page loads in.'),
-	p('Attaching to page using DHTML instead of JS calls'),
+	p('JSON data schema to represent pages as lambda terms (eliminating need for PhantomJS)'),
+	p('CSS approximations of components and layouts for server-side rendering'),
   ]);
 
-  var docs = docStack([
-	h1('hcj.js'),
-	p('Javascript library for web app frontend templating.'),
-	p('Pre-release.'),
-	install,
-	whatsItLike,
-	definingComponents,
-	renderingComponents,
-	definingLayouts,
-	standardLibraryElements,
-	standardLibraryComponents,
-	standardLibraryComponentModifiers,
-	standardLibraryStreams,
-	standardLibraryForms,
-	standardLibraryColors,
-	csIsNotAFunction,
-	version2,
-  ]);
+  var pages = [{
+	title: "Introduction",
+	component: whatsItLike,
+  }, {
+	title: 'Install',
+	component: install,
+  }, {
+	title: 'Terms',
+	component: aLittleVocab,
+  }, {
+	title: 'Modules',
+	component: libraryModules,
+  }, {
+	title: 'Defining Components',
+	component: definingComponents,
+  }, {
+	title: 'Rendering Components',
+	component: renderingComponents,
+  }, {
+	title: 'Defining Layouts',
+	component: definingLayouts,
+  }, {
+	title: 'Standard Library - Elements',
+	component: standardLibraryElements,
+  }, {
+	title: 'Standard Library - Components',
+	component: standardLibraryComponents,
+  }, {
+	title: 'Standard Library - Component Modifiers',
+	component: standardLibraryComponentModifiers,
+  }, {
+	title: 'Standard Library - Streams',
+	component: standardLibraryStreams,
+  }, {
+	title: 'Standard Library - Forms',
+	component: standardLibraryForms,
+  }, {
+	title: 'Standard Library - Colors',
+	component: standardLibraryColors,
+  }, {
+	title: 'cs is not a function',
+	component: csIsNotAFunction,
+  }, {
+	title: 'Planned Features',
+	component: version2,
+  }];
+
+  var initialIndex = window.location.hash && parseInt(window.location.hash.substring(1));
+  var currentPageS = stream.once(initialIndex || 0);
+
+  stream.map(currentPageS, function (index) {
+	window.location.hash = index;
+  });
+
+  var sidebar = c.all([
+	c.margin(20),
+	c.backgroundColor({
+	  background: color.lightGray,
+	}),
+  ])(stack(pages.map(function (p, i) {
+	return c.all([
+	  c.margin(2),
+	  c.link,
+	  c.clickThis(function () {
+		stream.push(currentPageS, i);
+	  }),
+	  c.backgroundColor({
+		background: stream.map(currentPageS, function (index) {
+		  return index === i ? color.lighterGray : color.lightGray;
+		}),
+		backgroundHover: color.lighterGray,
+	  }),
+	])(c.text(p.title, font.p));
+  })));
+
+  var docs = c.all([
+	c.minHeightAtLeast(stream.windowHeight),
+	c.backgroundColor({
+	  font: color.notBlack,
+	}),
+  ])(c.grid({
+	surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+	surplusHeightFunc: hcj.funcs.surplusHeight.giveToNth(0),
+  })([
+	sidebar,
+	c.all([
+	  c.margin(20),
+	  c.backgroundColor({
+		background: color.lighterGray,
+	  }),
+	])(docStack([
+	  h1('hcj.js'),
+	  p('"consider css deprecated"'),
+	  p('Pre-release'),
+	  c.componentStream(stream.map(currentPageS, function (index) {
+		var p = pages[index];
+		return docStack([
+		  h2(p.title),
+		  c.bar.v(5),
+		  p.component,
+		]);
+	  })),
+	])),
+  ]));
 
   window.hcj.rootComponent(docs);
 });
