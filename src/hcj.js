@@ -136,10 +136,10 @@
 
   var streamDeferFunc = deferFuncContext();
   var stream = {
-	create: function () {
+	create: function (v) {
 	  return {
 		listeners: [],
-		lastValue: undefined,
+		lastValue: v,
 	  };
 	},
 	next: streamDeferFunc.next,
@@ -150,14 +150,18 @@
 		v.hasOwnProperty('lastValue');
 	},
 	once: function (v) {
-	  var s = stream.create();
-	  stream.push(s, v);
-	  return s;
+	  return stream.create(v);
 	},
 	push: function (s, v) {
+	  if (Number.isNaN(v)) {
+		debugger;
+	  }
 	  streamDeferFunc.next(function () {
 		if (s.lastValue !== v) {
 		  s.lastValue = v;
+		  if (Number.isNaN(v)) {
+			debugger;
+		  }
 		  for (var i = 0; i < s.listeners.length; i++) {
 			if (s.listeners[i]) {
 			  s.listeners[i](v);
@@ -181,7 +185,7 @@
 	  if (s.lastValue !== undefined) {
 		stream.push(out, f(out.lastValue, s.lastValue));
 	  }
-	  s.listeners.push(function (v) {
+	  stream.map(s, function (v) {
 		stream.push(out, f(out.lastValue, v));
 	  });
 	  return out;
@@ -791,6 +795,7 @@
   };
 
   var color = function (c) {
+	c = c || {};
 	return {
 	  r: c.r || 0,
 	  g: c.g || 0,
@@ -1111,16 +1116,17 @@
 	  $el.css('color', colorString(fc));
 	});
   };
-  // var hoverColor = function (backgroundColor, hoverBackgroundColor, fontColor, hoverFontColor) {
-  // 	backgroundColor = colorString(backgroundColor || transparent);
-  // 	hoverBackgroundColor = colorString(hoverBackgroundColor || backgroundColor);
-  // 	fontColor = colorString(fontColor || black);
-  // 	hoverFontColor = colorString(hoverFontColor || fontColor);
-  // 	return hoverThis(function (h, $el) {
-  // 		$el.css('background-color', h ? hoverBackgroundColor : backgroundColor);
-  // 		$el.css('color', h ? hoverFontColor : fontColor);
-  // 	});
-  // };
+  var hoverColor = function (config) {
+	var backgroundColor = colorString(config.backgroundColor || transparent);
+	var hoverBackgroundColor = colorString(config.hoverBackgroundColor || backgroundColor);
+	var fontColor = colorString(config.fontColor || black);
+	var hoverFontColor = colorString(config.hoverFontColor || fontColor);
+	return hoverThis(function (h, $el) {
+	  $el.css('transition', 'background-color ease ' + config.transition + 's' + ', color ease ' + config.transition + 's');
+	  $el.css('background-color', h ? hoverBackgroundColor : backgroundColor);
+	  $el.css('color', h ? hoverFontColor : fontColor);
+	});
+  };
 
   var crop = function (amount) {
 	var top = amount.all || 0,
@@ -1311,10 +1317,18 @@
 	});
   };
 
-  var linkTo = function (href) {
+  var linkTo = function (config) {
+	if ($.type(config) === 'string') {
+	  config = {
+		href: config,
+	  };
+	}
 	return layout(a, function ($el, ctx, c) {
-	  $el.prop('href', href);
+	  $el.prop('href', config.href);
 	  $el.css('pointer-events', 'initial');
+	  if (config.targetBlank) {
+		$el.prop('target', '_blank');
+	  }
 	  return c(ctx.child());
 	});
   };
@@ -1433,18 +1447,19 @@
 		  var mw = config.minWidth ||
 				(config.measureWidth && measureWidth($el)) ||
 				300;
-		  var mh = function (w) {
+		  var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
 			var fontSize = parseInt($el.css('font-size'));
 			var str = $el.text();
 			var lineHeight = ($el.css('line-height').indexOf('px') !== -1 && parseFloat($el.css('line-height')));
 			return Math.ceil(fontSize * str.length * 0.5 / w) * lineHeight;
 		  };
-		  stream.defer(function () {
-			var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) ||
-				  (config.minHeight && constant(config.minHeight)) ||
-				  (measureHeight($el));
-			stream.push(mhS, mh);
-		  });
+		  if (!config.oneLine) {
+			stream.defer(function () {
+			  var mh = (config.minHeight && constant(config.minHeight)) ||
+					(measureHeight($el));
+			  stream.push(mhS, mh);
+			});
+		  }
 		  stream.push(mwS, mw);
 		  stream.push(mhS, mh);
 		  firstPush = false;
@@ -1566,7 +1581,7 @@
 	});
 	return positions;
   };
-  var evenSplitSurplusWidth = function (gridWidth, positions) {
+  var evenlySplitSurplusWidth = function (gridWidth, positions) {
 	var lastPosition = positions[positions.length - 1];
 	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
 	var widthPerCol = surplusWidth / positions.length;
@@ -1580,7 +1595,7 @@
 	var w = 0;
 	return function (gridWidth, positions, _, i) {
 	  if (i === 0) {
-		positions = evenSplitSurplusWidth(gridWidth, positions);
+		positions = evenlySplitSurplusWidth(gridWidth, positions);
 		w = positions[0].width;
 		return positions;
 	  }
@@ -1593,8 +1608,24 @@
 	  }
 	};
   };
+  var centerFirstRowThenAlignLeftSurplusWidth = function () {
+	var left = 0;
+	return function (gridWidth, positions, i) {
+	  if (i === 0) {
+		positions = centerSurplusWidth(gridWidth, positions);
+		left = positions[0].left;
+		return positions;
+	  }
+	  else {
+		positions.map(function (position, i) {
+		  position.left += left;
+		});
+		return positions;
+	  }
+	};
+  };
   // don't read this function, please
-  var evenSplitSurplusWidthWithMinPerRow = function (minPerRow) {
+  var evenlySplitSurplusWidthWithMinPerRow = function (minPerRow) {
 	return function (gridWidth, positions) {
 	  var lastPosition = positions[positions.length - 1];
 	  var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
@@ -1651,7 +1682,7 @@
 	  // if we're the only thing on the row, stretch up to roughly
 	  // double our min width
 	  if (surplusWidth < positions[0].width) {
-		return evenSplitSurplusWidth(gridWidth, positions);
+		return evenlySplitSurplusWidth(gridWidth, positions);
 	  }
 	  else {
 		return positions;
@@ -1693,7 +1724,7 @@
 	});
 	return positions;
   };
-  var evenSplitSurplusHeight = function (totalHeight, positions) {
+  var evenlySplitSurplusHeight = function (totalHeight, positions) {
 	var lastPosition = positions[positions.length - 1];
 	var surplusHeight = totalHeight - (lastPosition.top + lastPosition.height);
 	var heightPerCol = surplusHeight / positions.length;
@@ -1732,65 +1763,99 @@
 	});
 	return positions;
   };
-  var slideshow = function (config, cs) {
+
+  var slideshow = function (config) {
 	config.padding = config.padding || 0;
-	config.leftTransition = config.leftTransition || 'none';
-	config.alwaysFullWidth = config.alwaysFullWidth || false;
+	config.transitionTime = config.transitionTime || 0;
 	return layout(function ($el, ctx, cs) {
 	  $el.css('overflow', 'hidden');
 	  $el.addClass('slideshow');
 
-	  var contexts = cs.map(function () {
+	  var contexts = cs.concat(cs).concat(cs).map(function () {
 		return ctx.child({
 		  left: true,
-		  width: true,
 		});
 	  });
-	  var is = cs.map(function (c, index) {
+	  var is = cs.concat(cs).concat(cs).map(function (c, index) {
 		return c(contexts[index]);
 	  });
-	  is.map(function (i) {
-		i.$el.css('transition', 'left ' + config.leftTransition);
-	  });
 
-	  var allMinWidths = mapMinWidths(is, ctx);
-	  var allMinHeights = mapMinHeights(is, ctx);
+	  // the state
+	  var segmentOrder = [0, 1, 2];
 
+	  var findSegment = function (index) {
+		return modulo(Math.floor((index + cs.length) / cs.length), 3);
+	  };
+
+	  var allMinWidths = mapMinWidths(is);
+	  var allMinHeights = mapMinHeights(is);
+
+	  var computePositions = function (selected, width, mws, mhs, warpIndex) {
+		return mws.map(function (mw, index) {
+		  var thisSegment = Math.floor(index / cs.length);
+		  var thisSegmentIndex = segmentOrder.indexOf(thisSegment);
+		  var offset = modulo(index, cs.length) - modulo(selected, cs.length);
+		  return {
+			left: (offset + (thisSegmentIndex - 1) * cs.length) * (width + config.padding),
+			warp: thisSegmentIndex === warpIndex,
+		  };
+		});
+	  };
+
+	  var moveSlideshow = function (positions, selectedIndex, teleport, cb) {
+		positions.map(function (position, index) {
+		  var ctx = contexts[index];
+		  is[index].$el.css('transition', position.warp ? '' : 'left ease ' + config.transitionTime + 's');
+		  stream.push(ctx.left, position.left);
+		});
+		cb && setTimeout(function () {
+		  cb();
+		}, 500);
+	  };
+
+	  var modulo = function (a, b) {
+		return ((a % b) + b) % b;
+	  };
+
+	  var selectedIndexS = stream.reduce(config.moveS, function (a, b) {
+		return a + b.amount;
+	  }, 0);
 	  var minHeight = stream.combine([
-		config.selectedS,
+		selectedIndexS,
 		ctx.width,
 		allMinWidths,
 		allMinHeights,
-	  ], function (selected, width, mws, mhs) {
-		var selectedLeft = 0;
-		var selectedWidth = 0;
-		var left = 0;
-		var positions = mws.map(function (mw, index) {
-		  mw = config.alwaysFullWidth ? width : mw;
-		  if (selected === index) {
-			selectedLeft = left + config.padding * index;
-			selectedWidth = mw;
-		  }
-		  var position = {
-			left: left + config.padding * index,
-			width: mw,
-		  };
-		  left += mw;
-		  return position;
-		});
-		var dLeft = (width - selectedWidth) / 2 - selectedLeft;
-		positions.map(function (position) {
-		  position.left += dLeft;
-		});
-
-		positions.map(function (position, index) {
-		  var ctx = contexts[index];
-		  stream.push(ctx.left, position.left);
-		  stream.push(ctx.width, position.width);
-		});
-
+	  ], function (selectedIndex, width, mws, mhs) {
+		var selectedIndexModuloCs = modulo(selectedIndex, cs.length);
+		var targetSegment = findSegment(selectedIndex);
+		var targetSegmentIndex = segmentOrder.indexOf(targetSegment);
+		var positions;
+		switch (targetSegmentIndex) {
+		case 0:
+		  segmentOrder = [
+			segmentOrder[2],
+			segmentOrder[0],
+			segmentOrder[1],
+		  ];
+		  positions = computePositions(selectedIndexModuloCs + cs.length, width, mws, mhs, 0);
+		  moveSlideshow(positions, selectedIndexModuloCs + cs.length);
+		  break;
+		case 1:
+		  positions = computePositions(selectedIndexModuloCs + cs.length, width, mws, mhs);
+		  moveSlideshow(positions, selectedIndexModuloCs + cs.length);
+		  break;
+		case 2:
+		  segmentOrder = [
+			segmentOrder[1],
+			segmentOrder[2],
+			segmentOrder[0],
+		  ];
+		  positions = computePositions(selectedIndexModuloCs + cs.length, width, mws, mhs, 2);
+		  moveSlideshow(positions, selectedIndexModuloCs + cs.length);
+		  break;
+		}
 		return constant(mhs.map(function (mh, i) {
-		  return mh(positions[i].width);
+		  return mh(width);
 		}).reduce(mathMax, 0));
 	  });
 	  stream.push(minHeight, constant(0));
@@ -2866,6 +2931,7 @@
 		  heightCss: stream.once('100%'),
 		}));
 		i.$el.css('transition', 'inherit');
+		i.$el.prependTo($el);
 		stream.pushAll(i.minWidth, minWidthS);
 		stream.pushAll(i.minHeight, minHeightS);
 	  };
@@ -3338,7 +3404,7 @@
 		  }
 
 		  rows.map(function (row, i) {
-			row.cells = config.surplusWidthFunc(gridWidth, row.cells, config, i);
+			row.cells = config.surplusWidthFunc(gridWidth, row.cells, i);
 		  });
 
 		  return rows;
@@ -3440,9 +3506,17 @@
 	  $el.addClass('withMinHeightStream');
 	  var context = ctx.child();
 	  var i = c(context);
+	  var minHeightS = $.isFunction(getMinHeightStream) ? getMinHeightStream(i, context) : getMinHeightStream;
 	  return {
 		minWidth: i.minWidth,
-		minHeight: $.isFunction(getMinHeightStream) ? getMinHeightStream(i, context) : getMinHeightStream,
+		minHeight: stream.combine([
+		  i.minHeight,
+		  minHeightS,
+		], function (mh, minHeight) {
+		  return function (w) {
+			return Math.max(mh(w), minHeight(w));
+		  };
+		}),
 	  };
 	});
   };
@@ -3461,6 +3535,55 @@
 	  });
 	});
   };
+  var withMaxHeightStream = function (heightS) {
+	return layout(function ($el, ctx, c) {
+	  $el.addClass('maxHeightStream');
+	  var context = ctx.child({
+		height: true,
+		top: true,
+	  });
+	  var i = c(context);
+	  stream.pushAll(stream.combine([
+		i.minHeight,
+		ctx.width,
+		ctx.height,
+	  ], function (mh, w, h) {
+		return Math.max(h, mh(w));
+	  }), context.height);
+
+	  var lastScroll = windowScroll.lastValue;
+	  var scrollS = stream.map(windowScroll, function (s) {
+		var dScroll = s - lastScroll;
+		lastScroll = s;
+		return dScroll;
+	  });
+
+	  var scrollTarget = 0;
+	  var scrollTargetS = stream.combine([
+		ctx.height,
+		context.height,
+		scrollS,
+	  ], function (wh, h, s) {
+		scrollTarget -= s;
+		scrollTarget = Math.min(0, scrollTarget);
+		scrollTarget = Math.max(wh - h, scrollTarget);
+		return scrollTarget;
+	  });
+	  stream.pushAll(scrollTargetS, context.top);
+
+	  return {
+		minWidth: i.minWidth,
+		minHeight: stream.combine([
+		  heightS,
+		  i.minHeight,
+		], function (maxHeight, mh) {
+		  return function (w) {
+			return Math.min(maxHeight, mh(w));
+		  };
+		}),
+	  };
+	});
+  };
 
   // // var atMostWindowBottom = function (c, distanceStream) {
   // // 	distanceStream = distanceStream || stream.once(0);
@@ -3474,6 +3597,52 @@
   // // 							   });
   // // 	}, c);
   // // };
+
+  var largestWidthThatFits = function (config) {
+	return layout(function ($el, ctx, cs) {
+	  $el.addClass('largest-width-that-fits');
+	  var is = cs.map(function (c) {
+		return c(ctx.child());
+	  });
+	  var allMinWidths = mapMinWidths(is);
+	  var allMinHeights = mapMinHeights(is);
+	  var chooseIndex = function (w, mws) {
+		var index = mws.reduce(function (a, mw, index) {
+		  return (mw <= w) && (a === null || mw > a.mw) ? {
+			mw: mw,
+			index: index,
+		  } : a;
+		}, null).index;
+		if (index === null) {
+		  console.log('none small enough, TODO: use smallest');
+		}
+		return index;
+	  };
+	  stream.combine([
+		ctx.width,
+		allMinWidths,
+	  ], function (w, mws) {
+		var i = chooseIndex(w, mws);
+		is.map(function (instance, index) {
+		  instance.$el.css('display', (index === i) ? '' : 'none');
+		});
+	  });
+	  return {
+		minWidth: stream.map(allMinWidths, function (mws) {
+		  return mws.reduce(mathMax, 0);
+		}),
+		minHeight: stream.combine([
+		  allMinWidths,
+		  allMinHeights,
+		], function (mws, mhs) {
+		  return function (w) {
+			var i = chooseIndex(w, mws);
+			return mhs[i](w);
+		  };
+		}),
+	  };
+	});
+  };
 
   var overlays = function (config) {
 	return layout(function ($el, ctx, cs) {
@@ -3678,6 +3847,12 @@
 	  toString: colorString,
 	},
 	component: {
+	  $$: $$,
+	  $addClass: $addClass,
+	  $attr: $attr,
+	  $css: $css,
+	  $on: $on,
+	  $prop: $prop,
 	  alignHLeft: alignHLeft,
 	  alignHMiddle: alignHMiddle,
 	  alignHRight: alignHRight,
@@ -3687,29 +3862,39 @@
 	  alignVMiddle: alignVMiddle,
 	  alignVTop: alignVTop,
 	  all: all,
+	  and: and,
 	  backgroundColor: backgroundColor,
 	  bar: bar,
 	  border: border,
 	  changeThis: changeThis,
 	  clickThis: clickThis,
 	  componentStream: componentStreamWithExit,
+	  dropdownPanel: dropdownPanel,
 	  element: element,
 	  empty: empty,
 	  grid: grid,
+	  hoverColor: hoverColor,
+	  keepAspectRatio: keepAspectRatio,
 	  keydownThis: keydownThis,
 	  keyupThis: keyupThis,
 	  image: image,
+	  largestWidthThatFits: largestWidthThatFits,
 	  link: link,
 	  linkTo: linkTo,
 	  margin: margin,
+	  maxHeightStream: withMaxHeightStream,
+	  minHeight: minHeight,
+	  minHeightStream: withMinHeightStream,
 	  minHeightAtLeast: minHeightAtLeast,
+	  minWidth: minWidth,
 	  mousedownThis: mousedownThis,
 	  mousemoveThis: mousemoveThis,
 	  mouseoverThis: mouseoverThis,
 	  mouseoutThis: mouseoutThis,
 	  mouseupThis: mouseupThis,
 	  nothing: nothing,
-	  onThis: nothing,
+	  onThis: onThis,
+	  overlays: overlays,
 	  sideBySide: sideBySide,
 	  slider: slider,
 	  slideshow: slideshow,
@@ -3740,9 +3925,13 @@
 	  ul: ul,
 	},
 	funcs: {
+	  constant: constant,
+	  id: id,
 	  surplusWidth: {
 		ignore: ignoreSurplusWidth,
 		center: centerSurplusWidth,
+		centerFirstRowThenAlignLeft: centerFirstRowThenAlignLeftSurplusWidth,
+		evenlySplit: evenlySplitSurplusWidth,
 		justify: justifySurplusWidth,
 		giveToNth: giveToNth,
 	  },
@@ -3752,8 +3941,15 @@
 		giveToNth: giveHeightToNth,
 	  },
 	},
-	stream: stream,
 	rootComponent: rootComponent,
+	stream: stream,
+	unit: {
+	  px: px,
+	},
+	viewport: {
+	  heightS: windowHeight,
+	  widthS: windowWidth,
+	},
   };
 
   window.hcj = hcj;
