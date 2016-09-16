@@ -178,7 +178,7 @@ $(function () {
   ]);
 
   var definingLayouts = docStack([
-	p("A layout is a function that takes components as arguments and returns a component.  The `layout` function is for making layouts.  You pass it one argument, the layout's `buildLayout` function."),
+	p("A layout is a function that takes components as arguments and returns a component.  The `layout` function is for making layouts.  All it does, really, is apply the 'pointer-events: none' DOM style to itself.  You pass it one argument, the layout's `buildLayout` function."),
 	p("The arguments to your `buildLayout` function are somewhat dynamic.  The first two arguments, $el and context, are passed through from the layout component's $el and context (see the Defining Components section above).  The remaining arguments are the child components, as they are passed in to the layout."),
 	p("The buildLayout function must return an object with `minWidth` and `minHeight` streams.  These streams are then returned from the layout component's build method."),
 
@@ -299,7 +299,7 @@ $(function () {
 
 	h3('text'),
 	p('`text :: ([SpanConfig], TextConfig) -> Component`'),
-	p("The `text` function has a complex API."),
+	p("The `text` function has a rather complex API."),
 	p('It is a two-argument function.  The first argument can either be one `SpanConfig` or an array of `SpanConfigs`.  The second argument is an optional `TextConfig`.'),
 	p('A `SpanConfig` may be either a string, or an object with the following properties (all optional except `str` which is required):'),
 	stack([
@@ -317,7 +317,8 @@ $(function () {
 	  p("* minHeight: causes the text's height not to be measured; this number is used instead"),
 	  p("* oneLine: causes the text's height not to be measured.  It is assumed to be one line tall.  Its min height value is calculated from its font size and line height."),
 	]),
-	p("Floating components inside text is currently not supported.  There are no technical barriers, it's only a matter of reworking the API."),
+	p("Each time dimensions may change, `text` first approximates its min width and min height by assuming that a character has a width of 0.5 times its height.  Then, it performs the above operation.  If oneLine is set, then height approximation is not performed."),
+	p("Occlusions are not yet supported."),
 	p('Examples:'),
 	codeBlock([
 	  "var hello = text('Hello');",
