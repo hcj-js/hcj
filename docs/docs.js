@@ -640,6 +640,10 @@ $(function () {
 	p('CSS approximations of components and layouts for server-side rendering'),
   ]);
 
+  var support = docStack([
+	p('For support, join #hcj on Freenode or submit an issue on Github.  It will be answered asap.'),
+  ]);
+
   var pages = [{
 	title: "Introduction",
 	component: whatsItLike,
@@ -679,6 +683,9 @@ $(function () {
   }, {
 	title: 'Planned Features',
 	component: version2,
+  }, {
+	title: 'Support',
+	component: support,
   }];
 
   var initialIndex = window.location.hash && parseInt(window.location.hash.substring(1));
