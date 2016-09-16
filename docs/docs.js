@@ -94,16 +94,16 @@ $(function () {
 	  p("2. Combine Components."),
 	  p("3. Profit!"),
 	]),
-	p("CSS and HTML are venerable.  First engineered for simple document layout, today they are technically turing complete.  The eternal struggle of the web developer, is that CSS is so complicated that it's impossible to prove that a better system is needed."),
+	p("CSS and HTML are venerable.  First engineered for simple document layout, today they are technically turing complete."),
 	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child."),
-	p("That's all.  It's stream programming."),
+	p("That's all.  Stream programming."),
 	p("One major thing that HCJ gives up, is the ability to inline arbitrary content into paragraphs.  All the standard library supports is styling and hyperlinking bits of text using spans.  You MAY embed arbitrary HTML into library code, but you may not embed HCJ components into that HTML.  Additionally, websites built with this library are slower ones that use CSS.  We hope that as browsers get faster and CSS approximation techniques improve, this situation will continue to improve as well."),
 	p("HCJ supports any and all semantic web features you may wish for.  We recommend PhantomJS to generate content for SEO.  This can be done server-side, or made part of your build process."),
   ]);
 
   var aLittleVocab = docStack([
 	p("A `component` is a function that takes a `context` and returns an `instance`.  To `render` a component is to apply it to a context.  A `layout` is a function that takes components and returns a component."),
-	p("A context is an object with the following nine properties:"),
+	p("A context is an object with the following ten properties:"),
 	stack([
 	  p('* $el: Element to append the instance to.'),
 	  p('* width: Stream of numbers, width available to the component.'),
@@ -112,6 +112,7 @@ $(function () {
 	  p('* top: Stream of numbers, top coordinate of the component.'),
 	  p('* leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.'),
 	  p('* topAccum: Stream of numbers, parent top coordinate relative to top edge of page.'),
+	  p('* occlusions: Stream of objects with width, height, top, and left properties.  Content should generally stay out from under occlusions.'),
 	  p('* onDestroy: Sign up callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
 	  p('* child: Returns a context for rendering a child component'),
 	]),
@@ -164,11 +165,7 @@ $(function () {
   ]);
 
   var renderingComponents = docStack([
-	p("Currently, the only way to actually render a component onto a web page is to append it to `body`, and use the window width and window height as its dimensions.  This is done using the `rootComponent` function."),
-	p("(When this is done, the minimum width of the root instance is ignored; the window width is used instead.  The actual height of the component is set to be its minimum height at that width.  (If it so happens that the minimum height of the root component at the window width is greater than the window height, but the minimum height of the root component at the window width minus the width of the scrollbar is smaller than the window height, then 'overflow-y: scroll' is added to the body so that the page can render in a sensical way.))"),
-
-	h3('Rendering a Page'),
-	p('To render a page, simply call the rootComponent function.'),
+	p('To render a component, pass it to the `rootComponent` function.  For example:'),
 	codeBlock([
 	  "var page = all([",
 	  "  margin(10),",
@@ -181,6 +178,7 @@ $(function () {
 	  "&nbsp;",
 	  "var rootInstance = rootComponent(page);",
 	]),
+	p("Due to the way HCJ works, the only way to render a component is as the root component of a page.  Unfortunately, it cannot be sprinkled here and there through an existing web app."),
   ]);
 
   var definingLayouts = docStack([
@@ -300,7 +298,7 @@ $(function () {
 
 	h3('text'),
 	p('`text :: ([SpanConfig], TextConfig) -> Component`'),
-	p('Text still has an incomplete and clunky API.'),
+	p("The `text` function has a large API."),
 	p('It is a two-argument function.  The first argument can either be one `SpanConfig` or an array of `SpanConfigs`.  The second argument is an optional `TextConfig`.'),
 	p('A `SpanConfig` may be either a string, or an object with the following properties (all optional except `str` which is required):'),
 	stack([
@@ -604,20 +602,8 @@ $(function () {
 	title: 'Terms',
 	component: aLittleVocab,
   }, {
-	title: 'Modules',
-	component: libraryModules,
-  }, {
-	title: 'Defining Components',
-	component: definingComponents,
-  }, {
 	title: 'Rendering Components',
 	component: renderingComponents,
-  }, {
-	title: 'Defining Layouts',
-	component: definingLayouts,
-  }, {
-	title: 'Standard Library - Elements',
-	component: standardLibraryElements,
   }, {
 	title: 'Standard Library - Components',
 	component: standardLibraryComponents,
@@ -633,6 +619,12 @@ $(function () {
   }, {
 	title: 'Standard Library - Colors',
 	component: standardLibraryColors,
+  }, {
+	title: 'Defining Components',
+	component: definingComponents,
+  }, {
+	title: 'Defining Layouts',
+	component: definingLayouts,
   }, {
 	title: 'cs is not a function',
 	component: csIsNotAFunction,
