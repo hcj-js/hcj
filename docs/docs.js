@@ -85,7 +85,7 @@ $(function () {
   };
 
   var install = docStack([
-	p("`git clone https://github.com/jeffersoncarpenter/hcj.git`"),
+	p("`git clone https://github.com/hcj-js/hcj.git`"),
   ]);
 
   var whatsItLike = docStack([
