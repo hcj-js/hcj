@@ -95,10 +95,9 @@ $(function () {
 	  p("3. Profit!"),
 	]),
 	p("CSS and HTML are venerable.  First engineered for simple document layout, today they are technically turing complete."),
-	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child."),
-	p("That's all.  Stream programming."),
-	p("One major thing that HCJ gives up, is the ability to inline arbitrary content into paragraphs.  All the standard library supports is styling and hyperlinking bits of text using spans.  You MAY embed arbitrary HTML into library code, but you may not embed HCJ components into that HTML.  Additionally, websites built with this library are slower ones that use CSS.  We hope that as browsers get faster and CSS approximation techniques improve, this situation will continue to improve as well."),
-	p("HCJ supports any and all semantic web features you may wish for.  We recommend PhantomJS to generate content for SEO.  This can be done server-side, or made part of your build process."),
+	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child.  This is really an alternate layout system, to be used instead of stylesheets."),
+	p("Some CSS capabilities are not present in HCJ, and some may be difficult to implement.  Additionally, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
+	p("These docs are written in HCJ.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
   ]);
 
   var aLittleVocab = docStack([
@@ -112,16 +111,16 @@ $(function () {
 	  p('* top: Stream of numbers, top coordinate of the component.'),
 	  p('* leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.'),
 	  p('* topAccum: Stream of numbers, parent top coordinate relative to top edge of page.'),
-	  p('* occlusions: Stream of objects with width, height, top, and left properties.  Content should generally stay out from under occlusions.'),
+	  p('* occlusions: Stream of objects with width, height, top, and left properties.  Content placed inside the context should try to stay out from under any occlusions.  Might be slow, not sure yet.'),
 	  p('* onDestroy: Sign up callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
-	  p('* child: Returns a context for rendering a child component'),
+	  p('* child: Returns a new `context` for rendering a child component'),
 	]),
 	p('An instance is returned when you render a component.  It is an object with the following properties:'),
 	stack([
 	  p('* $el: The created root element.'),
 	  p('* minWidth: stream of numbers giving the element\'s min width in pixels'),
 	  p('* minHeight: stream of functions that, given a width, return the min height of the element at that width'),
-	  p("* destroy: runs all onDestroy methods, removes $el from the dom"),
+	  p("* destroy: runs its context's onDestroy methods, and removes $el from the dom"),
 	]),
   ]);
 
@@ -178,7 +177,7 @@ $(function () {
 	  "&nbsp;",
 	  "var rootInstance = rootComponent(page);",
 	]),
-	p("Due to the way HCJ works, the only way to render a component is as the root component of a page.  Unfortunately, it cannot be sprinkled here and there through an existing web app."),
+	p("Currently, it's only possible to render a component by making it a root component of the page.  Multiple root components may be used to display some modal dialogs."),
   ]);
 
   var definingLayouts = docStack([
@@ -433,20 +432,19 @@ $(function () {
 
 	h3('all'),
 	p('`all :: [Component -> Component] -> Component -> Component`'),
-	p('The `all` function is key.  It enables you to apply multiple functions to a component, one after another.'),
-	p('Arguably, `all` should be renamed to `compose`.'),
+	p('The `all` function is listed first because it is key to using the other functions listed here.  Performs function composition, i.e. applies multiple functions to a component, one after another.'),
 	p('Example:'),
 	codeBlock([
-	  "var button = all([",
+	  "var title = all([",
 	  "  margin({",
 	  "    all: 10,",
 	  "  }),",
 	  "  border(color.white, {",
 	  "    all: 1,",
 	  "  }),",
-	  "])(text('Submit'));",
+	  "])(text('Star Trek Voyager'));",
 	]),
-	p('Composition Example (notice that `all` applied to an array of functions is itself such a function):'),
+	p('Another example:'),
 	codeBlock([
 	  "var prettyBorder = all([",
 	  "  border(white, {",
@@ -468,16 +466,27 @@ $(function () {
 	  "])(text('Submit'));",
 	]),
 
-	h3('margin'),
-	p('`margin :: MarginConfig -> Component -> Component`'),
-	p('Adds some space around a component.'),
-	p('A `MarginConfig` may have any of the following properties:'),
+	h3('$$'),
+	p('`$$ :: ($ -> IO ()) -> Component -> Component`'),
+	p('Takes a function which takes the JQuery selector of the component and performs arbitrary actions.  Returns a function from a component to a component.'),
+	p('Should not affect min width and min height of the element as rendered by the browser.'),
+
+	h3('$addClass, $attr, $css, $on, $prop'),
 	stack([
-	  p("* all: margin to apply to all sides"),
-	  p("* top: margin to apply to the top"),
-	  p("* bottom: margin to apply to bottom"),
-	  p("* left: margin to apply to the left side"),
-	  p("* right: margin to apply to the right side"),
+	  p('`$addClass :: String -> Component -> Component`'),
+	  p('`$attr :: (String, String) -> Component -> Component`'),
+	  p('`$css :: (String, String) -> Component -> Component`'),
+	  p('`$on :: (String, (Event -> IO ())) -> Component -> Component`'),
+	  p('`$prop :: (String, String) -> Component -> Component`'),
+	]),
+	p('All defined using `$$`, and simply mimic jquery methods.'),
+
+	h3('backgroundColor'),
+	p('`backgroundColor :: BackgroundColorConfig -> Component -> Component`'),
+	p('A `BackgroundColorConfig` is an object with any of the following properties:'),
+	stack([
+	  p("* backgroundColor: background color"),
+	  p("* fontColor: font color"),
 	]),
 
 	h3('border'),
@@ -510,27 +519,16 @@ $(function () {
 	p('`linkTo :: String -> Component -> Component`'),
 	p('Takes a URL, then takes a component and wraps it in an `a` tag with that href.'),
 
-	h3('$$'),
-	p('`$$ :: ($ -> IO ()) -> Component -> Component`'),
-	p('Takes a function which takes the JQuery selector of the component and performs arbitrary actions.  Returns a function from a component to a component.'),
-	p('Should not affect min width and min height of the element as rendered by the browser.'),
-
-	h3('$addClass, $attr, $css, $on, $prop'),
+	h3('margin'),
+	p('`margin :: MarginConfig -> Component -> Component`'),
+	p('Adds some space around a component.'),
+	p('A `MarginConfig` may have any of the following properties:'),
 	stack([
-	  p('`$addClass :: String -> Component -> Component`'),
-	  p('`$attr :: (String, String) -> Component -> Component`'),
-	  p('`$css :: (String, String) -> Component -> Component`'),
-	  p('`$on :: (String, (Event -> IO ())) -> Component -> Component`'),
-	  p('`$prop :: (String, String) -> Component -> Component`'),
-	]),
-	p('All defined using `$$`, and simply mimic jquery methods.'),
-
-	h3('withBackgroundColor'),
-	p('`withBackgroundColor :: BackgroundColorConfig -> Component -> Component`'),
-	p('A `BackgroundColorConfig` is an object with any of the following properties:'),
-	stack([
-	  p("* backgroundColor: background color"),
-	  p("* fontColor: font color"),
+	  p("* all: margin to apply to all sides"),
+	  p("* top: margin to apply to the top"),
+	  p("* bottom: margin to apply to bottom"),
+	  p("* left: margin to apply to the left side"),
+	  p("* right: margin to apply to the right side"),
 	]),
   ]);
 
@@ -551,6 +549,7 @@ $(function () {
 	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state in terms of input state as lightly as possible.'),
 	p('Other stream libraries that you use in your application code will interoperate with HCJ just fine.'),
 	p('Here are the stream methods:'),
+	p('TODO: finish this section'),
   ]);
 
   var standardLibraryForms = docStack([
