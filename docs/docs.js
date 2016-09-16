@@ -97,7 +97,7 @@ $(function () {
 	p("CSS and HTML are venerable.  First engineered for simple document layout, today they are technically turing complete."),
 	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child.  This is really an alternate layout system, to be used instead of stylesheets."),
 	p("Some CSS capabilities are not present in HCJ, and some may be difficult to implement.  Additionally, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
-	p("These docs are written in HCJ.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
+	p("These docs are written using HCJ.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
   ]);
 
   var aLittleVocab = docStack([
