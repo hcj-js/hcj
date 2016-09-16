@@ -94,7 +94,7 @@ $(function () {
 	  p("2. Combine Components."),
 	  p("3. Profit!"),
 	]),
-	p("CSS and HTML are venerable.  First engineered for simple document layout, today they are technically turing complete."),
+	p("HTML and CSS are venerable.  First engineered for simple document layout, today they are technically turing complete."),
 	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child.  This is really an alternate layout system, to be used instead of stylesheets."),
 	p("Some CSS capabilities are not present in HCJ, and some may be difficult to implement.  Additionally, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
 	p("These docs are written using HCJ.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
@@ -354,7 +354,7 @@ $(function () {
 	  p('`alignHMiddle :: Component -> Component`'),
 	]),
 	p('Takes up to three components.  Aligns them left, right, and middle within the space available.  Three functions are also provided that operate on just one component each.'),
-	p("The `AlignLRMConfig` is not currently used.  However, don't forget to stick in those extra parentheses (see example) or you'll get an error."),
+	p("The `AlignLRMConfig` is not currently used.  However, don't forget to stick in those extra parentheses (see example) or you'll get an error.  This will probably be removed."),
 	p('An `LRMComponents` is just an object with up to three properties:'),
 	stack([
 	  p("* l: component to align left"),
@@ -377,7 +377,7 @@ $(function () {
 	  p('`alignVMiddle :: Component -> Component`'),
 	]),
 	p('Takes up to three components.  Aligns them top, bottom, and middle within the space available.  Three functions are also provided that operate on just one component each.'),
-	p("The `AlignTBMConfig` is not currently used.  However, like `alignLRM` remember to put in the parentheses."),
+	p("The `AlignTBMConfig` is not currently used.  However, like `alignLRM` remember to put in the parentheses.  This will probably be removed."),
 	p('A `TBMComponents` is an object with up to three properties:'),
 	stack([
 	  p("* t: component to align top"),
