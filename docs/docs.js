@@ -678,7 +678,6 @@ $(function () {
 	  }),
 	])(docStack([
 	  h1('hcj.js'),
-	  p('"consider css deprecated"'),
 	  p('Pre-release'),
 	  c.componentStream(stream.map(currentPageS, function (index) {
 		var p = pages[index];
