@@ -1038,10 +1038,7 @@
 	  };
 	});
   };
-  var link = all([
-	$css('cursor', 'pointer'),
-	$css('pointer-events', 'initial'),
-  ]);
+  var link = $css('cursor', 'pointer');
 
   // var componentName = function (name) {
   // 	return passthrough(function ($el) {
@@ -1374,8 +1371,8 @@
 	return layout(a, function ($el, ctx, c) {
 	  $el.prop('href', config.href);
 	  $el.css('pointer-events', 'initial');
-	  if (config.targetBlank) {
-		$el.prop('target', '_blank');
+	  if (config.target) {
+		$el.prop('target', config.target);
 	  }
 	  return c(ctx.child());
 	});
