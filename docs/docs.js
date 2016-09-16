@@ -450,7 +450,7 @@ $(function () {
   ]);
 
   var standardLibraryComponentModifiers = docStack([
-	p('While some layouts take multiple components and return a component, these generally take one component and return a component.  Much styling and functionality can be added by applying these functions.'),
+	p('While some layouts take multiple components and return a component, these generally take one component and return a component.  Much styling and functionality can be added by applying these layouts.'),
 	p('These are found in the `window.hcj.component` object.'),
 
 	h3('all'),
@@ -605,6 +605,7 @@ $(function () {
 
   var standardLibraryColors = docStack([
 	p('The standard library has a standard notation for colors.  A `Color` is an object with all of the following properties:'),
+	p('These functions are found in `window.hcj.color'),
 	stack([
 	  p("* r: red value from 0 to 255"),
 	  p("* g: green value from 0 to 255"),
@@ -654,7 +655,7 @@ $(function () {
 	title: 'Standard Library - Components',
 	component: standardLibraryComponents,
   }, {
-	title: 'Standard Library - Component Modifiers',
+	title: 'Standard Library - Styling Layouts',
 	component: standardLibraryComponentModifiers,
   }, {
 	title: 'Standard Library - Streams',

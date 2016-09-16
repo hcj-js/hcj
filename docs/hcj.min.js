@@ -2114,9 +2114,7 @@ function waitForWebfonts(fonts, callback) {
 	  };
 	});
   };
-  var link = all([
-	$css('cursor', 'pointer'),
-  ]);
+  var link = $css('cursor', 'pointer');
 
   // var componentName = function (name) {
   // 	return passthrough(function ($el) {
@@ -4966,6 +4964,7 @@ function waitForWebfonts(fonts, callback) {
 
   var hcj = {
 	color: {
+	  color: color,
 	  create: color,
 	  toString: colorString,
 	},

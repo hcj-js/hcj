@@ -3888,6 +3888,7 @@
 
   var hcj = {
 	color: {
+	  color: color,
 	  create: color,
 	  toString: colorString,
 	},
