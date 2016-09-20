@@ -112,7 +112,6 @@ $(function () {
 	  p('* top: Stream of numbers, top coordinate of the component.'),
 	  p('* leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.'),
 	  p('* topAccum: Stream of numbers, parent top coordinate relative to top edge of page.'),
-	  p('* occlusions: Stream of objects with width, height, top, and left properties.  Content placed inside the context should try to stay out from under any occlusions.  Might be slow, not sure yet.'),
 	  p('* onDestroy: Sign up callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
 	  p('* child: Returns a new `context` for rendering a child component'),
 	]),
@@ -196,7 +195,6 @@ $(function () {
 	  p("* topCSS: string values used for the top css property, used instead of mapping (+ \"px\") over the top property if present"),
 	  p("* left: numbers specifying the left coordinate of the child component, used instead of `stream.once(0)` if present"),
 	  p("* leftCSS: string values used for the left css property, used instead of mapping (+ \"px\") over the left property if present"),
-	  p("* occlusions: stream of occlusion rectangles to add to existing occlusions lying over this child, coordinates relative to layout"),
 	]),
 	p("If a stream, it is used as described.  If `true`, an empty stream is created and returned, and you must manually push values into it.  Thus, like the instance's `minWidth` and `minHeight` streams, these streams may be defined either declaratively or imperatively."),
 	p("The `context.child` function returns a context.  Now, here's the code for `purpleMargin`.  First, the background color is set.  Second, the child instance is defined.  Last, the layout's min size info is returned."),
@@ -319,7 +317,6 @@ $(function () {
 	  p("* oneLine: causes the text's height not to be measured.  It is assumed to be one line tall.  Its min height value is calculated from its font size and line height."),
 	]),
 	p("Each time dimensions may change, `text` first approximates its min width and min height by assuming that a character has a width of 0.5 times its height.  Then, it performs the above operation.  If oneLine is set, then height approximation is not performed."),
-	p("Occlusions are not yet supported."),
 	p('Examples:'),
 	codeBlock([
 	  "var hello = text('Hello');",
@@ -429,7 +426,7 @@ $(function () {
 
 	h3('overlays'),
 	p('`overlays :: OverlaysConfig -> [Component] -> Component`'),
-	p('Places components one directly on top of another.  Currently does not utilize `occlusions` stream.'),
+	p('Places components one directly on top of another.'),
 	p('The OverlaysConfig is not currently used.'),
 
 	h3('sideBySide'),
