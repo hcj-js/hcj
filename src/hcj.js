@@ -1350,6 +1350,9 @@
 		var mw = config.minWidth ||
 			  (config.minHeight && config.minHeight * aspectRatio) ||
 			  $el[0].naturalWidth;
+		if (config.minWidth === 0 || config.minHeight === 0) {
+		  mw = 0;
+		}
 		stream.push(minWidth, mw);
 		stream.push(minHeight, function (w) {
 		  return w / aspectRatio;
