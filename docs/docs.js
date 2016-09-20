@@ -98,6 +98,7 @@ $(function () {
 	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child.  This is really an alternate layout system, to be used instead of stylesheets."),
 	p("Some CSS capabilities are not present in HCJ, and some may be difficult to implement.  Additionally, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
 	p("These docs are written using HCJ.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
+	p("One major thing that HCJ does not support is floating items so that text can flow around them.  We would very much like to add this kind of functionality, but recognize that doing this both well and fast will be difficult.  Prior work that we're looking at includes CSS floats, as well as the capabilities of programs like LaTeX and Word.")
   ]);
 
   var aLittleVocab = docStack([
@@ -700,21 +701,28 @@ $(function () {
 	c.backgroundColor({
 	  background: color.lightGray,
 	}),
-  ])(stack(pages.map(function (p, i) {
-	return c.all([
-	  c.margin(2),
-	  c.link,
-	  c.clickThis(function () {
-		stream.push(currentPageS, i);
-	  }),
-	  c.backgroundColor({
-		background: stream.map(currentPageS, function (index) {
-		  return index === i ? color.lighterGray : color.lightGray;
+  ])(stack([
+	c.image({
+	  src: './demo.png',
+	  minWidth: 0,
+	}),
+	c.bar.h(20),
+	stack(pages.map(function (p, i) {
+	  return c.all([
+		c.margin(2),
+		c.link,
+		c.clickThis(function () {
+		  stream.push(currentPageS, i);
 		}),
-		backgroundHover: color.lighterGray,
-	  }),
-	])(c.text(p.title, font.p));
-  })));
+		c.backgroundColor({
+		  background: stream.map(currentPageS, function (index) {
+			return index === i ? color.lighterGray : color.lightGray;
+		  }),
+		  backgroundHover: color.lighterGray,
+		}),
+	  ])(c.text(p.title, font.p));
+	})),
+  ]));
 
   var docs = c.all([
 	c.minHeightAtLeast(stream.windowHeight),
