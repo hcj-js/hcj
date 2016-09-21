@@ -658,7 +658,7 @@ $(function () {
 	title: 'Standard Library - Components',
 	component: standardLibraryComponents,
   }, {
-	title: 'Standard Library - Styling Layouts',
+	title: 'Standard Library - Styling with Layouts',
 	component: standardLibraryComponentModifiers,
   }, {
 	title: 'Standard Library - Streams',
