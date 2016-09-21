@@ -10,4 +10,4 @@ Pre-release.
 
 ## Docs ##
 
-Docs are located at http://jeffersoncarpenter.github.io/hcj/index.html
+Docs are located at http://hcj-js.github.io/hcj/index.html

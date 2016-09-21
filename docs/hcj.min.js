@@ -1602,6 +1602,41 @@ function waitForWebfonts(fonts, callback) {
 		ctx.left = ctx.left || onceZeroS;
 		ctx.topAccum = stream.combine([context.topAccum, context.top], add);
 		ctx.leftAccum = stream.combine([context.leftAccum, context.left], add);
+		ctx.occlusions = stream.combine([
+		  ctx.occlusions || context.occlusions,
+		  ctx.width,
+		  ctx.height,
+		  ctx.left,
+		  ctx.top,
+		], function (os, w, h, t, l) {
+		  return os.map(function (o) {
+			return {
+			  left: o.left - l,
+			  top: o.top - t,
+			  width: o.width,
+			  height: o.height,
+			};
+		  }).filter(function (o) {
+			// throw out occlusion if
+			if (o.left + o.width < 0) {
+			  // right hand side of occlusion to the left of component
+			  return;
+			}
+			if (o.left > w) {
+			  // left hand side of occlusion to the right of component
+			  return;
+			}
+			if (o.top + o.height < 0) {
+			  // bottom of occlusion above component
+			  return;
+			}
+			if (o.top > h) {
+			  // top of occlusion below component
+			  return;
+			}
+			return true;
+		  });
+		});
 		ctx.onDestroy = onDestroy.push;
 		stream = stream;
 		return ctx;
@@ -1664,12 +1699,25 @@ function waitForWebfonts(fonts, callback) {
 	  stream.push(instance.minHeight, instance.initialMinHeight);
 	}
 
+	if (context.useMinWidth) {
+	  stream.pushAll(instance.minWidth, context.width);
+	}
+	if (context.useMinHeight) {
+	  stream.pushAll(stream.combine([
+		instance.minHeight,
+		context.width,
+	  ], function (mh, w) {
+		return mh(w);
+	  }), context.height);
+	}
+
 	$el.appendTo(context.$el);
 
 	instance.destroy = function () {
 	  onDestroy.map(apply());
 	  $el.remove();
 	};
+	context.onDestroy(instance.destroy);
 
 	return instance;
   };
@@ -1728,7 +1776,6 @@ function waitForWebfonts(fonts, callback) {
 		  console.log('not a component');
 		  debugger;
 		}
-		ctx.onDestroy(i.destroy);
 		return i;
 	  };
 	}
@@ -1839,6 +1886,7 @@ function waitForWebfonts(fonts, callback) {
 	  left: onceZeroS,
 	  topAccum: onceZeroS,
 	  leftAccum: onceZeroS,
+	  occlusions: stream.once([]),
 	  onDestroy: onDestroy.push,
 	});
 	i.$el.css('position', 'absolute')
@@ -2071,10 +2119,7 @@ function waitForWebfonts(fonts, callback) {
 	  };
 	});
   };
-  var link = all([
-	$css('cursor', 'pointer'),
-	$css('pointer-events', 'initial'),
-  ]);
+  var link = $css('cursor', 'pointer');
 
   // var componentName = function (name) {
   // 	return passthrough(function ($el) {
@@ -2386,6 +2431,9 @@ function waitForWebfonts(fonts, callback) {
 		var mw = config.minWidth ||
 			  (config.minHeight && config.minHeight * aspectRatio) ||
 			  $el[0].naturalWidth;
+		if (config.minWidth === 0 || config.minHeight === 0) {
+		  mw = 0;
+		}
 		stream.push(minWidth, mw);
 		stream.push(minHeight, function (w) {
 		  return w / aspectRatio;
@@ -2407,8 +2455,8 @@ function waitForWebfonts(fonts, callback) {
 	return layout(a, function ($el, ctx, c) {
 	  $el.prop('href', config.href);
 	  $el.css('pointer-events', 'initial');
-	  if (config.targetBlank) {
-		$el.prop('target', '_blank');
+	  if (config.target) {
+		$el.prop('target', config.target);
 	  }
 	  return c(ctx.child());
 	});
@@ -4924,6 +4972,7 @@ function waitForWebfonts(fonts, callback) {
 
   var hcj = {
 	color: {
+	  color: color,
 	  create: color,
 	  toString: colorString,
 	},
