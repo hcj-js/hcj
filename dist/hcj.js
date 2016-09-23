@@ -3402,6 +3402,8 @@ function waitForWebfonts(fonts, callback) {
 	config = config || {};
 	config.padding = config.padding || 0;
 	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
+	config.collapsePadding = config.collapsePadding || false;
+	config.transition = config.transition || 0;
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('stack');
 	  if (cs.length === 0) {
@@ -3426,9 +3428,9 @@ function waitForWebfonts(fonts, callback) {
 		  i.$el.css('transition', 'height ' + transition + ', top ' + transition);
 		});
 	  }
-	  var allMinWidths = mapMinWidths(is, ctx);
-	  var allMinHeights = mapMinHeights(is, ctx);
-	  stream.combine([
+	  var allMinWidths = mapMinWidths(is);
+	  var allMinHeights = mapMinHeights(is);
+	  stream.all([
 		ctx.width,
 		ctx.height,
 		allMinHeights,
@@ -3436,10 +3438,18 @@ function waitForWebfonts(fonts, callback) {
 		var top = 0;
 		var positions = mhs.map(function (mh, index) {
 		  var position = {
-			top: top + config.padding * index,
+			top: top,
 			height: mh(width),
 		  };
-		  top += mh(width);
+		  var minHeight = mh(width);
+		  if (config.collapsePadding) {
+			if (minHeight > 0) {
+			  top += minHeight + config.padding;
+			}
+		  }
+		  else {
+			top += minHeight + config.padding;
+		  }
 		  return position;
 		});
 		positions = config.surplusHeightFunc(height, positions);
@@ -3455,7 +3465,10 @@ function waitForWebfonts(fonts, callback) {
 		}),
 		minHeight: stream.map(allMinHeights, function (mhs) {
 		  return function (w) {
-			return mhs.map(apply(w)).reduce(add, config.padding * (is.length - 1));
+			var minHeights = mhs.map(apply(w));
+			return minHeights.reduce(add, config.padding * (minHeights.filter(function (x) {
+			  return !config.collapsePadding || x > 0;
+			}).length - 1));
 		  };
 		}),
 	  };
