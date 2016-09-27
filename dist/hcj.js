@@ -1575,7 +1575,7 @@ function waitForWebfonts(fonts, callback) {
 	};
   };
 
-  var elementFunc = function (name, build, context) {
+  var componentFunc = function (name, build, context) {
 	var $el = $(document.createElement(name));
 	$el.css('pointer-events', 'initial');
 
@@ -1722,29 +1722,29 @@ function waitForWebfonts(fonts, callback) {
 	return instance;
   };
 
-  var element = function (name) {
+  var component = function (name) {
 	return function (build) {
 	  return function (context) {
-		return elementFunc(name, build, context);
+		return componentFunc(name, build, context);
 	  };
 	};
   };
 
-  var a = element('a');
-  var button = element('button');
-  var div = element('div');
-  var form = element('form');
-  var iframe = element('iframe');
-  var img = element('img');
-  var input = element('input');
-  var label = element('label');
-  var li = element('li');
-  var option = element('option');
-  var p = element('p');
-  var pre = element('pre');
-  var select = element('select');
-  var textarea = element('textarea');
-  var ul = element('ul');
+  var a = component('a');
+  var button = component('button');
+  var div = component('div');
+  var form = component('form');
+  var iframe = component('iframe');
+  var img = component('img');
+  var input = component('input');
+  var label = component('label');
+  var li = component('li');
+  var option = component('option');
+  var p = component('p');
+  var pre = component('pre');
+  var select = component('select');
+  var textarea = component('textarea');
+  var ul = component('ul');
 
   var _scrollbarWidth = function () {
 	var parent, child, width;
@@ -2458,7 +2458,7 @@ function waitForWebfonts(fonts, callback) {
   };
 
   var empty = function (el) {
-	return el(function ($el, ctx) {
+	return component(el)(function ($el, ctx) {
 	  $el.addClass('empty');
 	  return {
 		minWidth: onceZeroS,
@@ -2466,7 +2466,7 @@ function waitForWebfonts(fonts, callback) {
 	  };
 	});
   };
-  var nothing = empty(div);
+  var nothing = empty("div");
 
   var text = function (strs, config) {
 	strs = strs || '';
@@ -4995,7 +4995,7 @@ function waitForWebfonts(fonts, callback) {
 	  clickThis: clickThis,
 	  componentStream: componentStreamWithExit,
 	  dropdownPanel: dropdownPanel,
-	  element: element,
+	  element: component,
 	  empty: empty,
 	  grid: grid,
 	  hoverColor: hoverColor,

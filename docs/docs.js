@@ -86,6 +86,7 @@ $(function () {
 
   var install = docStack([
 	p("`git clone https://github.com/hcj-js/hcj.git`"),
+	p("Use the CSS file, and either of the JS files, in the dist folder."),
   ]);
 
   var whatsItLike = docStack([
@@ -178,9 +179,25 @@ $(function () {
   ]);
 
   var definingLayouts = docStack([
-	p("A layout is a function that takes components as arguments and returns a component.  The `layout` function is for making layouts.  All it does, really, is apply the 'pointer-events: none' DOM style to itself.  You pass it one argument, the layout's `buildLayout` function."),
-	p("The arguments to your `buildLayout` function are somewhat dynamic.  The first two arguments, $el and context, are passed through from the layout component's $el and context (see the Defining Components section above).  The remaining arguments are the child components, as they are passed in to the layout."),
+	p("A layout is any function that takes components as arguments and returns a component.  The `layout` function is a helper method for making layouts, and should almost always be used.  (It adds CSS styles to keep visible content from spilling outside the layout element's boundaries, and to keep it from absorbing pointer events.)  You pass it one argument, the layout's `buildLayout` function."),
+	p("The arguments to your `buildLayout` function are somewhat dynamic.  The first two arguments, $el and context, are passed through from the layout component's `build` method (see the Defining Components section above).  The remaining arguments are the child components, as they are passed in to the layout."),
 	p("The buildLayout function must return an object with `minWidth` and `minHeight` streams.  These streams are then returned from the layout component's build method."),
+
+	h3('Very Basic Example'),
+	p('`someLayout :: Component -> Component`'),
+	p(""),
+	codeBlock([
+	  "var someLayout = layout(function ($el, ctx, c) {",
+	  "  var context = ctx.child({",
+	  "	top: true,",
+	  "  });",
+	  "  stream.push(context.top, 5);",
+	  "  return c(context);",
+	  "});",
+	  "&nbsp;",
+	  "var someComponent = /* some component */;",
+	  "var nestedComponent = someLayout(someComponent);",
+	]),
 
 	h3('Basic Example - Purple Margin'),
 	p('`purpleMargin :: Component -> Component`'),
@@ -292,8 +309,7 @@ $(function () {
   ]);
 
   var standardLibraryComponents = docStack([
-	p('HCJ comes with a standard library of components and layouts.  The `text` and `image` functions are placed first because they (other than what is in the Defining Components section) are the only primitive components.  The rest are layouts.'),
-
+	p('Here, in no particular order, are the primitive components.  These are defined as described in the Defining Components section.'),
 	p('These are found in the `window.hcj.component` object.'),
 
 	h3('text'),
@@ -344,6 +360,25 @@ $(function () {
 	]),
 	p('Note: Images will almost always stretch.  To solve this, wrap them in the keepAspectRatio layout.'),
 
+	h3('bar.h and bar.v'),
+	stack([
+	  p('`bar.h :: Number -> Component`'),
+	  p('`bar.v :: Number -> Component`'),
+	]),
+	p("Has the horizontal or vertical size you specify."),
+
+	h3('empty'),
+	stack([
+	  p('`empty :: String -> Component`'),
+	  p('`nothing :: Component`'),
+	]),
+	p('The `empty` function takes a tag name, for example "p", and returns a component with zero width and zero height using that tag name.'),
+	p('The `nothing` component is defined as `empty("div")`.'),
+  ]);
+
+  var standardLibraryLayouts = docStack([
+	p('Here are some common functions for overall page layout.'),
+
 	h3('alignLRM'),
 	stack([
 	  p('`alignLRM :: AlignLRMConfig -> LRMComponents -> Component`'),
@@ -352,7 +387,7 @@ $(function () {
 	  p('`alignHMiddle :: Component -> Component`'),
 	]),
 	p('Takes up to three components.  Aligns them left, right, and middle within the space available.  Three functions are also provided that operate on just one component each.'),
-	p("The `AlignLRMConfig` is not currently used.  However, don't forget to stick in those extra parentheses (see example) or you'll get an error.  This will probably be removed."),
+	p("The `AlignLRMConfig` is not currently used.  However, don't forget to stick in those extra parentheses (see example) or you'll get an error.  In the future, config options."),
 	p('An `LRMComponents` is just an object with up to three properties:'),
 	stack([
 	  p("&#8226; l: component to align left"),
@@ -382,10 +417,6 @@ $(function () {
 	  p("&#8226; b: component to align bottom"),
 	  p("&#8226; m: component to align middle"),
 	]),
-
-	h3('bar.h and bar.v'),
-	p('`bar.h :: Number -> Component`'),
-	p("These functions, like text and image, produce primitive components.  They simply have the size you specify."),
 
 	h3('componentStream'),
 	p('`componentStream :: Stream(Component) -> Component`'),
@@ -454,7 +485,7 @@ $(function () {
 
 	h3('all'),
 	p('`all :: [Component -> Component] -> Component -> Component`'),
-	p('The `all` function is listed first because it is key to using the other functions listed here.  Performs function composition, i.e. applies multiple functions to a component, one after another.'),
+	p('The `all` function is listed first because it is key to using the other functions listed here.  It performs function composition, i.e. applies multiple functions to a component, one after another.'),
 	p('Example:'),
 	codeBlock([
 	  "var title = all([",
@@ -488,6 +519,15 @@ $(function () {
 	  "])(text('Submit'));",
 	]),
 
+	h3('and'),
+	p('`and :: ((Instance, Context) -> IO ()) -> Component -> Component`'),
+	p('The "and" function is listed second because it is.  It takes a function which takes an instance and a context, and returns a function from a component to a component.  Example:'),
+	codeBlock([
+	  "var turnBlue = and(function (i) {",
+	  "  i.$el.css('background-color', 'blue');",
+	  "});",
+	]),
+
 	h3('$$'),
 	p('`$$ :: ($ -> IO ()) -> Component -> Component`'),
 	p('Takes a function which takes the JQuery selector of the component and performs arbitrary actions.  Returns a function from a component to a component.'),
@@ -505,10 +545,12 @@ $(function () {
 
 	h3('backgroundColor'),
 	p('`backgroundColor :: BackgroundColorConfig -> Component -> Component`'),
-	p('A `BackgroundColorConfig` is an object with any of the following properties:'),
+	p('A `BackgroundColorConfig` is an object with any of the following properties, all optional:'),
 	stack([
-	  p("&#8226; backgroundColor: background color"),
-	  p("&#8226; fontColor: font color"),
+	  p("&#8226; background: background color"),
+	  p("&#8226; font: font color"),
+	  p("&#8226; backgroundHover: background color on hover"),
+	  p("&#8226; fontHover: font color on hover"),
 	]),
 
 	h3('border'),
@@ -586,20 +628,124 @@ $(function () {
 	  p("&#8226; lastValue: the most recent data point"),
 	  p("&#8226; listeners: array of functions that are run when there is new data (private member, do not access)"),
 	]),
-	p('Streams can be defined both declaratively and imperatively.  That is, you can let a stream be an operation applied to other streams, or you can let it be an empty stream and push to it.  Unlike in other stream implementations:'),
+	p('Streams can be defined either declaratively or imperatively.  That is, you can let a stream be an operation applied to other streams, or you can just create it and push to it.  Unlike in other stream implementations:'),
 	stack([
 	  p("&#8226; The most recent data point is accessible through the `lastValue` property, and may be read off at your leisure."),
 	  p("&#8226; If you push one value through a stream multiple times, it will only be hanlded the first time."),
-	  p("&#8226; If you push multiple values through a stream quickly (synchronously), intermediate values may be skipped."),
+	  p("&#8226; If you push multiple values through a stream quickly (synchronously), intermediate values will be skipped."),
 	]),
 	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state in terms of input state as lightly as possible.'),
-	p('Other stream libraries that you use in your application code will interoperate with HCJ just fine.'),
-	p('Here are the stream methods:'),
-	p('TODO: finish this section'),
+	p('Note: to skip intermediate values, `setTimeout` calls are made.  When streams are defined in terms of each other, multiple `setTimeout` calls are made in sequence.  If you want to run some code after all stream operations have settled, you must call `stream.defer` instead of `setTimeout`.  If you want to defer the execution of a block of code and then push to a stream, call `stream.next` instead of `setTimeout`.  Otherwise, `stream.defer` calls will not know to wait for your code.'),
+
+	p('Here, in alphabetical order, are the stream methods.  Common methods are `create`, `push`, `map`, `reduce`, and `combine`.'),
+
+	h3('combine'),
+	p('`combine : map Stream ts -> (ts -> x) -> Stream x`'),
+	p('Takes an array of streams, and a function.  Result stream is the application the function onto the latest values from all input streams.'),
+
+	h3('combineInto'),
+	p('`combine : map Stream ts -> (ts -> x) -> Stream x -> IO ()`'),
+	p('Imperative form of `combine`.  Takes an array of streams, a function, and a target stream, and pushes all values into the target stream.'),
+
+	h3('combineObject'),
+	p('`combineObject : {a: Stream x, b: Stream y, ...} -> Stream {a: x, b: y, ...}`'),
+	p('Takes an object whose properties are streams, returns a stream of objects.'),
+
+	h3('create'),
+	p('`create : a -> Stream a`'),
+	p('Creates a stream, and (optionally) initializes it using the argument passed in.  The `push` or `pushAll` functions can be used to push in additional points into the stream.'),
+	p('Example:'),
+	codeBlock([
+	  "var onceFiftyS = stream.create(50);",
+	]),
+
+	h3('debounce'),
+	p('`debounce : Stream a -> Number -> Stream a`'),
+	p('Pushes to output stream no more quickly than the given number of milliseconds.'),
+
+	h3('delay'),
+	p('`delay : Stream a -> Number -> Stream a`'),
+	p('Pushes to output stream after waiting the given number of milliseconds.'),
+
+	h3('filter'),
+	p('`filter : Stream a -> (a -> Bool) -> Stream a`'),
+	p('Returns a stream that includes only the values for which the provided predicate returns something truthy.'),
+
+	h3('fromPromise'),
+	p('`fromPromise : Promise a -> a -> Stream a`'),
+	p('Takes a promise, and an optional initial value.  Returns a stream (optionally initialized with the initial value), which receives the value from the promise when it resolves.'),
+
+	h3('map'),
+	p('`map : Stream a -> (a -> b) -> Stream b'),
+	p('Applies a function to each data point of a stream.'),
+	p('Example:'),
+	codeBlock([
+	  "var centsS = stream.create();",
+	  "var dollarAmountS = stream.map(centsS, function (cents) {",
+	  "  return Math.floor(cents / 100) + '.' + (cents % 100);",
+	  "})",
+	]),
+
+	h3('promise'),
+	p('`promise : Stream a -> Promise a`'),
+	p('Returns a promise that resolves as soon as there is a data point in the stream.'),
+
+	h3('prop'),
+	p('`prop : Stream {p: t} -> (p : String) -> Stream t`'),
+	p('Maps over a stream of objects, accessing the specified key.  That type signature uses some made-up notation for polymorphic row types.'),
+
+	h3('push'),
+	p('`push : Stream a -> a -> IO ()`'),
+	p('Pushes a value onto a stream.'),
+	p('Example:'),
+	codeBlock([
+	  "var clickS = stream.create();",
+	  "$el.on('click', function (ev) {",
+	  "  stream.push(clickS, ev)",
+	  "})",
+	]),
+
+	h3('pushAll'),
+	p('`pushAll : Stream a -> Stream a -> IO ()`'),
+	p('Pushes all values from one stream onto another stream.'),
+	p('Example:'),
+	codeBlock([
+	  "var sourceS = stream.create();",
+	  "var targetS = stream.create();",
+	  "stream.pushAll(sourceS, targetS);",
+	]),
+
+	h3('reduce'),
+	p('`reduce : Stream a -> (b -> a -> b) -> b -> Stream b'),
+	p('Applies a function to each data point of a stream, keeping a running total.  Like array reduce, but the reduce callback has the orders of the arguments reversed.'),
+	p('Example:'),
+	codeBlock([
+	  "var clickS = stream.create();",
+	  "var countClicksS = stream.reduce(clickS, function (x)",
+	  "  return x + 1;",
+	  "}, 0);",
+	]),
+
+	h3('splitObject'),
+	p('`splitObject : {a: x, b: y, ...} -> {a: Stream x, b: Stream y, ...}`'),
+	p('Takes an object, returns an object where each property is a stream initialized with the value from the input object.'),
   ]);
 
   var standardLibraryForms = docStack([
-	p('TODO: add forms documentation'),
+	h3('HCJ Forms'),
+	p("TODO: add forms documentation"),
+	// p("Hcj provides some functionality for generating web forms.  To be frank it's a little haphazard, and will be replaced by something cleaner in the future.  However it definitely works."),
+
+	// h3("hcj.forms.formFor"),
+	// p("The formFor function is for generating forms.  It is curried, taking several parameters in sequence.  These paramaters are:"),
+	// stack([
+	//   p('The form field types and names'),
+	//   p('Default values for the form fields'),
+	//   p('The on submit function'),
+	//   p('Form style'),
+	//   p('Display callback'),
+	// ]),
+	// p("The field types and names are two parameters"),
   ]);
 
   var standardLibraryColors = docStack([
@@ -649,7 +795,7 @@ $(function () {
 	title: 'Install',
 	component: install,
   }, {
-	title: 'Terms',
+	title: 'Hcj Terminology',
 	component: aLittleVocab,
   }, {
 	title: 'Rendering Components',
@@ -658,7 +804,10 @@ $(function () {
 	title: 'Standard Library - Components',
 	component: standardLibraryComponents,
   }, {
-	title: 'Standard Library - Styling with Layouts',
+	title: 'Standard Library - Layouts',
+	component: standardLibraryLayouts,
+  }, {
+	title: 'Standard Library - More Layouts',
 	component: standardLibraryComponentModifiers,
   }, {
 	title: 'Standard Library - Streams',
@@ -743,7 +892,6 @@ $(function () {
 		var p = pages[index];
 		return docStack([
 		  h2(p.title),
-		  c.bar.v(5),
 		  p.component,
 		]);
 	  })),
