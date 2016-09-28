@@ -1833,6 +1833,7 @@ function waitForWebfonts(fonts, callback) {
 	  .css('z-index', -1)
 	  .appendTo($('body'));
   };
+  var countComponentsRendered = 0;
   var rootComponent = function (c, config) {
 	// var debugAndRepeat = function () {
 	//   debugger;
@@ -1891,7 +1892,10 @@ function waitForWebfonts(fonts, callback) {
 	i.$el.css('position', 'absolute')
 	  .css('top', '0px')
 	  .css('left', '0px')
-	  .css('background-color', config.noBackground ? '' : 'white');
+	  .css('background-color', config.noBackground ? '' : 'white')
+	  .addClass('root-component')
+	  .addClass('root-component-' + countComponentsRendered);
+	countComponentsRendered += 1;
 	var elHeight = i.$el.css('height');
 	stream.map(displayedS, function (displayed) {
 	  if (displayed) {
@@ -1899,6 +1903,7 @@ function waitForWebfonts(fonts, callback) {
 		  $('.server-content').css('display', 'none');
 		  console.log('did it');
 		  console.log('golly look at this endearing debug output');
+		  $('.huge').css('display', 'none');
 		}, 500);
 	  }
 	});
@@ -5073,6 +5078,7 @@ function waitForWebfonts(fonts, callback) {
 	},
 	viewport: {
 	  heightS: windowHeight,
+	  scrollS: windowScroll,
 	  widthS: windowWidth,
 	},
   };
