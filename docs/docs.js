@@ -96,32 +96,43 @@ $(function () {
 	  p("3. Profit!"),
 	]),
 	p("HTML and CSS are venerable.  First engineered for simple document layout, today they are technically turing complete."),
-	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child.  This is really an alternate layout system, to be used instead of stylesheets."),
-	p("Some CSS capabilities are not present in HCJ, and some may be difficult to implement.  Additionally, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
+	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child."),
 	p("These docs are written using HCJ.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
+	p("Some CSS features are not mirrored in HCJ.  Additionally, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
 	p("One major thing that HCJ does not support is floating items so that text can flow around them.  We would very much like to add this kind of functionality, but recognize that doing this both well and fast will be difficult.  Prior work that we're looking at includes CSS floats, as well as the capabilities of programs like LaTeX and Word.")
   ]);
 
   var aLittleVocab = docStack([
-	p("A `component` is a function that takes a `context` and returns an `instance`.  To `render` a component is to apply it to a context.  A `layout` is a function that takes components and returns a component."),
-	p("A context is an object with the following ten properties:"),
+	p("A `component` is a function that takes a `context` and returns an `instance`.  To render a component is to apply it to a context.  A `layout` is a function that takes components and returns a component."),
+	p("A `context` is an object with the following nine properties:"),
 	stack([
-	  p('&#8226; $el: Element to append the instance to.'),
-	  p('&#8226; width: Stream of numbers, width available to the component.'),
-	  p('&#8226; height: Stream of numbers, height available to the component.'),
-	  p('&#8226; left: Stream of numbers, left coordinate of the component.'),
-	  p('&#8226; top: Stream of numbers, top coordinate of the component.'),
-	  p('&#8226; leftAccum: Stream of numbers, parent left coordinate relative to left edge of page.'),
-	  p('&#8226; topAccum: Stream of numbers, parent top coordinate relative to top edge of page.'),
-	  p('&#8226; onDestroy: Sign up callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
-	  p('&#8226; child: Returns a new `context` for rendering a child component'),
+	  p('&#8226; `$el`: Element the instance will be appended to.'),
+	  p('&#8226; `width`: Stream of numbers, width available to the component.'),
+	  p('&#8226; `height`: Stream of numbers, height available to the component.'),
+	  p('&#8226; `left`: Stream of numbers, left coordinate of the component.'),
+	  p('&#8226; `top`: Stream of numbers, top coordinate of the component.'),
+	  p('&#8226; `leftAccum`: Stream of numbers, parent left coordinate relative to left edge of page.'),
+	  p('&#8226; `topAccum`: Stream of numbers, parent top coordinate relative to top edge of page.'),
+	  p('&#8226; `onDestroy`: Sign up callbacks when the instance is destroyed.  (A context should only be passed into a component once).'),
+	  p('&#8226; `child`: Returns a new `context` for rendering a child component (see below, and the Defining Layouts section)'),
 	]),
-	p('An instance is returned when you render a component.  It is an object with the following properties:'),
+	p('An `instance` is an object with the following properties:'),
 	stack([
-	  p('&#8226; $el: The created root element.'),
-	  p('&#8226; minWidth: stream of numbers giving the element\'s min width in pixels'),
-	  p('&#8226; minHeight: stream of functions that, given a width, return the min height of the element at that width'),
-	  p("&#8226; destroy: runs its context's onDestroy methods, and removes $el from the dom"),
+	  p('&#8226; `$el`: The created root element.'),
+	  p('&#8226; `minWidth`: stream of numbers giving the element\'s min width in pixels'),
+	  p('&#8226; `minHeight`: stream of functions that, given a width, return the min height of the element at that width'),
+	  p("&#8226; `destroy`: runs its context's onDestroy methods, and removes $el from the dom"),
+	]),
+	p("The `Context::child` function takes an optional object with the following properties:"),
+	stack([
+	  p("&#8226; `width`: Width of the child component in pixels.  If present, used instead of the parent's width."),
+	  p("&#8226; `height`: see width"),
+	  p("&#8226; `top`: see width"),
+	  p("&#8226; `left`: see width"),
+	  p("&#8226; `widthCss`: Stream of string values to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the width stream or using '100%'.  Needed for css transitions to work correctly."),
+	  p("&#8226; `heightCss`: see widthCss"),
+	  p("&#8226; `topCss`: see widthCss"),
+	  p("&#8226; `leftCss`: see widthCss"),
 	]),
   ]);
 
@@ -164,16 +175,18 @@ $(function () {
   var renderingComponents = docStack([
 	p('To render a component, pass it to the `rootComponent` function.  For example:'),
 	codeBlock([
-	  "var page = all([",
-	  "  margin(10),",
-	  "  backgroundColor(color({",
+	  "var c = hcj.component;",
+	  "&nbsp;",
+	  "var page = c.all([",
+	  "  c.margin(10),",
+	  "  c.backgroundColor(color({",
 	  "    r: 200,",
 	  "    g: 253,",
 	  "    b: 53,",
 	  "  }),",
-	  "])(text('Hello World'));",
+	  "])(c.text('Hello World'));",
 	  "&nbsp;",
-	  "var rootInstance = rootComponent(page);",
+	  "var rootInstance = hcj.rootComponent(page);",
 	]),
 	p("Currently, it's only possible to render a component by making it a root component of the page.  Multiple root components may be used to display some modal dialogs."),
   ]);
@@ -185,6 +198,7 @@ $(function () {
 
 	h3('Very Basic Example'),
 	p('`someLayout :: Component -> Component`'),
+	p("Here is an archetypcial example of a layout.  Basically it wraps a component in a div and pushes it down by five pixels."),
 	p(""),
 	codeBlock([
 	  "var someLayout = layout(function ($el, ctx, c) {",
@@ -202,17 +216,6 @@ $(function () {
 	h3('Basic Example - Purple Margin'),
 	p('`purpleMargin :: Component -> Component`'),
 	p("Let's say we want to define a layout that adds a 10px purple margin."),
-	p("Here we will quickly go over the `context.child` function mentioned earlier.  The child function takes one optional argument.  This object may be an object with the following properties, all either streams or `true`:"),
-	stack([
-	  p("&#8226; width: numbers that specify the width of the child component, used instead of the parent's own width if present"),
-	  p("&#8226; widthCSS: string values to use for the width css property, used instead of mapping (+ \"px\") over the width stream if present"),
-	  p("&#8226; height: numbers that specify the height of the child component, used instead of the parent's own height if present"),
-	  p("&#8226; heightCSS: string values to use for the height css property, used instead of mapping (+ \"px\") over the height stream if present"),
-	  p("&#8226; top: numbers specifying the top coordinate of the child component, used instead of `stream.once(0)` if present"),
-	  p("&#8226; topCSS: string values used for the top css property, used instead of mapping (+ \"px\") over the top property if present"),
-	  p("&#8226; left: numbers specifying the left coordinate of the child component, used instead of `stream.once(0)` if present"),
-	  p("&#8226; leftCSS: string values used for the left css property, used instead of mapping (+ \"px\") over the left property if present"),
-	]),
 	p("If a stream, it is used as described.  If `true`, an empty stream is created and returned, and you must manually push values into it.  Thus, like the instance's `minWidth` and `minHeight` streams, these streams may be defined either declaratively or imperatively."),
 	p("The `context.child` function returns a context.  Now, here's the code for `purpleMargin`.  First, the background color is set.  Second, the child instance is defined.  Last, the layout's min size info is returned."),
 	codeBlock([
@@ -309,8 +312,7 @@ $(function () {
   ]);
 
   var standardLibraryComponents = docStack([
-	p('Here, in no particular order, are the primitive components.  These are defined as described in the Defining Components section.'),
-	p('These are found in the `window.hcj.component` object.'),
+	p('Here, in no particular order, are the primitive components.  These are defined as described in the Defining Components section.  They are found in the `window.hcj.component` object.'),
 
 	h3('text'),
 	p('`text :: ([SpanConfig], TextConfig) -> Component`'),
@@ -318,30 +320,32 @@ $(function () {
 	p('It is a two-argument function.  The first argument can either be one `SpanConfig` or an array of `SpanConfigs`.  The second argument is an optional `TextConfig`.'),
 	p('A `SpanConfig` may be either a string, or an object with the following properties (all optional except `str` which is required):'),
 	stack([
-	  p("&#8226; str: The string to show."),
-	  p("&#8226; size: font size"),
-	  p("&#8226; weight: font weight"),
-	  p("&#8226; family: font family"),
-	  p("&#8226; color: font color as an object with `r`, `g`, `b`, and `a` properties"),
-	  p("&#8226; shadow: font shadow"),
+	  p("&#8226; `str`: The string to show."),
+	  p("&#8226; `size`: font size"),
+	  p("&#8226; `weight`: font weight"),
+	  p("&#8226; `family`: font family"),
+	  p("&#8226; `color`: font color as an object with `r`, `g`, `b`, and `a` properties"),
+	  p("&#8226; `shadow`: font shadow"),
 	]),
 	p('The `TextConfig` parameter applies globally to all spans within the text component.  It can have all of the same properties as a `SpanConfig`, minus `str`, plus some additional properties:'),
 	stack([
-	  p("&#8226; align: text align"),
-	  p("&#8226; minWidth: causes the text's width not to be measured; this number is used instead"),
-	  p("&#8226; minHeight: causes the text's height not to be measured; this number is used instead"),
-	  p("&#8226; oneLine: causes the text's height not to be measured.  It is assumed to be one line tall.  Its min height value is calculated from its font size and line height."),
+	  p("&#8226; `align`: text align"),
+	  p("&#8226; `minWidth`: causes the text's width not to be measured; this number is used instead"),
+	  p("&#8226; `minHeight`: causes the text's height not to be measured; this number is used instead"),
+	  p("&#8226; `oneLine`: causes the text's height not to be measured.  It is assumed to be one line tall.  Its min height value is calculated from its font size and line height."),
 	]),
 	p("Each time dimensions may change, `text` first approximates its min width and min height by assuming that a character has a width of 0.5 times its height.  Then, it performs the above operation.  If oneLine is set, then height approximation is not performed."),
 	p('Examples:'),
 	codeBlock([
-	  "var hello = text('Hello');",
+	  "var c = window.hcj.component;",
 	  "&nbsp;",
-	  "var largeText = text('Large Text', {",
+	  "var hello = c.text('Hello');",
+	  "&nbsp;",
+	  "var largeText = c.text('Large Text', {",
 	  "  size: '50px',",
 	  "});",
 	  "&nbsp;",
-	  "var spans = text([{",
+	  "var spans = c.text([{",
 	  "  str: 'SANTIH',",
 	  "  weight: 'bold',",
 	  "}, {",
@@ -354,9 +358,9 @@ $(function () {
 	p('`image :: ImageConfig -> Component`'),
 	p("An `ImageConfig` may have the following properties, all optional except `src` which is required.  By default, an image's min width is set to its natural width, and its min height is set to maintain aspect ratio."),
 	stack([
-	  p("&#8226; src: image source"),
-	  p("&#8226; minWidth: if present, min width is set to this number instead of the image's natural width"),
-	  p("&#8226; minHeight: if present, min width of image is set to the quotient of this number and the image's aspect ratio"),
+	  p("&#8226; `src`: image source"),
+	  p("&#8226; `minWidth`: if present, min width is set to this number instead of the image's natural width"),
+	  p("&#8226; `minHeight`: if present, min width of image is set to the quotient of this number and the image's aspect ratio"),
 	]),
 	p('Note: Images will almost always stretch.  To solve this, wrap them in the keepAspectRatio layout.'),
 
@@ -379,32 +383,33 @@ $(function () {
   var standardLibraryLayouts = docStack([
 	p('Here are some common functions for overall page layout.'),
 
-	h3('alignLRM'),
+	h3('alignHorizontal (alignH)'),
 	stack([
-	  p('`alignLRM :: AlignLRMConfig -> LRMComponents -> Component`'),
+	  p('`alignHorizontal :: AlignLRMConfig -> {l: Component, r: Component, m: Component} -> Component`'),
 	  p('`alignHLeft :: Component -> Component`'),
 	  p('`alignHRight :: Component -> Component`'),
 	  p('`alignHMiddle :: Component -> Component`'),
 	]),
-	p('Takes up to three components.  Aligns them left, right, and middle within the space available.  Three functions are also provided that operate on just one component each.'),
-	p("The `AlignLRMConfig` is not currently used.  However, don't forget to stick in those extra parentheses (see example) or you'll get an error.  In the future, config options."),
-	p('An `LRMComponents` is just an object with up to three properties:'),
+	p('Aligns components left, right, and middle within the space available.  Components are passed in as an object with `l`, `r`, and/or `m` properties.'),
+	p("An `AlignLRMConfig` is an object with the following properties:"),
 	stack([
-	  p("&#8226; l: component to align left"),
-	  p("&#8226; r: component to align right"),
-	  p("&#8226; m: component to align middle"),
+	  p("&#8226; `transition`: css transition to apply to elements as w"),
+	  p("&#8226; `r`: component to align right"),
+	  p("&#8226; `m`: component to align middle"),
 	]),
 	p('Example:'),
 	codeBlock([
-	  "var header = alignLRM()({",
+	  "var c = window.hcj.component;",
+	  "&nbsp;",
+	  "var header = c.alignLRM()({",
 	  "  l: logo,",
 	  "  r: menu,",
 	  "});",
 	]),
 
-	h3('alignTBM'),
+	h3('alignVertical (alignV)'),
 	stack([
-	  p('`alignTBM :: AlignTBMConfig -> TBMComponents -> Component`'),
+	  p('`alignVertical :: AlignTBMConfig -> {t: Component, b: Component, m: Component} -> Component`'),
 	  p('`alignVTop :: Component -> Component`'),
 	  p('`alignVBottom :: Component -> Component`'),
 	  p('`alignVMiddle :: Component -> Component`'),
@@ -413,9 +418,9 @@ $(function () {
 	p("The `AlignTBMConfig` is not currently used.  However, like `alignLRM` remember to put in the parentheses.  This will probably be removed."),
 	p('A `TBMComponents` is an object with up to three properties:'),
 	stack([
-	  p("&#8226; t: component to align top"),
-	  p("&#8226; b: component to align bottom"),
-	  p("&#8226; m: component to align middle"),
+	  p("&#8226; `t`: component to align top"),
+	  p("&#8226; `b`: component to align bottom"),
+	  p("&#8226; `m`: component to align middle"),
 	]),
 
 	h3('componentStream'),
@@ -775,13 +780,22 @@ $(function () {
 	p('`Color` destructor.  Takes a color, returns string using rgba format.'),
   ]);
 
+  var standardLibraryJso = docStack([
+	p("Jso is an interpreted functional programming language for web design.  It is a subset of JSON, and therefore can be written in Javascript."),
+	p("A Jso program has server-side semantics as well as client-side semantics.  These semantics determine how side effects occur as a Jso program is evaluated.  Generally, under server semantics side effects are run directly while under client semantics API calls are made."),
+	// p("Some terms are inherited from the host language, including values of the Number type, the Array type, and associated operations."),
+  ]);
+
   var csIsNotAFunction = docStack([
 	p("The most common error message you're going to get using this library.  Very uninformative, sorry."),
   ]);
 
   var version2 = docStack([
-	p('JSON data schema to represent pages as lambda terms (eliminating need for PhantomJS)'),
-	p('CSS approximations of components and layouts for server-side rendering'),
+	p('JSON data schema to represent pages as lambda terms (will eliminating need for PhantomJS) (see https://github.com/jeffersoncarpenter/casesplit)'),
+	p('Float components so that text can float around them (will probably be a layout, unsure just what kind of api to give it)'),
+	p('Way to automatically apply CSS transitions in each place they are needed instead of doing that by hand'),
+	p('See if using canvas to measure text is faster than placing a DOM element in a sandbox'),
+	p('(maybe) CSS approximations of components and layouts for server-side rendering'),
   ]);
 
   var support = docStack([
@@ -819,6 +833,9 @@ $(function () {
 	title: 'Standard Library - Colors',
 	component: standardLibraryColors,
   }, {
+  // 	title: 'Standard Library - Jso',
+  // 	component: standardLibraryJso,
+  // }, {
 	title: 'Defining Components',
 	component: definingComponents,
   }, {
@@ -828,7 +845,7 @@ $(function () {
 	title: 'cs is not a function',
 	component: csIsNotAFunction,
   }, {
-	title: 'Planned Features',
+	title: 'Planned Items',
 	component: version2,
   }, {
 	title: 'Support',

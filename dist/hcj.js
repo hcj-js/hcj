@@ -1075,6 +1075,23 @@ function waitForWebfonts(fonts, callback) {
   }
 };
 (function () {
+  var uncurryConfig = function (f, valueIsNotConfig) {
+	valueIsNotConfig = valueIsNotConfig || function (obj) {
+	  return $.type(obj) !== 'object';
+	};
+	return function () {
+	  var args = Array.prototype.slice.call(arguments);
+	  var firstArgIsConfig = !valueIsNotConfig(args[0]);
+	  if ((args.length - (firstArgIsConfig ? 1 : 0)) > 0) {
+		return f.apply(null, args);
+	  }
+	  var arg = args[0];
+	  return function () {
+		var args = [arg].concat(Array.prototype.slice.call(arguments));
+		return f.apply(null, args);
+	  };
+	};
+  };
   var caseSplit = function (cases, obj) {
 	// may curry
 	if (!obj) {
@@ -1586,14 +1603,6 @@ function waitForWebfonts(fonts, callback) {
 	var onDestroy = [];
 	context.child = function (ctx) {
 	  ctx = ctx || {};
-	  ['width', 'height', 'top', 'left', 'widthCss', 'heightCss', 'topCss', 'leftCss'].map(function (prop) {
-		if (ctx[prop] === true) {
-		  ctx[prop] = stream.create();
-		}
-		else if (ctx[prop]) {
-		  ctx[prop] = stream.clone(ctx[prop]);
-		}
-	  });
 	  try {
 		ctx.$el = $el;
 		ctx.width = ctx.width || context.width;
@@ -2085,10 +2094,10 @@ function waitForWebfonts(fonts, callback) {
 	position.height = position.height || id;
 	return layout(function ($el, ctx, c) {
 	  var context = ctx.child({
-		top: true,
-		left: true,
-		width: true,
-		height: true,
+		top: stream.create(),
+		left: stream.create(),
+		width: stream.create(),
+		height: stream.create(),
 	  });
 	  var i = c(context);
 	  stream.pushAll(position.top, context.top);
@@ -2902,7 +2911,7 @@ function waitForWebfonts(fonts, callback) {
 
 	  var contexts = cs.concat(cs).concat(cs).map(function () {
 		return ctx.child({
-		  left: true,
+		  left: stream.create(),
 		});
 	  });
 	  var is = cs.concat(cs).concat(cs).map(function (c, index) {
@@ -3088,8 +3097,8 @@ function waitForWebfonts(fonts, callback) {
 	  var contexts = [];
 	  var is = cs.map(function (c) {
 		var context = ctx.child({
-		  left: true,
-		  width: true,
+		  left: stream.create(),
+		  width: stream.create(),
 		});
 		contexts.push(context);
 		return c(context);
@@ -3155,7 +3164,7 @@ function waitForWebfonts(fonts, callback) {
 	config.transition = config.transition || '1s';
 	return layout(function ($el, ctx, c) {
 	  var context = ctx.child({
-		top: true,
+		top: stream.create(),
 	  });
 	  var i = c(context);
 	  i.$el.css('transition', 'top ' + config.transition);
@@ -3280,7 +3289,7 @@ function waitForWebfonts(fonts, callback) {
 		  left: stream.map(leftsS, function (lefts) {
 			return lefts[index];
 		  }),
-		  width: true,
+		  width: stream.create(),
 		  height: ctx.height,
 		});
 	  });
@@ -3414,8 +3423,8 @@ function waitForWebfonts(fonts, callback) {
 	  var is = cs.map(function (c) {
 		var context = ctx.child({
 		  widthCss: stream.once('100%'),
-		  top: true,
-		  height: true,
+		  top: stream.create(),
+		  height: stream.create(),
 		});
 		contexts.push(context);
 		return c(context);
@@ -3533,8 +3542,8 @@ function waitForWebfonts(fonts, callback) {
 		  }
 		  index += 1;
 		  var context = ctx.child({
-			top: true,
-			height: true,
+			top: stream.create(),
+			height: stream.create(),
 		  });
 		  var i = child(c)(context);
 
@@ -3750,15 +3759,15 @@ function waitForWebfonts(fonts, callback) {
 	  return layout(function ($el, ctx, l, r, m) {
 		$el.addClass('alignLRM');
 		var lCtx = ctx.child({
-		  width: true,
+		  width: stream.create(),
 		});
 		var rCtx = ctx.child({
-		  width: true,
-		  left: true,
+		  width: stream.create(),
+		  left: stream.create(),
 		});
 		var mCtx = ctx.child({
-		  width: true,
-		  left: true,
+		  width: stream.create(),
+		  left: stream.create(),
 		});
 		var lI = l(lCtx);
 		var rI = r(rCtx);
@@ -3825,15 +3834,15 @@ function waitForWebfonts(fonts, callback) {
 	  return layout(function ($el, ctx, t, b, m) {
 		$el.addClass('alignTBM');
 		var tCtx = ctx.child({
-		  height: true,
+		  height: stream.create(),
 		});
 		var bCtx = ctx.child({
-		  height: true,
-		  top: true,
+		  height: stream.create(),
+		  top: stream.create(),
 		});
 		var mCtx = ctx.child({
-		  height: true,
-		  top: true,
+		  height: stream.create(),
+		  top: stream.create(),
 		});
 		var tI = t(tCtx);
 		var bI = b(bCtx);
@@ -4176,8 +4185,8 @@ function waitForWebfonts(fonts, callback) {
 	return layout(function ($el, ctx, source, panel) {
 	  $el.addClass('dropdown-panel');
 	  var panelCtx = ctx.child({
-		height: true,
-		top: true,
+		height: stream.create(),
+		top: stream.create(),
 	  });
 	  var sourceCtx = ctx.child();
 	  var panelI = panel(panelCtx);
@@ -4220,10 +4229,10 @@ function waitForWebfonts(fonts, callback) {
 	return layout(function ($el, ctx, source, panel) {
 	  $el.addClass('dropdown-panel');
 	  var panelCtx = ctx.child({
-		width: true,
-		height: true,
-		left: true,
-		top: true,
+		width: stream.create(),
+		height: stream.create(),
+		left: stream.create(),
+		top: stream.create(),
 	  });
 	  var sourceCtx = ctx.child();
 	  var panelI = panel(panelCtx);
@@ -4447,10 +4456,10 @@ function waitForWebfonts(fonts, callback) {
 		var contexts = [];
 		var is = cs.map(function (c) {
 		  var context = ctx.child({
-			top: true,
-			left: true,
-			width: true,
-			height: true,
+			top: stream.create(),
+			left: stream.create(),
+			width: stream.create(),
+			height: stream.create(),
 		  });
 		  contexts.push(context);
 		  return c(context);
@@ -4668,8 +4677,8 @@ function waitForWebfonts(fonts, callback) {
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('maxHeightStream');
 	  var context = ctx.child({
-		height: true,
-		top: true,
+		height: stream.create(),
+		top: stream.create(),
 	  });
 	  var i = c(context);
 	  stream.pushAll(stream.combine([
@@ -4969,6 +4978,314 @@ function waitForWebfonts(fonts, callback) {
 	}));
   };
 
+  // types - object where keys are field names, values are formType
+  // properties
+  var formFor = function (types, names) {
+	names = names || {};
+	// defaults - optional object where keys are field names,
+	// values are undefined OR a default value
+	return function (defaults) {
+	  defaults = defaults || {};
+	  return function (mkOnSubmit) {
+		// style - function taking a formType and a component,
+		// returns a styled component
+		return function (style) {
+		  style = style || function (_, c) {
+			return c;
+		  };
+		  var elements = {
+			captcha: function (k, s) {
+			  return div(function ($el, ctx, mw, mh) {
+				$.getScript('https://www.google.com/recaptcha/api.js', function () {
+				  auth.grecaptchaP.then(function (grecaptcha) {
+					auth.grecaptchaSitekeyP.then(function (sitekey) {
+					  grecaptcha.render($el[0], {
+						sitekey: sitekey,
+						callback: function (v) {
+						  stream.push(s, v);
+						},
+					  });
+					  mh();
+					  mw();
+					});
+				  });
+				});
+			  });
+			},
+			checkbox: function (k, s) {
+			  return input(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('id', k);
+				$el.prop('name', k);
+				$el.prop('type', 'checkbox');
+				stream.onValue(s, function (v) {
+				  $el.prop('checked', v ? 'checked' : '');
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, $el.prop('checked'));
+				});
+			  });
+			},
+			date: function (k, s) {
+			  return input(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('name', k);
+				$el.prop('type', 'date');
+				stream.onValue(s, function (v) {
+				  $el.val(moment(v).format('YYYY-MM-DD'));
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, moment($el.val()).toDate());
+				});
+			  });
+			},
+			dropdown: function (k, s, type) {
+			  return select(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('name', k);
+				type.options.map(function (option) {
+				  if ('string' === $.type(option)) {
+					option = {
+					  name: option,
+					  value: option,
+					};
+				  }
+				  $(document.createElement('option'))
+					.html(option.name)
+					.prop('value', option.value)
+					.appendTo($el);
+				});
+				if (!s.lastValue) {
+				  stream.push(s, $el.val());
+				}
+				stream.onValue(s, function (v) {
+				  $el.val(v);
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, $el.val());
+				});
+			  });
+			},
+			image: function (k, s) {
+			  return input(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('name', k);
+				$el.prop('type', 'file');
+				$el.prop('accept', 'image/*');
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function (ev) {
+				  stream.push(s, ev.target.files[0]);
+				});
+			  });
+			},
+			number: function (k, s) {
+			  return input(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('name', k);
+				$el.prop('type', 'number');
+				stream.onValue(s, function (v) {
+				  $el.val(v);
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, $el.val());
+				});
+			  });
+			},
+			password: function (k, s) {
+			  return input(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('name', k);
+				$el.prop('type', 'password');
+				stream.onValue(s, function (v) {
+				  $el.val(v);
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, $el.val());
+				});
+			  });
+			},
+			radios: function (k, s, type) {
+			  return type.options.map(function (option) {
+				return input(function ($el, ctx, mw, mh) {
+				  mw();
+				  mh();
+				  $el.prop('id', option);
+				  $el.prop('value', option);
+				  $el.prop('name', k);
+				  $el.prop('type', 'radio');
+				  stream.onValue(s, function (v) {
+					if (v === option) {
+					  $el.prop('checked', v ? 'checked' : '');
+					}
+				  });
+				  $el.on('blur', function () {
+					// added blur as a trigger after autocomplete
+					stream.push(s, $el.val());
+				  });
+				  $el.on('change', function () {
+					if ($el.prop('checked')) {
+					  stream.push(s, option);
+					}
+				  });
+				});
+			  });
+			},
+			starRating: function (k, s) {
+			  return input(function ($el) {
+				$el.prop('name', k);
+				$el.prop('type', 'hidden');
+				stream.onValue(s, function (v) {
+				  $el.val(v);
+				});
+				return {
+				  minWidth: onceZeroS,
+				  minHeight: stream.once(constant(0)),
+				};
+			  });
+			},
+			text: function (k, s) {
+			  return input(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('name', k);
+				stream.onValue(s, function (v) {
+				  $el.val(v);
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, $el.val());
+				});
+				$el.on('keyup', function () {
+				  stream.push(s, $el.val());
+				});
+			  });
+			},
+			textarea: function (k, s) {
+			  return textarea(function ($el, ctx) {
+				var mw = stream.once($el.outerWidth());
+				// 20 is a fucking magic number, meh
+				var mh = stream.once(constant($el.outerHeight() + 20));
+				$el.prop('name', k);
+				stream.onValue(s, function (v) {
+				  $el.val(v);
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, $el.val());
+				});
+				$el.on('keyup', function () {
+				  stream.push(s, $el.val());
+				});
+				var lastOuterWidth = $el.outerWidth();
+				var lastOuterHeight = $el.outerHeight();
+				$('body').on('mousemove', function () {
+				  // this handler is a memory leak, should unbind it
+				  var currentOuterWidth = $el.outerWidth();
+				  var currentOuterHeight = $el.outerHeight();
+				  if (lastOuterWidth !== currentOuterWidth) {
+					stream.push(mw, currentOuterWidth);
+					lastOuterWidth = currentOuterWidth;
+				  }
+				  if (lastOuterHeight !== currentOuterHeight) {
+					stream.push(mh, constant(currentOuterHeight - 20));
+					lastOuterHeight = currentOuterHeight;
+				  }
+				});
+				$el.on('click', function () {
+				  stream.push(mw, $el.outerWidth());
+				  stream.push(mh, constant($el.outerHeight() - 20));
+				});
+				stream.onValue(ctx.width, function (w) {
+				  $el.css('width', px(w));
+				});
+				stream.onValue(ctx.height, function (h) {
+				  $el.css('height', px(h));
+				});
+				return {
+				  minWidth: mw,
+				  minHeight: mh,
+				};
+			  });
+			},
+			time: function (k, s) {
+			  return input(function ($el, ctx, mw, mh) {
+				mw();
+				mh();
+				$el.prop('name', k);
+				$el.prop('type', 'time');
+				stream.onValue(s, function (v) {
+				  $el.val(v);
+				});
+				$el.on('blur', function () {
+				  // added blur as a trigger after autocomplete
+				  stream.push(s, $el.val());
+				});
+				$el.on('change', function () {
+				  stream.push(s, $el.val());
+				});
+			  });
+			},
+		  };
+		  var keys = Object.keys(types);
+		  return function (f) {
+			var streamsObj = keys.reduce(function (obj, k) {
+			  var d = defaults[k];
+			  obj[k] = d ? stream.once(d) : stream.create();
+			  return obj;
+			}, {});
+			var inputsObj = keys.reduce(function (obj, k) {
+			  var type = types[k];
+			  obj[k] = type && style(type, elements[type.type](k, streamsObj[k], type, names[k]), names[k], k, streamsObj[k]);
+			  return obj;
+			}, {});
+			var submit = function (name) {
+			  return style(formType.button, pushButton(name));
+			};
+			var onSubmit = mkOnSubmit(streamsObj);
+			return layout(form, function ($el, ctx, c) {
+			  $el.on('submit', onSubmit.onSubmit);
+			  return c(ctx.child());
+			})(f(streamsObj, inputsObj, submit, onSubmit.resultS));
+		  };
+		};
+	  };
+	};
+  };
 
   var hcj = {
 	color: {
@@ -4983,12 +5300,16 @@ function waitForWebfonts(fonts, callback) {
 	  $css: $css,
 	  $on: $on,
 	  $prop: $prop,
+	  alignH: alignLRM,
+	  alignHorizontal: alignLRM,
 	  alignHLeft: alignHLeft,
 	  alignHMiddle: alignHMiddle,
 	  alignHRight: alignHRight,
 	  alignLRM: alignLRM,
 	  alignTBM: alignTBM,
+	  alignV: alignTBM,
 	  alignVBottom: alignVBottom,
+	  alignVertical: alignTBM,
 	  alignVMiddle: alignVMiddle,
 	  alignVTop: alignVTop,
 	  all: all,
@@ -5053,6 +5374,9 @@ function waitForWebfonts(fonts, callback) {
 	  select: select,
 	  textarea: textarea,
 	  ul: ul,
+	},
+	forms: {
+	  formFor: formFor,
 	},
 	funcs: {
 	  constant: constant,

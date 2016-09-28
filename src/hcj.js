@@ -1,4 +1,21 @@
 (function () {
+  var uncurryConfig = function (f, valueIsNotConfig) {
+	valueIsNotConfig = valueIsNotConfig || function (obj) {
+	  return $.type(obj) !== 'object';
+	};
+	return function () {
+	  var args = Array.prototype.slice.call(arguments);
+	  var firstArgIsConfig = !valueIsNotConfig(args[0]);
+	  if ((args.length - (firstArgIsConfig ? 1 : 0)) > 0) {
+		return f.apply(null, args);
+	  }
+	  var arg = args[0];
+	  return function () {
+		var args = [arg].concat(Array.prototype.slice.call(arguments));
+		return f.apply(null, args);
+	  };
+	};
+  };
   var caseSplit = function (cases, obj) {
 	// may curry
 	if (!obj) {
@@ -510,14 +527,6 @@
 	var onDestroy = [];
 	context.child = function (ctx) {
 	  ctx = ctx || {};
-	  ['width', 'height', 'top', 'left', 'widthCss', 'heightCss', 'topCss', 'leftCss'].map(function (prop) {
-		if (ctx[prop] === true) {
-		  ctx[prop] = stream.create();
-		}
-		else if (ctx[prop]) {
-		  ctx[prop] = stream.clone(ctx[prop]);
-		}
-	  });
 	  try {
 		ctx.$el = $el;
 		ctx.width = ctx.width || context.width;
@@ -1009,10 +1018,10 @@
 	position.height = position.height || id;
 	return layout(function ($el, ctx, c) {
 	  var context = ctx.child({
-		top: true,
-		left: true,
-		width: true,
-		height: true,
+		top: stream.create(),
+		left: stream.create(),
+		width: stream.create(),
+		height: stream.create(),
 	  });
 	  var i = c(context);
 	  stream.pushAll(position.top, context.top);
@@ -1826,7 +1835,7 @@
 
 	  var contexts = cs.concat(cs).concat(cs).map(function () {
 		return ctx.child({
-		  left: true,
+		  left: stream.create(),
 		});
 	  });
 	  var is = cs.concat(cs).concat(cs).map(function (c, index) {
@@ -2012,8 +2021,8 @@
 	  var contexts = [];
 	  var is = cs.map(function (c) {
 		var context = ctx.child({
-		  left: true,
-		  width: true,
+		  left: stream.create(),
+		  width: stream.create(),
 		});
 		contexts.push(context);
 		return c(context);
@@ -2079,7 +2088,7 @@
 	config.transition = config.transition || '1s';
 	return layout(function ($el, ctx, c) {
 	  var context = ctx.child({
-		top: true,
+		top: stream.create(),
 	  });
 	  var i = c(context);
 	  i.$el.css('transition', 'top ' + config.transition);
@@ -2204,7 +2213,7 @@
 		  left: stream.map(leftsS, function (lefts) {
 			return lefts[index];
 		  }),
-		  width: true,
+		  width: stream.create(),
 		  height: ctx.height,
 		});
 	  });
@@ -2338,8 +2347,8 @@
 	  var is = cs.map(function (c) {
 		var context = ctx.child({
 		  widthCss: stream.once('100%'),
-		  top: true,
-		  height: true,
+		  top: stream.create(),
+		  height: stream.create(),
 		});
 		contexts.push(context);
 		return c(context);
@@ -2457,8 +2466,8 @@
 		  }
 		  index += 1;
 		  var context = ctx.child({
-			top: true,
-			height: true,
+			top: stream.create(),
+			height: stream.create(),
 		  });
 		  var i = child(c)(context);
 
@@ -2674,15 +2683,15 @@
 	  return layout(function ($el, ctx, l, r, m) {
 		$el.addClass('alignLRM');
 		var lCtx = ctx.child({
-		  width: true,
+		  width: stream.create(),
 		});
 		var rCtx = ctx.child({
-		  width: true,
-		  left: true,
+		  width: stream.create(),
+		  left: stream.create(),
 		});
 		var mCtx = ctx.child({
-		  width: true,
-		  left: true,
+		  width: stream.create(),
+		  left: stream.create(),
 		});
 		var lI = l(lCtx);
 		var rI = r(rCtx);
@@ -2749,15 +2758,15 @@
 	  return layout(function ($el, ctx, t, b, m) {
 		$el.addClass('alignTBM');
 		var tCtx = ctx.child({
-		  height: true,
+		  height: stream.create(),
 		});
 		var bCtx = ctx.child({
-		  height: true,
-		  top: true,
+		  height: stream.create(),
+		  top: stream.create(),
 		});
 		var mCtx = ctx.child({
-		  height: true,
-		  top: true,
+		  height: stream.create(),
+		  top: stream.create(),
 		});
 		var tI = t(tCtx);
 		var bI = b(bCtx);
@@ -3100,8 +3109,8 @@
 	return layout(function ($el, ctx, source, panel) {
 	  $el.addClass('dropdown-panel');
 	  var panelCtx = ctx.child({
-		height: true,
-		top: true,
+		height: stream.create(),
+		top: stream.create(),
 	  });
 	  var sourceCtx = ctx.child();
 	  var panelI = panel(panelCtx);
@@ -3144,10 +3153,10 @@
 	return layout(function ($el, ctx, source, panel) {
 	  $el.addClass('dropdown-panel');
 	  var panelCtx = ctx.child({
-		width: true,
-		height: true,
-		left: true,
-		top: true,
+		width: stream.create(),
+		height: stream.create(),
+		left: stream.create(),
+		top: stream.create(),
 	  });
 	  var sourceCtx = ctx.child();
 	  var panelI = panel(panelCtx);
@@ -3371,10 +3380,10 @@
 		var contexts = [];
 		var is = cs.map(function (c) {
 		  var context = ctx.child({
-			top: true,
-			left: true,
-			width: true,
-			height: true,
+			top: stream.create(),
+			left: stream.create(),
+			width: stream.create(),
+			height: stream.create(),
 		  });
 		  contexts.push(context);
 		  return c(context);
@@ -3592,8 +3601,8 @@
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('maxHeightStream');
 	  var context = ctx.child({
-		height: true,
-		top: true,
+		height: stream.create(),
+		top: stream.create(),
 	  });
 	  var i = c(context);
 	  stream.pushAll(stream.combine([
@@ -4215,12 +4224,16 @@
 	  $css: $css,
 	  $on: $on,
 	  $prop: $prop,
+	  alignH: alignLRM,
+	  alignHorizontal: alignLRM,
 	  alignHLeft: alignHLeft,
 	  alignHMiddle: alignHMiddle,
 	  alignHRight: alignHRight,
 	  alignLRM: alignLRM,
 	  alignTBM: alignTBM,
+	  alignV: alignTBM,
 	  alignVBottom: alignVBottom,
+	  alignVertical: alignTBM,
 	  alignVMiddle: alignVMiddle,
 	  alignVTop: alignVTop,
 	  all: all,
