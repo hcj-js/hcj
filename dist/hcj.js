@@ -1163,7 +1163,7 @@ function waitForWebfonts(fonts, callback) {
 	}
   };
 
-  var deferFuncContext = function () {
+  var createDeferFuncContext = function (runASAP) {
 	/*
 	 WARNING:
 
@@ -1172,45 +1172,50 @@ function waitForWebfonts(fonts, callback) {
 	 implementing here, I will find and use an existing library for it.
 
 	 */
-    var nextFunctions = [];
-    var deferredFunctions = [];
-    var running = false;
-    var ensureRunning = function () {
-      if (running === false) {
-        running = true;
-        setTimeout(function () {
-          running = false;
-          // run nextFunctions now, allowing more next functions to be
-          // signed up
-          var nowFunctions = nextFunctions;
-          nextFunctions = [];
-          nowFunctions.map(function (f) {
-            f(deferFuncObj);
-          });
-          // if no next functions were signed up, then go ahead and
-          // run the deferred functions
-          if (running === false) {
-            nextFunctions = deferredFunctions;
-            deferredFunctions = [];
-            ensureRunning();
-          }
-        });
-      }
-    };
-    var deferFuncObj = {
-      next: function (f) {
-        nextFunctions.push(f);
-        ensureRunning();
-      },
-      defer: function (f) {
-        deferredFunctions.push(f);
-        ensureRunning();
-      },
-    };
-    return deferFuncObj;
+	runASAP = runASAP || setTimeout;
+	var nextFuncs = [];
+	var running = false;
+	var deferFunc = function (f) {
+	  runASAP(function () {
+		if (nextFuncs.length === 0) {
+		  f();
+		}
+		else {
+		  deferFunc(f);
+		}
+	  });
+	};
+	var childContext = null;
+	var deferFuncContext = {
+	  next: function (f) {
+		nextFuncs.push(f);
+		if (running === false) {
+		  running = true;
+		  runASAP(function () {
+			running = false;
+			var runFuncs = nextFuncs;
+			nextFuncs = [];
+			runFuncs.map(function (f) {
+			  f();
+			});
+		  });
+		}
+		return deferFuncContext;
+	  },
+	  childContext: function () {
+		childContext = childContext || createDeferFuncContext(deferFunc);
+		return childContext;
+	  },
+	  defer: function (f) {
+		var childContext = deferFuncContext.childContext();
+		childContext.next(f);
+		return childContext;
+	  },
+	};
+	return deferFuncContext;
   };
 
-  var streamDeferFunc = deferFuncContext();
+  var streamDeferFunc = createDeferFuncContext();
   var stream = {
 	create: function (v) {
 	  return {
@@ -1219,7 +1224,7 @@ function waitForWebfonts(fonts, callback) {
 	  };
 	},
 	next: streamDeferFunc.next,
-	defer: streamDeferFunc.defer,
+	defer: streamDeferFunc.childContext().defer,
 	isStream: function (v) {
 	  return v &&
 		v.hasOwnProperty('listeners') &&
@@ -1344,7 +1349,7 @@ function waitForWebfonts(fonts, callback) {
 	  var tryRunF = function () {
 		if (!running) {
 		  running = true;
-		  streamDeferFunc.next(function () {
+		  streamDeferFunc.defer(function () {
 			running = false;
 			for (var i = 0; i < streams.length; i++) {
 			  if (arr[i] === undefined) {
@@ -1377,7 +1382,7 @@ function waitForWebfonts(fonts, callback) {
 	  var tryRunF = function () {
 		if (!running) {
 		  running = true;
-		  streamDeferFunc.next(function () {
+		  streamDeferFunc.defer(function () {
 			running = false;
 			for (var i = 0; i < streams.length; i++) {
 			  if (arr[i] === undefined) {
@@ -1787,7 +1792,8 @@ function waitForWebfonts(fonts, callback) {
 	return function () {
 	  var args = Array.prototype.slice.call(arguments);
 	  return el(function ($el, ctx) {
-		$el.css('pointer-events', 'none');
+		$el.css('pointer-events', 'none')
+		  .css('overflow', 'hidden');
 		return buildLayout.apply(null, [$el, ctx].concat(layoutRecurse($el, ctx, args)));
 	  });
 	};
@@ -1931,6 +1937,13 @@ function waitForWebfonts(fonts, callback) {
 	  b: c.b || 0,
 	  a: c.a || 1,
 	};
+  };
+  var isColor = function (x) {
+	return x &&
+	  x.hasOwnProperty('r') &&
+	  x.hasOwnProperty('g') &&
+	  x.hasOwnProperty('b') &&
+	  x.hasOwnProperty('a');
   };
   var multiplyColor = function (amount) {
 	return function (c) {
@@ -2185,8 +2198,18 @@ function waitForWebfonts(fonts, callback) {
 	});
   };
 
-  var backgroundColor = function (s) {
-	// stream is an object
+  var backgroundColor = function (s, arg2, arg3, arg4) {
+	// function may accept four arguments...
+	if (isColor(s)) {
+	  s = {
+		background: s,
+		font: arg2,
+		backgroundHover: arg3,
+		fontHover: arg4,
+	  };
+	}
+	s = s || {};
+	// or it may accept one object whose properties are either colors or streams...
 	if (stream.isStream(s.background) ||
 		stream.isStream(s.font) ||
 		stream.isStream(s.backgroundHover) ||
@@ -2205,6 +2228,7 @@ function waitForWebfonts(fonts, callback) {
 	  }
 	  s = stream.combineObject(s);
 	}
+	// or a stream.
 	if (!stream.isStream(s)) {
 	  s = stream.once(s);
 	}
@@ -2583,11 +2607,11 @@ function waitForWebfonts(fonts, callback) {
 			return Math.ceil(fontSize * str.length * 0.5 / w) * lineHeight;
 		  };
 		  if (!config.oneLine) {
-			stream.defer(function () {
-			  var mh = (config.minHeight && constant(config.minHeight)) ||
-					(measureHeight($el));
-			  stream.push(mhS, mh);
-			});
+			// stream.defer(function () {
+			//   var mh = (config.minHeight && constant(config.minHeight)) ||
+			// 		(measureHeight($el));
+			//   stream.push(mhS, mh);
+			// });
 		  }
 		  stream.push(mwS, mw);
 		  stream.push(mhS, mh);
@@ -3430,7 +3454,7 @@ function waitForWebfonts(fonts, callback) {
 	  }
 	  var allMinWidths = mapMinWidths(is);
 	  var allMinHeights = mapMinHeights(is);
-	  stream.all([
+	  stream.combine([
 		ctx.width,
 		ctx.height,
 		allMinHeights,
@@ -3466,6 +3490,10 @@ function waitForWebfonts(fonts, callback) {
 		minHeight: stream.map(allMinHeights, function (mhs) {
 		  return function (w) {
 			var minHeights = mhs.map(apply(w));
+			if (minHeights[0] === 76 && Number.isNaN(minHeights[1])) {
+			  debugger;
+			}
+			minHeights = mhs.map(apply(w));
 			return minHeights.reduce(add, config.padding * (minHeights.filter(function (x) {
 			  return !config.collapsePadding || x > 0;
 			}).length - 1));
@@ -3919,6 +3947,10 @@ function waitForWebfonts(fonts, callback) {
 	  m: c,
 	});
   };
+  var alignMiddle = all([
+	alignHMiddle,
+	alignVMiddle,
+  ]);
 
   // // var invertOnHover = function (c) {
   // // 	var invert = stream.once(false, 'invert');
@@ -4656,6 +4688,9 @@ function waitForWebfonts(fonts, callback) {
 		  minHeightS,
 		], function (mh, minHeight) {
 		  return function (w) {
+			if (Number.isNaN(Math.max(mh(w), minHeight(w)))) {
+			  debugger;
+			}
 			return Math.max(mh(w), minHeight(w));
 		  };
 		}),
@@ -4996,10 +5031,12 @@ function waitForWebfonts(fonts, callback) {
 	  $css: $css,
 	  $on: $on,
 	  $prop: $prop,
+	  adjustPosition: adjustPosition,
 	  alignHLeft: alignHLeft,
 	  alignHMiddle: alignHMiddle,
 	  alignHRight: alignHRight,
 	  alignLRM: alignLRM,
+	  alignMiddle: alignMiddle,
 	  alignTBM: alignTBM,
 	  alignVBottom: alignVBottom,
 	  alignVMiddle: alignVMiddle,
@@ -5012,16 +5049,21 @@ function waitForWebfonts(fonts, callback) {
 	  changeThis: changeThis,
 	  clickThis: clickThis,
 	  componentStream: componentStreamWithExit,
+	  cssStream: cssStream,
+	  dimensions: withDimensions,
 	  dropdownPanel: dropdownPanel,
 	  element: element,
 	  empty: empty,
+	  fadeIn: fadeIn,
 	  grid: grid,
 	  hoverColor: hoverColor,
+	  hoverThis: hoverThis,
 	  keepAspectRatio: keepAspectRatio,
 	  keydownThis: keydownThis,
 	  keyupThis: keyupThis,
 	  image: image,
 	  largestWidthThatFits: largestWidthThatFits,
+	  layout: layout,
 	  link: link,
 	  linkTo: linkTo,
 	  margin: margin,
@@ -5030,6 +5072,7 @@ function waitForWebfonts(fonts, callback) {
 	  minHeightStream: withMinHeightStream,
 	  minHeightAtLeast: minHeightAtLeast,
 	  minWidth: minWidth,
+	  minWidthAtLeast: minWidthAtLeast,
 	  mousedownThis: mousedownThis,
 	  mousemoveThis: mousemoveThis,
 	  mouseoverThis: mouseoverThis,
@@ -5038,7 +5081,10 @@ function waitForWebfonts(fonts, callback) {
 	  nothing: nothing,
 	  onThis: onThis,
 	  overlays: overlays,
+	  promiseComponent: promiseComponent,
 	  sideBySide: sideBySide,
+	  sideSlidingPanel: sideSlidingPanel,
+	  slideIn: slideIn,
 	  slider: slider,
 	  slideshow: slideshow,
 	  stack: stack,
@@ -5070,6 +5116,10 @@ function waitForWebfonts(fonts, callback) {
 	funcs: {
 	  constant: constant,
 	  id: id,
+	  rowHeight: {
+		useMaxHeight: useMaxHeight,
+		useNthMinHeight: useNthMinHeight,
+	  },
 	  surplusWidth: {
 		ignore: ignoreSurplusWidth,
 		center: centerSurplusWidth,
@@ -5085,6 +5135,13 @@ function waitForWebfonts(fonts, callback) {
 	  },
 	},
 	rootComponent: rootComponent,
+	routing: {
+	  matchStrings: matchStrings,
+	  route: route,
+	  routeMatchRest: routeMatchRest,
+	  routeToComponentF: routeToComponentF,
+	  routeToFirst: routeToFirst,
+	},
 	stream: stream,
 	unit: {
 	  px: px,
