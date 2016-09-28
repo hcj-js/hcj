@@ -1509,12 +1509,14 @@
 		  if (!config.oneLine) {
 			stream.defer(function () {
 			  var mh = (config.minHeight && constant(config.minHeight)) ||
-					(measureHeight($el));
-			  stream.push(mhS, mh);
+					(!config.oneLine && measureHeight($el));
+			  mh && stream.push(mhS, mh);
 			});
 		  }
 		  stream.push(mwS, mw);
-		  stream.push(mhS, mh);
+		  if (!config.noApproximateHeight) {
+			stream.push(mhS, mh);
+		  }
 		  firstPush = false;
 		});
 	  };

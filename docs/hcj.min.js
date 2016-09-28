@@ -2590,7 +2590,9 @@ function waitForWebfonts(fonts, callback) {
 			});
 		  }
 		  stream.push(mwS, mw);
-		  stream.push(mhS, mh);
+		  if (!config.noApproximateHeight) {
+			stream.push(mhS, mh);
+		  }
 		  firstPush = false;
 		});
 	  };
