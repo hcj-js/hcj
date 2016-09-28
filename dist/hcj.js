@@ -2607,14 +2607,16 @@ function waitForWebfonts(fonts, callback) {
 			return Math.ceil(fontSize * str.length * 0.5 / w) * lineHeight;
 		  };
 		  if (!config.oneLine) {
-			// stream.defer(function () {
-			//   var mh = (config.minHeight && constant(config.minHeight)) ||
-			// 		(measureHeight($el));
-			//   stream.push(mhS, mh);
-			// });
+			stream.defer(function () {
+			  var mh = (config.minHeight && constant(config.minHeight)) ||
+					measureHeight($el);
+			  stream.push(mhS, mh);
+			});
 		  }
 		  stream.push(mwS, mw);
-		  stream.push(mhS, mh);
+		  if (!config.noApproximateHeight) {
+			stream.push(mhS, mh);
+		  }
 		  firstPush = false;
 		});
 	  };
@@ -3490,10 +3492,6 @@ function waitForWebfonts(fonts, callback) {
 		minHeight: stream.map(allMinHeights, function (mhs) {
 		  return function (w) {
 			var minHeights = mhs.map(apply(w));
-			if (minHeights[0] === 76 && Number.isNaN(minHeights[1])) {
-			  debugger;
-			}
-			minHeights = mhs.map(apply(w));
 			return minHeights.reduce(add, config.padding * (minHeights.filter(function (x) {
 			  return !config.collapsePadding || x > 0;
 			}).length - 1));
