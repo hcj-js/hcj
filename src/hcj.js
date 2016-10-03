@@ -108,9 +108,10 @@
 	/*
 	 WARNING:
 
-	 This is a hacky implementation of something that already exists.  Do
-	 not use this library.  When I find out what it is that I'm crudely
-	 implementing here, I will find and use an existing library for it.
+	 This is a hacky implementation of something that already exists.
+	 Do not use this little function.  When I find out what it is that
+	 this function crudely implements, I will find and use an existing
+	 library for it.
 
 	 */
 	runASAP = runASAP || setTimeout;
@@ -484,6 +485,71 @@
 	updateDomEls.push($el);
 	updateDomProps.push(prop);
 	updateDomValues.push(value);
+  };
+
+  var canvas = document.createElement('canvas');
+  var $canvas = $(canvas);
+  var ctx = canvas.getContext('2d');
+
+  var decodeDiv = document.createElement('div');
+  var htmlDecode = function (input) {
+	decodeDiv.innerHTML = input;
+	return decodeDiv.childNodes.length === 0 ? "" : decodeDiv.childNodes[0].nodeValue;
+  };
+
+  var measureTextWidth = function (str, font) {
+	if (font) {
+	  ctx.font = font;
+	}
+	return ctx.measureText(str).width;
+  };
+  var measureTextHeight = function (strs, lineHeight) {
+	var ws = {};
+	var strsOriginal = strs;
+	strsOriginal.map(function (str) {
+	  str.originalWords = str.words;
+	});
+	return function (w) {
+	  strs = strsOriginal.slice(0);
+	  // if (ws[w]) {
+	  // 	return ws[w];
+	  // }
+
+	  var outputLines = 0;
+	  var thisLineLength = 0;
+	  var thisLineHeight = 0;
+	  if (strs.length === 0) {
+		return 0;
+	  }
+	  var str = strs[0];
+	  ctx.font = str.font;
+	  str.words = str.originalWords.slice(0);
+	  while (strs.length > 0) {
+		var word = str.words[0] + ((strs.length > 1 || str.words.length > 1) ? ' ' : '');
+		var wordWidth = measureTextWidth(word);
+		if (wordWidth + thisLineLength > w) {
+		  outputLines += thisLineHeight;
+		  thisLineLength = 0;
+		  thisLineHeight = 0;
+		}
+		thisLineLength += wordWidth;
+		thisLineHeight = Math.max(thisLineHeight, str.size);
+		str.words.splice(0, 1);
+		if (str.words.length === 0) {
+		  strs.splice(0, 1);
+		  if (strs.length > 0) {
+			str = strs[0];
+			str.words = str.words.slice(0);
+			ctx.font = str.font;
+		  }
+		}
+	  }
+
+	  var height = (outputLines + thisLineHeight) * (lineHeight || 1);
+
+	  ws[w] = height;
+	  return height;
+	};
   };
 
   var measureWidth = function ($el, w) {
@@ -1443,17 +1509,21 @@
 	  config = config.reduce($.extend, {});
 	}
 
+	config.size = config.size || 16;
+	config.lineHeight = config.lineHeight || 1;
+
 	return (config.el || div)(function ($el, ctx) {
 	  var didMH = false;
 	  var mwS = stream.create();
 	  var mhS = stream.create();
 	  var spanStreams = [];
 	  $el.addClass('text');
-	  strs.map(function (c) {
+	  strs.map(function (c, index) {
 		if ($.type(c) === 'string') {
 		  c = {
 			str: c,
 		  };
+		  strs[index] = c;
 		}
 		if (c.font) {
 		  c = $.extend(c, c.font);
@@ -1465,7 +1535,22 @@
 		}
 		var $span = $(document.createElement('span'));
 		$span.html(' ' + c.str + ' ');
+		c.words = c.str.split(' ');
 		c.size = c.size || config.size;
+		var fontStyle = 'normal';
+		var fontVariant = 'normal';
+		var fontWeight = c.weight || config.weight || 'normal';
+		var fontSize = c.size || config.size || $el.css('font-size');
+		var lineHeight = c.lineHeight || config.lineHeight || $el.css('line-height');
+		var fontFamily = c.family || config.family || 'initial';
+		c.font = [
+		  fontStyle,
+		  fontVariant,
+		  fontWeight,
+		  fontSize + 'px/' + lineHeight,
+		  fontFamily,
+		].join(' ');
+
 		if (c.size) {
 		  if (stream.isStream(c.size)) {
 			spanStreams.push(stream.map(c.size, function (x) {
@@ -1533,24 +1618,37 @@
 	  var firstPush = true;
 	  var pushDimensions = function () {
 		stream.next(function () {
-		  var mw = config.minWidth ||
-				(config.measureWidth && measureWidth($el)) ||
+		  var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
+				(config.measureWidth && strs.reduce(function (a, c, index) {
+				  var width = measureTextWidth(c.str, c.font);
+				  return a + width;
+				}, 0)) ||
 				300;
+		  // var mw = config.minWidth ||
+		  // 		(config.measureWidth && measureWidth($el)) ||
+		  // 		300;
 		  var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
-			var fontSize = parseInt($el.css('font-size'));
+			var fontSize = config.size;
 			var str = $el.text();
-			var lineHeight = ($el.css('line-height').indexOf('px') !== -1 && parseFloat($el.css('line-height')));
-			return Math.ceil(fontSize * str.length * 0.5 / w) * lineHeight;
+			var lineHeight = config.lineHeight;
+			return Math.ceil(fontSize * str.length * 0.5 / w) * fontSize * config.lineHeight;
 		  };
 		  if (!config.oneLine) {
 			stream.defer(function () {
 			  var mh = (config.minHeight && constant(config.minHeight)) ||
-					measureHeight($el);
+					// measureHeight($el);
+					measureTextHeight(strs.map(function (c) {
+					  return {
+						words: c.words.slice(0),
+						font: c.font,
+						size: c.size || config.size,
+					  };
+					}), config.lineHeight);
 			  stream.push(mhS, mh);
 			});
 		  }
 		  stream.push(mwS, mw);
-		  if (!config.noApproximateHeight) {
+		  if (config.approximateHeight) {
 			stream.push(mhS, mh);
 		  }
 		  firstPush = false;
@@ -3011,8 +3109,9 @@
 	});
   };
 
-  var componentStreamWithExit = function (cStream, exit) {
+  var componentStreamWithExit = function (cStream, exit, entrance) {
 	var i;
+	var ctx;
 	exit = exit || function () {
 	  var d = $.Deferred();
 	  d.resolve();
@@ -3028,20 +3127,28 @@
 		if (i) {
 		  (function (i) {
 			setTimeout(function () {
-			  exit(i).then(function () {
+			  exit(i, ctx).then(function () {
 				i.destroy();
 			  });
 			});
 		  })(i);
 		}
-		i = child(c)(context.child({
+		ctx = context.child({
 		  widthCss: stream.once('100%'),
 		  heightCss: stream.once('100%'),
-		}));
+		});
+		i = child(c)(ctx);
 		i.$el.css('transition', 'inherit');
+		i.$el.css('display', 'none');
 		i.$el.prependTo($el);
 		stream.pushAll(i.minWidth, minWidthS);
 		stream.pushAll(i.minHeight, minHeightS);
+		stream.defer(function () {
+		  i.$el.css('display', '');
+		  if (entrance) {
+			entrance(i, ctx);
+		  }
+		});
 	  };
 	  stream.map(localCStream, function (c) {
 		instanceC(c);

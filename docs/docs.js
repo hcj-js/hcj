@@ -33,22 +33,29 @@ $(function () {
 	h1: {
 	  family: 'sans-serif',
 	  size: 40,
+	  lineHeight: 1.2,
 	  weight: 'bold',
 	},
 	h2: {
 	  family: 'sans-serif',
+	  lineHeight: 1.2,
 	  size: 30,
 	},
 	h3: {
 	  family: 'sans-serif',
+	  lineHeight: 1.2,
 	  size: 20,
 	},
 	p: {
+	  approximateHeight: true,
 	  family: 'sans-serif',
+	  lineHeight: 1.2,
 	  size: 15,
 	},
 	code: {
 	  family: 'monospace',
+	  lineHeight: 1.2,
+	  size: 15,
 	},
   };
 
@@ -98,8 +105,8 @@ $(function () {
 	p("HTML and CSS are venerable.  First engineered for simple document layout, today they are technically turing complete."),
 	p("HCJ.js provides a simple api for element positioning.  First, minimum dimensions are sent from child to parent.  Second, the actual dimensions are sent from parent to child."),
 	p("These docs are written using HCJ.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
-	p("Some CSS features are not mirrored in HCJ.  Additionally, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
-	p("One major thing that HCJ does not support is floating items so that text can flow around them.  We would very much like to add this kind of functionality, but recognize that doing this both well and fast will be difficult.  Prior work that we're looking at includes CSS floats, as well as the capabilities of programs like LaTeX and Word.")
+	p("Some CSS features are not mirrored in HCJ.  Additionally, because it is a javascript framework, page load times are longer.  SEO doesn't come out of the box, but we support rendering using PhantomJS.  This can be done either server-side or as part of your build process."),
+	p("One major thing that HCJ does not support is floating items so that text can flow around them.  We would like to add this kind of functionality, but recognize that doing this both well and fast will be difficult.  The general principle is pretty complex, a lot like string theory.  Prior work that we're looking at includes CSS floats, as well as the capabilities of programs like LaTeX and Word.")
   ]);
 
   var aLittleVocab = docStack([
@@ -642,7 +649,7 @@ $(function () {
 	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state in terms of input state as lightly as possible.'),
 	p('Note: to skip intermediate values, `setTimeout` calls are made.  When streams are defined in terms of each other, multiple `setTimeout` calls are made in sequence.  If you want to run some code after all stream operations have settled, you must call `stream.defer` instead of `setTimeout`.  If you want to defer the execution of a block of code and then push to a stream, call `stream.next` instead of `setTimeout`.  Otherwise, `stream.defer` calls will not know to wait for your code.'),
 
-	p('Here, in alphabetical order, are the stream methods.  Common methods are `create`, `push`, `map`, `reduce`, and `combine`.'),
+	p('Here are the stream methods:'),
 
 	h3('combine'),
 	p('`combine : map Stream ts -> (ts -> x) -> Stream x`'),
@@ -907,11 +914,30 @@ $(function () {
 	  p('Pre-release'),
 	  c.componentStream(stream.map(currentPageS, function (index) {
 		var p = pages[index];
-		return docStack([
+		return c.all([
+		  c.$css('transition', 'left 1s'),
+		])(docStack([
 		  h2(p.title),
 		  p.component,
-		]);
-	  })),
+		]));
+	  }), function (i, ctx) {
+		var deferred = $.Deferred();
+		stream.defer(function () {
+		  i.$el.css('left', -ctx.width.lastValue + 'px');
+		  setTimeout(function () {
+			deferred.resolve();
+		  }, 1000);
+		});
+		return deferred.promise();
+	  }, function (i, ctx) {
+		stream.defer(function () {
+		  i.$el.css('left', ctx.width.lastValue / 2 + 'px');
+		  setTimeout(function () {
+			i.$el.css('transition', 'left 1s');
+			// i.$el.css('left', '0px');
+		  });
+		});
+	  }),
 	])),
   ]));
 
