@@ -2132,7 +2132,10 @@ function waitForWebfonts(fonts, callback) {
 	  };
 	});
   };
-  var link = $css('cursor', 'pointer');
+  var link = all([
+	$css('cursor', 'pointer'),
+	$css('pointer-events', 'initial'),
+  ]);
 
   // var componentName = function (name) {
   // 	return passthrough(function ($el) {
@@ -4170,7 +4173,6 @@ function waitForWebfonts(fonts, callback) {
 		$el.css('pointer-events', 'initial');
 
 		stream.onValue(open, function (on) {
-		  console.log(on);
 		  if (on) {
 			$el.css('display', '');
 			setTimeout(function () {
@@ -4261,7 +4263,10 @@ function waitForWebfonts(fonts, callback) {
 	config = config || {};
 	config.transition = config.transition || "0.5s";
 	return layout(function ($el, ctx, source, panel) {
-	  $el.addClass('dropdown-panel');
+	  $el.addClass('side-sliding-panel');
+	  setTimeout(function () {
+		$el.css('overflow', 'visible');
+	  });
 	  var panelCtx = ctx.child({
 		width: true,
 		height: true,
@@ -4289,7 +4294,7 @@ function waitForWebfonts(fonts, callback) {
 		minWidth: stream.map(stream.combine([
 		  panelI.minWidth,
 		  sourceI.minWidth,
-		], Math.max), function (mw) {
+		], add), function (mw) {
 		  return mw;
 		}),
 		minHeight: sourceI.minHeight,
@@ -4303,7 +4308,6 @@ function waitForWebfonts(fonts, callback) {
 		  return on ? 0 : w;
 		})
 	  }));
-	  $el.css('overflow', 'hidden');
 	  i.$el.css('transition', 'left ' + config.transition)
 		.css('z-index', 1000);
 	  return i;
