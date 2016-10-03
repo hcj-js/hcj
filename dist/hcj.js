@@ -1609,7 +1609,7 @@ function waitForWebfonts(fonts, callback) {
 		  thisLineHeight = 0;
 		}
 		thisLineLength += wordWidth;
-		thisLineHeight = Math.max(thisLineHeight, str.size);
+		thisLineHeight = Math.max(thisLineHeight, parseInt(str.size)); // assumes px
 		str.words.splice(0, 1);
 		if (str.words.length === 0) {
 		  strs.splice(0, 1);
@@ -2694,15 +2694,15 @@ function waitForWebfonts(fonts, callback) {
 	  var firstPush = true;
 	  var pushDimensions = function () {
 		stream.next(function () {
-		  var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
-				(config.measureWidth && strs.reduce(function (a, c, index) {
-				  var width = measureTextWidth(c.str, c.font);
-				  return a + width;
-				}, 0)) ||
-				300;
-		  // var mw = config.minWidth ||
-		  // 		(config.measureWidth && measureWidth($el)) ||
+		  // var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
+		  // 		(config.measureWidth && strs.reduce(function (a, c, index) {
+		  // 		  var width = measureTextWidth(c.str, c.font);
+		  // 		  return a + width;
+		  // 		}, 0)) ||
 		  // 		300;
+		  var mw = config.minWidth ||
+		  		(config.measureWidth && measureWidth($el)) ||
+		  		300;
 		  var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
 			var fontSize = config.size;
 			var str = $el.text();
@@ -2712,19 +2712,19 @@ function waitForWebfonts(fonts, callback) {
 		  if (!config.oneLine) {
 			stream.defer(function () {
 			  var mh = (config.minHeight && constant(config.minHeight)) ||
-					// measureHeight($el);
-					measureTextHeight(strs.map(function (c) {
-					  return {
-						words: c.words.slice(0),
-						font: c.font,
-						size: c.size || config.size,
-					  };
-					}), config.lineHeight);
+					measureHeight($el);
+					// measureTextHeight(strs.map(function (c) {
+					//   return {
+					// 	words: c.words.slice(0),
+					// 	font: c.font,
+					// 	size: c.size || config.size,
+					//   };
+					// }), config.lineHeight);
 			  stream.push(mhS, mh);
 			});
 		  }
 		  stream.push(mwS, mw);
-		  if (config.approximateHeight) {
+		  if (config.oneLine || config.approximateHeight) {
 			stream.push(mhS, mh);
 		  }
 		  firstPush = false;
