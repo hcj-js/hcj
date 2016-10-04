@@ -4445,6 +4445,7 @@
 	  submitThis: submitThis,
 	  tabs: tabs,
 	  text: text,
+	  toggleHeight: toggleHeight,
 	  wrap: wrap,
 	},
 	// Remember, elements are not components.  This is why they are
