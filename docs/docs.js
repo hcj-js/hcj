@@ -838,10 +838,10 @@ $(function () {
   ]);
 
   var testPage = docStack([
-	p("Here we visually test the standard library components."),
+	p("Demo of the standard library components."),
 
 	h2("text"),
-	p("It should be possible to display all kinds of text."),
+	p("Display all kinds of text."),
 	c.text("big text", {
 	  size: 50,
 	}),
@@ -919,15 +919,15 @@ $(function () {
 	h2("bar.h, bar.v"),
 	p('Make a 20px horizontal separator'),
 	c.sideBySide([
-	  pm('BLAH'),
+	  pm('TEXT'),
 	  c.bar.h(20),
-	  pm('BLAH'),
+	  pm('TEXT'),
 	]),
 	p('Make a 20px vertical separator'),
 	c.stack([
-	  pm('BLAH'),
+	  pm('TEXT'),
 	  c.bar.v(20),
-	  pm('BLAH'),
+	  pm('TEXT'),
 	]),
 
 	c.nothing,
@@ -1216,7 +1216,8 @@ $(function () {
 	]),
 
 	c.nothing,
-	h2('prompt the user'),
+	h2('clickThis'),
+	p('prompt the user'),
 	c.all([
 	  c.clickThis(function () {
 		var name = prompt("What's your name?");

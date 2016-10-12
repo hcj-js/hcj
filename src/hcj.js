@@ -4028,10 +4028,10 @@
 
   var bar = {
 	h: function (size) {
-	  return minHeight(size)(nothing);
+	  return minWidth(size)(nothing);
 	},
 	v: function (size) {
-	  return minWidth(size)(nothing);
+	  return minHeight(size)(nothing);
 	},
   };
   var rectangle = function (size) {
