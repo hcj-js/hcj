@@ -1077,20 +1077,30 @@ function waitForWebfonts(fonts, callback) {
 (function () {
   var uncurryConfig = function (f, valueIsNotConfig) {
 	valueIsNotConfig = valueIsNotConfig || function (obj) {
-	  return $.type(obj) !== 'object';
+	  return $.type(obj) === 'array' || $.type(obj) === 'function';
 	};
 	return function () {
 	  var args = Array.prototype.slice.call(arguments);
 	  var firstArgIsConfig = !valueIsNotConfig(args[0]);
 	  if ((args.length - (firstArgIsConfig ? 1 : 0)) > 0) {
-		return f.apply(null, args);
+		var args0 = [];
+		if (firstArgIsConfig) {
+		  args0 = args.splice(0, 1);
+		}
+		return f.apply(null, args0).apply(null, args);
 	  }
 	  var arg = args[0];
 	  return function () {
-		var args = [arg].concat(Array.prototype.slice.call(arguments));
-		return f.apply(null, args);
+		var args = Array.prototype.slice.call(arguments);
+		return f.apply(null, [arg]).apply(null, args);
 	  };
 	};
+  };
+  var lrmIsNotConfig = function (obj) {
+	return obj.l || obj.r || obj.m;
+  };
+  var tbmIsNotConfig = function (obj) {
+	return obj.t || obj.b || obj.m;
   };
   var caseSplit = function (cases, obj) {
 	// may curry
@@ -1675,48 +1685,13 @@ function waitForWebfonts(fonts, callback) {
 	  }
 	  ctx = ctx || {};
 	  try {
-		ctx.$el = $el;
+		ctx.$el = ctx.$el || $el;
 		ctx.width = ctx.width || context.width;
 		ctx.height = ctx.height || context.height;
 		ctx.top = ctx.top || onceZeroS;
 		ctx.left = ctx.left || onceZeroS;
 		ctx.topOffset = stream.combine([context.topOffset, context.top], add);
 		ctx.leftOffset = stream.combine([context.leftOffset, context.left], add);
-		ctx.occlusions = stream.combine([
-		  ctx.occlusions || context.occlusions,
-		  ctx.width,
-		  ctx.height,
-		  ctx.left,
-		  ctx.top,
-		], function (os, w, h, t, l) {
-		  return os.map(function (o) {
-			return {
-			  left: o.left - l,
-			  top: o.top - t,
-			  width: o.width,
-			  height: o.height,
-			};
-		  }).filter(function (o) {
-			// throw out occlusion if
-			if (o.left + o.width < 0) {
-			  // right hand side of occlusion to the left of component
-			  return;
-			}
-			if (o.left > w) {
-			  // left hand side of occlusion to the right of component
-			  return;
-			}
-			if (o.top + o.height < 0) {
-			  // bottom of occlusion above component
-			  return;
-			}
-			if (o.top > h) {
-			  // top of occlusion below component
-			  return;
-			}
-			return true;
-		  });
-		});
 		ctx.onRemove = onRemove.push;
 		stream = stream;
 		return c(ctx);
@@ -1967,7 +1942,6 @@ function waitForWebfonts(fonts, callback) {
 	  left: onceZeroS,
 	  topOffset: onceZeroS,
 	  leftOffset: onceZeroS,
-	  occlusions: stream.once([]),
 	  onRemove: onRemove.push,
 	});
 	i.$el.css('position', 'absolute')
@@ -2007,10 +1981,10 @@ function waitForWebfonts(fonts, callback) {
   var color = function (c) {
 	c = c || {};
 	return {
-	  r: c.r || 0,
-	  g: c.g || 0,
-	  b: c.b || 0,
-	  a: c.a || 1,
+	  r: c.hasOwnProperty('r') ? c.r : 1,
+	  g: c.hasOwnProperty('g') ? c.g : 1,
+	  b: c.hasOwnProperty('b') ? c.b : 1,
+	  a: c.hasOwnProperty('a') ? c.a : 1,
 	};
   };
   var isColor = function (x) {
@@ -2194,7 +2168,7 @@ function waitForWebfonts(fonts, callback) {
 	});
   };
 
-  var adjustMinSize = function (config) {
+  var adjustMinSize = uncurryConfig(function (config) {
 	return layout(function ($el, ctx, c) {
 	  var i = ctx.append(c);
 	  return {
@@ -2206,7 +2180,7 @@ function waitForWebfonts(fonts, callback) {
 		}),
 	  };
 	});
-  };
+  });
   var link = all([
 	$css('cursor', 'pointer'),
 	$css('pointer-events', 'initial'),
@@ -2344,7 +2318,7 @@ function waitForWebfonts(fonts, callback) {
 	  $el.css('color', colorString(fc));
 	});
   };
-  var hoverColor = function (config) {
+  var hoverColor = uncurryConfig(function (config) {
 	var backgroundColor = colorString(config.backgroundColor || transparent);
 	var hoverBackgroundColor = colorString(config.hoverBackgroundColor || backgroundColor);
 	var fontColor = colorString(config.fontColor || black);
@@ -2354,7 +2328,7 @@ function waitForWebfonts(fonts, callback) {
 	  $el.css('background-color', h ? hoverBackgroundColor : backgroundColor);
 	  $el.css('color', h ? hoverFontColor : fontColor);
 	});
-  };
+  });
 
   var crop = function (amount) {
 	var top = amount.all || 0,
@@ -2428,7 +2402,7 @@ function waitForWebfonts(fonts, callback) {
 	  };
 	});
   };
-  var keepAspectRatio = function (config) {
+  var keepAspectRatio = uncurryConfig(function (config) {
 	config = config || {};
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('keepAspectRatio');
@@ -2448,6 +2422,9 @@ function waitForWebfonts(fonts, callback) {
 	  ], function (mw, mh, w, h) {
 		var ar = mw / mh(mw);
 		var AR = w / h;
+		if (Number.isNaN(ar) || Number.isNaN(AR)) {
+		  console.log('keepAspectRatio aspect ratio NaN');
+		}
 		// container is wider
 		if ((!config.fill && AR > ar) ||
 			(config.fill && AR < ar)) {
@@ -2518,7 +2495,7 @@ function waitForWebfonts(fonts, callback) {
 		minHeight: minHeight,
 	  };
 	});
-  };
+  });
 
   var image = function (config) {
 	var srcStream = stream.isStream(config.src) ? config.src : stream.once(config.src);
@@ -2548,7 +2525,7 @@ function waitForWebfonts(fonts, callback) {
 	});
   };
 
-  var linkTo = function (config) {
+  var linkTo = uncurryConfig(function (config) {
 	if ($.type(config) === 'string') {
 	  config = {
 		href: config,
@@ -2560,9 +2537,12 @@ function waitForWebfonts(fonts, callback) {
 	  if (config.target) {
 		$el.prop('target', config.target);
 	  }
+	  if (!config.defaultStyle) {
+		$el.addClass('no-style');
+	  }
 	  return ctx.append(c);
 	});
-  };
+  });
 
   var empty = function (el) {
 	return component(el)(function ($el, ctx) {
@@ -2585,7 +2565,6 @@ function waitForWebfonts(fonts, callback) {
 	  config = config.reduce($.extend, {});
 	}
 
-	config.size = config.size || 16;
 	config.lineHeight = config.lineHeight || 1;
 
 	return (config.el || div)(function ($el, ctx) {
@@ -2610,20 +2589,29 @@ function waitForWebfonts(fonts, callback) {
 		  });
 		}
 		var $span = $(document.createElement('span'));
-		var str = c.str;
-		if (index === 0) {
-		  str = ' ' + str;
+		var updateStr = function (str) {
+		  if (index === 0) {
+			str = ' ' + str;
+		  }
+		  if (index === strs.length - 1) {
+			str = str + ' ';
+		  }
+		  $span.html(str);
+		  c.words = str.split(' ');
+		};
+		if (stream.isStream(c.str)) {
+		  spanStreams.push(stream.map(c.str, function (x) {
+			updateStr(x);
+		  }));
 		}
-		if (index === strs.length - 1) {
-		  str = str + ' ';
+		else {
+		  updateStr(c.str);
 		}
-		$span.html(str);
-		c.words = c.str.split(' ');
 		c.size = c.size || config.size;
 		var fontStyle = 'normal';
 		var fontVariant = 'normal';
 		var fontWeight = c.weight || config.weight || 'normal';
-		var fontSize = c.size || config.size || $el.css('font-size');
+		var fontSize = c.size || config.size || parseInt($el.css('font-size'));
 		var lineHeight = c.lineHeight || config.lineHeight || $el.css('line-height');
 		var fontFamily = c.family || config.family || 'initial';
 		c.font = [
@@ -2684,6 +2672,16 @@ function waitForWebfonts(fonts, callback) {
 			$span.css('text-shadow', c.shadow);
 		  }
 		}
+		if (c.align) {
+		  if (stream.isStream(c.align)) {
+			spanStreams.push(stream.map(c.align, function (x) {
+			  $span.css('vertical-align', c.x);
+			}));
+		  }
+		  else {
+			$span.css('vertical-align', c.align);
+		  }
+		}
 		if (c.spanCSS) {
 		  c.spanCSS.map(function (css) {
 			$span.css(css.name, css.value);
@@ -2711,7 +2709,8 @@ function waitForWebfonts(fonts, callback) {
 		  		(config.measureWidth && measureWidth($el)) ||
 		  		300;
 		  var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
-			var fontSize = config.size;
+			// TODO: loop over spans
+			var fontSize = config.size || parseInt($el.css('font-size'));
 			var str = $el.text();
 			var lineHeight = config.lineHeight;
 			return Math.ceil(fontSize * str.length * 0.5 / w) * fontSize * config.lineHeight;
@@ -2860,6 +2859,15 @@ function waitForWebfonts(fonts, callback) {
 	positions.map(function (position, i) {
 	  position.width += widthPerCol;
 	  position.left += i * widthPerCol;
+	});
+	return positions;
+  };
+  var evenlySplitCenterSurplusWidth = function (gridWidth, positions) {
+	var lastPosition = positions[positions.length - 1];
+	var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
+	var widthPerCol = surplusWidth / positions.length;
+	positions.map(function (position, i) {
+	  position.left += (i + 0.5) * widthPerCol;
 	});
 	return positions;
   };
@@ -3036,7 +3044,7 @@ function waitForWebfonts(fonts, callback) {
 	return positions;
   };
 
-  var slideshow = function (config) {
+  var slideshow = uncurryConfig(function (config) {
 	config.padding = config.padding || 0;
 	config.transitionTime = config.transitionTime || 0;
 	return layout(function ($el, ctx, cs) {
@@ -3139,7 +3147,7 @@ function waitForWebfonts(fonts, callback) {
 		minHeight: minHeight,
 	  };
 	});
-  };
+  });
   // var slideshowVertical = function (config, cs) {
   // 	config.padding = config.padding || 0;
   // 	config.topTransition = config.topTransition || 'none';
@@ -3216,7 +3224,7 @@ function waitForWebfonts(fonts, callback) {
   // 	]);
   // };
 
-  var sideBySide = function (config) {
+  var sideBySide = uncurryConfig(function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
 	config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
@@ -3290,9 +3298,9 @@ function waitForWebfonts(fonts, callback) {
 		}),
 	  };
 	});
-  };
+  });
 
-  var slideIn = function (config) {
+  var slideIn = uncurryConfig(function (config) {
 	config = config || {};
 	config.top = config.top || 50;
 	config.transition = config.transition || '1s';
@@ -3325,8 +3333,8 @@ function waitForWebfonts(fonts, callback) {
 		minHeight: i.minHeight,
 	  };
 	});
-  };
-  var fadeIn = function (config) {
+  });
+  var fadeIn = uncurryConfig(function (config) {
 	config = config || {};
 	config.transition = config.transition || '1s';
 	config.margin = config.margin || 0;
@@ -3358,9 +3366,9 @@ function waitForWebfonts(fonts, callback) {
 		minHeight: i.minHeight,
 	  };
 	});
-  };
+  });
 
-  var slider = function (config, cs) {
+  var slider = uncurryConfig(function (config, cs) {
 	config = config || {};
 	config.leftTransition = config.leftTransition || '0s';
 	var grabbedS = stream.once(false);
@@ -3538,9 +3546,9 @@ function waitForWebfonts(fonts, callback) {
 		}),
 	  };
 	});
-  };
+  });
 
-  var stack = function (config) {
+  var stack = uncurryConfig(function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
 	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
@@ -3615,9 +3623,9 @@ function waitForWebfonts(fonts, callback) {
 		}),
 	  };
 	});
-  };
+  });
 
-  var stackStream = function (config) {
+  var stackStream = uncurryConfig(function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
 	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
@@ -3728,9 +3736,9 @@ function waitForWebfonts(fonts, callback) {
 		};
 	  });
 	};
-  };
+  });
 
-  var tree = function (config, index) {
+  var tree = uncurryConfig(function (config, index) {
 	config = config || {};
 	config.indent = config.indent || 10;
 	return function (actionS) {
@@ -3746,7 +3754,7 @@ function waitForWebfonts(fonts, callback) {
 		}))),
 	  ]);
 	};
-  };
+  });
 
   var intersperse = function (arr, v) {
 	var result = [];
@@ -3898,7 +3906,7 @@ function waitForWebfonts(fonts, callback) {
 	});
   };
 
-  var alignLRM = function (config) {
+  var alignLRM = uncurryConfig(function (config) {
 	config = config || {};
 	config.transition = (config.transition || 0) + 's';
 	return function (lrm) {
@@ -3937,7 +3945,9 @@ function waitForWebfonts(fonts, callback) {
 			rI.minWidth,
 			mI.minWidth,
 		  ], function (l, r, m) {
-			return [l, r, m].reduce(add);
+			return (m > 0) ?
+			  Math.max(m + 2 * l, m + 2 * r) :
+			  l + r;
 		  }),
 		  minHeight: stream.combine([
 			lI.minWidth,
@@ -3952,28 +3962,28 @@ function waitForWebfonts(fonts, callback) {
 			};
 		  }),
 		};
-	  })(lrm.l || nothing, lrm.r || nothing, lrm.m || nothing);
+	  })(lrm.l || nothing, lrm.r || nothing, lrm.m || lrm.c || nothing);
 	};
-  };
+  }, lrmIsNotConfig);
   var alignLeft = function (c) {
-	return alignLRM()({
+	return alignLRM({
 	  l: c,
 	});
   };
   var alignRight = function (c) {
-	return alignLRM()({
+	return alignLRM({
 	  r: c,
 	});
   };
-  var center = function (config) {
+  var center = uncurryConfig(function (config) {
 	return function (c) {
 	  return alignLRM(config)({
 		m: c,
 	  });
 	};
-  };
+  });
 
-  var alignTBM = function (config) {
+  var alignTBM = uncurryConfig(function (config) {
 	config = config || {};
 	config.transition = (config.transition || 0) + 's';
 	return function (tbm) {
@@ -4022,42 +4032,47 @@ function waitForWebfonts(fonts, callback) {
 			tI.minHeight,
 			bI.minHeight,
 			mI.minHeight,
-		  ], function (t, b, m) {
+		  ], function (tH, bH, mH) {
 			return function (w) {
-			  return [t, b, m].map(apply(w)).reduce(add);
+			  var t = tH(w);
+			  var b = bH(w);
+			  var m = mH(w);
+			  return (m > 0) ?
+				Math.max(m + 2 * t, m + 2 * b) :
+				t + b;
 			};
 		  }),
 		};
-	  })(tbm.t || nothing, tbm.b || nothing, tbm.m || nothing);
+	  })(tbm.t || nothing, tbm.b || nothing, tbm.m || tbm.c || nothing);
 	};
-  };
+  }, tbmIsNotConfig);
   var alignVTop = function (c) {
-	return alignTBM()({
+	return alignTBM({
 	  t: c,
 	});
   };
   var alignVBottom = function (c) {
-	return alignTBM()({
+	return alignTBM({
 	  b: c,
 	});
   };
   var alignVMiddle = function (c) {
-	return alignTBM()({
+	return alignTBM({
 	  m: c,
 	});
   };
   var alignHLeft = function (c) {
-	return alignLRM()({
+	return alignLRM({
 	  l: c,
 	});
   };
   var alignHRight = function (c) {
-	return alignLRM()({
+	return alignLRM({
 	  r: c,
 	});
   };
   var alignHMiddle = function (c) {
-	return alignLRM()({
+	return alignLRM({
 	  m: c,
 	});
   };
@@ -4248,9 +4263,12 @@ function waitForWebfonts(fonts, callback) {
 	});
   };
 
-  var promiseComponent = function (cP) {
+  var promiseComponent = function (cP, c1) {
 	// var s = stream.once(nothing);
 	var s = stream.create();
+	if (c1) {
+	  stream.push(s, c1);
+	}
 	cP.then(function (c) {
 	  stream.push(s, c);
 	}, function (error) {
@@ -4433,7 +4451,7 @@ function waitForWebfonts(fonts, callback) {
 	})(panel));
   };
 
-  var fixedHeaderBody = function (config) {
+  var fixedHeaderBody = uncurryConfig(function (config) {
 	config.transition = config.transition || "0.5s";
 	return layout(function ($el, ctx, bodyC, headerC) {
 	  var headerHeightS = stream.create();
@@ -4482,7 +4500,7 @@ function waitForWebfonts(fonts, callback) {
 		}),
 	  };
 	});
-  };
+  });
 
   var makeSticky = function (str) {
 	str = str || onceZeroS;
@@ -4592,7 +4610,7 @@ function waitForWebfonts(fonts, callback) {
 	}, 0);
   };
 
-  var grid = function (config) {
+  var grid = uncurryConfig(function (config) {
 	config = config || {};
 	config.padding = config.padding || 0;
 	config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
@@ -4772,9 +4790,12 @@ function waitForWebfonts(fonts, callback) {
 		};
 	  })(cs);
 	};
-  };
+  });
 
   var withMinWidthStream = function (getMinWidthStream) {
+	if ($.type(getMinWidthStream) === 'number') {
+	  return minWidth(getMinWidthStream);
+	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withMinWidthStream');
 	  var i = ctx.append(c);
@@ -4796,6 +4817,9 @@ function waitForWebfonts(fonts, callback) {
 	});
   };
   var withMinHeightStream = function (getMinHeightStream) {
+	if ($.type(getMinHeightStream) === 'number') {
+	  return minHeight(getMinHeightStream);
+	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withMinHeightStream');
 	  var i = ctx.append(c);
@@ -4807,9 +4831,6 @@ function waitForWebfonts(fonts, callback) {
 		  minHeightS,
 		], function (mh, minHeight) {
 		  return function (w) {
-			if (Number.isNaN(Math.max(mh(w), minHeight(w)))) {
-			  debugger;
-			}
 			return Math.max(mh(w), minHeight(w));
 		  };
 		}),
@@ -4894,7 +4915,7 @@ function waitForWebfonts(fonts, callback) {
   // // 	}, c);
   // // };
 
-  var largestWidthThatFits = function (config) {
+  var largestWidthThatFits = uncurryConfig(function (config) {
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('largest-width-that-fits');
 	  var is = cs.map(function (c) {
@@ -4938,9 +4959,9 @@ function waitForWebfonts(fonts, callback) {
 		}),
 	  };
 	});
-  };
+  });
 
-  var overlays = function (config) {
+  var overlays = uncurryConfig(function (config) {
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('overlays');
 	  var is = cs.map(function (c) {
@@ -4969,10 +4990,10 @@ function waitForWebfonts(fonts, callback) {
 		}),
 	  };
 	});
-  };
+  });
 
 
-  // // var table = function (config, css) {
+  // // var table = function (config, css)) {
   // // 	config = config || {};
   // // 	var padding = (config.padding || 0) * 2;
   // // 	return div.all(stream.map(css, function (cs) {
@@ -5089,6 +5110,12 @@ function waitForWebfonts(fonts, callback) {
 	  return minWidth(size)(nothing);
 	},
   };
+  var rectangle = function (size) {
+	return all([
+	  minHeight(size.v || size.x || 0),
+	  minWidth(size.h || size.y || 0),
+	])(nothing);
+  };
   var matchStrings = function (stringsAndRouters) {
 	return function (str) {
 	  for (var i = 0; i < stringsAndRouters.length; i++ ) {
@@ -5134,6 +5161,12 @@ function waitForWebfonts(fonts, callback) {
 	return componentStream(stream.map(s, function (hash) {
 	  return router(hash);
 	}));
+  };
+
+  var scope = function (f) {
+	return function (ctx) {
+	  return f()(ctx);
+	};
   };
 
   // types - object where keys are field names, values are formType
@@ -5479,11 +5512,12 @@ function waitForWebfonts(fonts, callback) {
 	  border: border,
 	  changeThis: changeThis,
 	  clickThis: clickThis,
+	  component: component,
 	  componentStream: componentStreamWithExit,
+	  crop: crop,
 	  cssStream: cssStream,
 	  dimensions: withDimensions,
 	  dropdownPanel: dropdownPanel,
-	  element: component,
 	  empty: empty,
 	  fadeIn: fadeIn,
 	  grid: grid,
@@ -5499,11 +5533,12 @@ function waitForWebfonts(fonts, callback) {
 	  linkTo: linkTo,
 	  margin: margin,
 	  maxHeightStream: withMaxHeightStream,
-	  minHeight: minHeight,
+	  minHeight: withMinHeightStream,
 	  minHeightStream: withMinHeightStream,
 	  minHeightAtLeast: minHeightAtLeast,
-	  minWidth: minWidth,
+	  minWidth: withMinWidthStream,
 	  minWidthAtLeast: minWidthAtLeast,
+	  minWidthStream: withMinWidthStream,
 	  mousedownThis: mousedownThis,
 	  mousemoveThis: mousemoveThis,
 	  mouseoverThis: mouseoverThis,
@@ -5513,6 +5548,8 @@ function waitForWebfonts(fonts, callback) {
 	  onThis: onThis,
 	  overlays: overlays,
 	  promiseComponent: promiseComponent,
+	  rectangle: rectangle,
+	  scope: scope,
 	  sideBySide: sideBySide,
 	  sideSlidingPanel: sideSlidingPanel,
 	  slideIn: slideIn,
@@ -5560,7 +5597,9 @@ function waitForWebfonts(fonts, callback) {
 		center: centerSurplusWidth,
 		centerFirstRowThenAlignLeft: centerFirstRowThenAlignLeftSurplusWidth,
 		evenlySplit: evenlySplitSurplusWidth,
+		evenlySplitCenter: evenlySplitCenterSurplusWidth,
 		justify: justifySurplusWidth,
+		justifyAndCenter: justifyAndCenterSurplusWidth,
 		giveToNth: giveToNth,
 	  },
 	  surplusHeight: {

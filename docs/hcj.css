@@ -54,11 +54,11 @@ table {
 }
 
 
-a,
-a:link,
-a:visited,
-a:hover,
-a:active {
+a.no-style,
+a.no-style:link,
+a.no-style:visited,
+a.no-style:hover,
+a.no-style:active {
     color: inherit;
     text-decoration: inherit;
     font-weight: inherit;
@@ -75,11 +75,6 @@ input[type=radio   ]:not(old){
   padding   : 0;
 }
 
-button {
-	border: none;
-	padding: 0px;
-	font: inherit;
-}
 strong {
 	font-weight: bold;
 }
