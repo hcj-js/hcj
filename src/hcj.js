@@ -21,10 +21,10 @@
 	};
   };
   var lrmIsNotConfig = function (obj) {
-	return obj.l || obj.r || obj.m;
+	return !obj || obj.l || obj.r || obj.m;
   };
   var tbmIsNotConfig = function (obj) {
-	return obj.t || obj.b || obj.m;
+	return !obj || obj.t || obj.b || obj.m;
   };
   var caseSplit = function (cases, obj) {
 	// may curry
