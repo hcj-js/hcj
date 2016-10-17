@@ -4370,7 +4370,7 @@ function waitForWebfonts(fonts, callback) {
 	  if (config.panelHeightS) {
 		stream.pushAll(context.height, config.panelHeightS);
 	  }
-	  var i = panel(context);
+	  var i = ctx.append(panel, context);
 	  $el.css('overflow', 'hidden');
 	  i.$el.css('transition', 'top ' + config.transition)
 		.css('z-index', 1000);
@@ -4425,7 +4425,7 @@ function waitForWebfonts(fonts, callback) {
 		  ctx.width,
 		], function (on, w) {
 		  return on ? 0 : w;
-		})
+		}),
 	  });
 	  i.$el.css('transition', 'left ' + config.transition)
 		.css('z-index', 1000);
