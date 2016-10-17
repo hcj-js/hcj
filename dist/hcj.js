@@ -1544,21 +1544,24 @@ function waitForWebfonts(fonts, callback) {
   var displayedS = stream.once(false);
 
   var updateDomEls = [];
+  var updateDomKinds = [];
   var updateDomProps = [];
   var updateDomValues = [];
   var runDomFuncs = function () {
 	for (var i = 0; i < updateDomEls.length; i++) {
-	  updateDomEls[i].css(updateDomProps[i], updateDomValues[i]);
+	  updateDomEls[i][updateDomKinds[i]](updateDomProps[i], updateDomValues[i]);
 	}
 	updateDomEls = [];
+	updateDomKinds = [];
 	updateDomProps = [];
 	updateDomValues = [];
   };
-  var updateDomFunc = function ($el, ctx, prop, value) {
+  var updateDomFunc = function ($el, kind, prop, value) {
 	if (updateDomEls.length === 0) {
 	  stream.defer(runDomFuncs);
 	}
 	updateDomEls.push($el);
+	updateDomKinds.push(kind);
 	updateDomProps.push(prop);
 	updateDomValues.push(value);
   };
@@ -1730,16 +1733,16 @@ function waitForWebfonts(fonts, callback) {
 	  .css('pointer-events', 'initial')
 	  .css('position', 'absolute');
 	stream.onValue(context.widthCss || context.width, function (w) {
-	  updateDomFunc($el, context, 'width', w);
+	  updateDomFunc($el, 'css', 'width', w);
 	});
 	stream.onValue(context.heightCss || context.height, function (h) {
-	  updateDomFunc($el, context, 'height', h);
+	  updateDomFunc($el, 'css', 'height', h);
 	});
 	stream.onValue(context.topCss || context.top, function (t) {
-	  updateDomFunc($el, context, 'top', t);
+	  updateDomFunc($el, 'css', 'top', t);
 	});
 	stream.onValue(context.leftCss || context.left, function (l) {
-	  updateDomFunc($el, context, 'left', l);
+	  updateDomFunc($el, 'css', 'left', l);
 	});
 	stream.combine([
 	  context.width,
@@ -1747,7 +1750,7 @@ function waitForWebfonts(fonts, callback) {
 	  context.top,
 	  context.left,
 	], function () {
-	  updateDomFunc($el, context, 'visibility', 'initial');
+	  updateDomFunc($el, 'css', 'visibility', 'initial');
 	});
 
 	var instance = {
@@ -1900,7 +1903,7 @@ function waitForWebfonts(fonts, callback) {
 	  ctx.left,
 	], function () {
 	  stream.push(displayedS, true);
-	  updateDomFunc($('body'), ctx, 'height', 'auto');
+	  updateDomFunc($('body'), 'css', 'height', 'auto');
 	});
 	return ctx.append(c);
   });
@@ -2525,8 +2528,11 @@ function waitForWebfonts(fonts, callback) {
 	return img(function ($el, ctx) {
 	  var minWidth = stream.create();
 	  var minHeight = stream.create();
+	  if (srcStream.lastValue) {
+		$el.prop('src', srcStream.lastValue);
+	  }
 	  stream.map(srcStream, function (src) {
-		$el.prop('src', src);
+		updateDomFunc($el, 'prop', 'src', src);
 	  });
 	  $el.on('load', function () {
 		var aspectRatio = $el[0].naturalWidth / $el[0].naturalHeight;
