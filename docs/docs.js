@@ -824,12 +824,11 @@ $(function () {
 
   var version2 = docStack([
 	p('Remove JQuery dependency, making hcj smaller and more agnostic'),
-	p('Add a Test Page testing the standard library, as well as documenting how to use it'),
 	p('Document Jso (see https://github.com/jeffersoncarpenter/casesplit)'),
 	p('Add some float left and float right functionality'),
 	p('Automatically apply CSS transitions / make sure they work'),
 	p('See if using canvas to measure text is faster than placing a DOM element in a sandbox'),
-	p('(maybe) CSS approximations of components and layouts for server-side rendering'),
+	p('CSS approximations of components and layouts for server-side rendering'),
   ]);
 
   var support = docStack([
@@ -895,7 +894,7 @@ $(function () {
 	}, {
 	  str: 't',
 	}]),
-	c.text("invisible text", {
+	c.text("secret text", {
 	  color: hcj.color.create({
 		r: 0,
 		g: 0,
@@ -936,7 +935,7 @@ $(function () {
 	c.nothing,
 
 	c.nothing,
-	h2("alignH"),
+	h2("alignHorizontal"),
 	p('Align three items left, right, and middle'),
 	c.alignH({
 	  l: pm('LEFT'),
@@ -945,7 +944,7 @@ $(function () {
 	}),
 
 	c.nothing,
-	h2("alignV"),
+	h2("alignVertical"),
 	p('Align three items top, bottom, and middle'),
 	c.sideBySide([
 	  c.alignV({
@@ -1241,6 +1240,9 @@ $(function () {
 	title: 'Terminology',
 	component: aLittleVocab,
   }, {
+	title: 'Test Page',
+	component: testPage,
+  }, {
 	title: 'Rendering Components',
 	component: renderingComponents,
   }, {
@@ -1273,9 +1275,6 @@ $(function () {
   }, {
 	title: 'cs is not a function',
 	component: csIsNotAFunction,
-  }, {
-	title: 'Test Page',
-	component: testPage,
   }, {
 	title: 'Planned Features',
 	component: version2,
