@@ -770,8 +770,31 @@ $(function () {
 
   var standardLibraryForms = docStack([
 	h2('HCJ Forms'),
-	p("Forms documentation coming soon"),
-	// p("Hcj provides some functionality for generating web forms.  To be frank it's a little haphazard, and will be replaced by something cleaner in the future.  However it definitely works."),
+	p("Hcj takes the liberty of providing a way to display web forms.  It's kind of arbitrary, but it seems to work."),
+
+	h3('formType'),
+	p('The hcj form types are the keys of the `window.hcj.forms.formType` object.  Its values are those form types\' constructors.  These constructors are either objects whose one property, `type`, is again the form type, or functions that take some parameters and return an object with such a `type` property and that additional data.  The hcj form types are as follows, generally corresponding to html input types:'),
+	stack([
+	  p('`button`'),
+	  p('`checkbox`'),
+	  p('`date`'),
+	  p('`dropdown` - function taking an array of objects with `name` and `value` properties giving the options\' names and values'),
+	  p('`image` - will be changed to `file` by 1.0'),
+	  p('`number`'),
+	  p('`password`'),
+	  p('`radios` - function taking an arary of strings giving the buttons\' unique values'),
+	  p('`text`'),
+	  p('`textarea`'),
+	  p('`time`'),
+	]),
+
+	h3('forms.formComponent'),
+	p("The `window.hcj.forms.formComponent` object has exactly the same keys as the `formType` object.  While that object is for signifying form types, this object is for rendering components."),
+
+	h3('forms.formStyle'),
+	p("An hcj form style is a function that styles a form element."),
+
+	h3('forms.formFor'),
 
 	// h2("hcj.forms.formFor"),
 	// p("The formFor function is for generating forms.  It is curried, taking several parameters in sequence.  These paramaters are:"),
@@ -823,7 +846,7 @@ $(function () {
   ]);
 
   var version2 = docStack([
-	p('Remove JQuery dependency, making hcj smaller and more agnostic'),
+	p('Remove JQuery and moment.js dependencies, making hcj smaller and more agnostic'),
 	p('Document Jso (see https://github.com/jeffersoncarpenter/casesplit)'),
 	p('Add some float left and float right functionality'),
 	p('Automatically apply CSS transitions / make sure they work'),
