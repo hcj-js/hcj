@@ -4168,11 +4168,21 @@
 	}
 	return year + '-' + month + '-' + day;
   };
+  var getFormElementBorderWidthH = function ($el) {
+	var width = 0;
+	width += parseFloat($el.css('padding-left'));
+	width += parseFloat($el.css('border-left-width'));
+	return width;
+  };
+  var getFormElementBorderWidthV = function ($el) {
+	var width = 0;
+	width += parseFloat($el.css('padding-top'));
+	width += parseFloat($el.css('border-top-width'));
+	return width;
+  };
   var formElementBorderWidth = (function () {
 	var $input = $(document.createElement('input')).appendTo($('body'));
-	var width = 0;
-	width += parseFloat($input.css('padding'));
-	width += parseFloat($input.css('border-width'));
+	var width = getFormElementBorderWidthH($input);
 	$input.remove();
 	return width;
   })();
@@ -4429,12 +4439,18 @@
 		$el.on('keyup', function () {
 		  stream.push(s, $el.val());
 		});
-		var lastOuterWidth = $el.outerWidth() - 2 * formElementBorderWidth;
-		var lastOuterHeight = $el.outerHeight() - 2 * formElementBorderWidth;
+		var borderWidthH = getFormElementBorderWidthH($el);
+		var borderWidthV = getFormElementBorderWidthV($el);
+		var lastOuterWidth = $el.outerWidth() - 2 * borderWidthH;
+		var lastOuterHeight = $el.outerHeight() - 2 * borderWidthV;
 		$('body').on('mousemove', function () {
 		  // this handler is a memory leak, should unbind it on remove
-		  var currentOuterWidth = $el.outerWidth() - 2 * formElementBorderWidth;
-		  var currentOuterHeight = $el.outerHeight() - 2 * formElementBorderWidth;
+		  var borderWidthH = getFormElementBorderWidthH($el);
+		  var borderWidthV = getFormElementBorderWidthV($el);
+		  var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
+		  var currentOuterHeight = $el.outerHeight() - 2 * borderWidthV;
+		  console.log(lastOuterWidth);
+		  console.log(currentOuterWidth);
 		  if (lastOuterWidth !== currentOuterWidth) {
 			stream.push(mw, currentOuterWidth);
 			lastOuterWidth = currentOuterWidth;
@@ -4445,8 +4461,10 @@
 		  }
 		});
 		$el.on('click', function () {
-		  stream.push(mw, $el.outerWidth() - 2 * formElementBorderWidth);
-		  stream.push(mh, constant($el.outerHeight() - 2 * formElementBorderWidth));
+		  var borderWidthH = getFormElementBorderWidthH($el);
+		  var borderWidthV = getFormElementBorderWidthV($el);
+		  stream.push(mw, $el.outerWidth() - 2 * borderWidthH);
+		  stream.push(mh, constant($el.outerHeight() - 2 * borderWidthV));
 		});
 		return {
 		  minWidth: mw,
@@ -4546,7 +4564,7 @@
 			  }, {});
 			  var disabledS = stream.once(false);
 			  var submit = function (name) {
-				return style('', stream.create(), formType.button, name)(text({
+				return style('', stream.create(), formType.button(), name)(text({
 				  str: name,
 				  el: button,
 				  measureWidth: true,
@@ -4644,6 +4662,7 @@
 	  nothing: nothing,
 	  onThis: onThis,
 	  overlays: overlays,
+	  passthrough: passthrough,
 	  promiseComponent: promiseComponent,
 	  rectangle: rectangle,
 	  scope: scope,
@@ -4683,6 +4702,7 @@
 	},
 	forms: {
 	  formComponent: formComponent,
+	  formElementBorderWidth: formElementBorderWidth,
 	  formFor: formFor,
 	  formStyle: formStyle,
 	  formType: formType,
