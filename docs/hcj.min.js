@@ -4418,8 +4418,10 @@ function waitForWebfonts(fonts, callback) {
 	  stream.combineInto([
 		ctx.height,
 		windowHeight,
-	  ], function (sh, wh) {
-		return wh - sh;
+		panelI.minWidth,
+		panelI.minHeight,
+	  ], function (sh, wh, mw, mh) {
+		return Math.max(wh - sh, mh(mw));
 	  }, panelCtx.height);
 	  stream.pushAll(ctx.height, panelCtx.top);
 	  stream.combineInto([
