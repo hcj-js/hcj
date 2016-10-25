@@ -4365,6 +4365,7 @@ function waitForWebfonts(fonts, callback) {
 	config.transition = config.transition || "0.5s";
 	return layout(function ($el, ctx, source, panel) {
 	  $el.addClass('dropdown-panel');
+	  $el.css('overflow', 'visible');
 	  var panelCtx = {
 		height: stream.create(),
 		top: stream.create(),
@@ -4395,7 +4396,6 @@ function waitForWebfonts(fonts, callback) {
 		stream.pushAll(context.height, config.panelHeightS);
 	  }
 	  var i = ctx.append(panel, context);
-	  $el.css('overflow', 'hidden');
 	  i.$el.css('transition', 'top ' + config.transition)
 		.css('z-index', 1000);
 	  return i;
