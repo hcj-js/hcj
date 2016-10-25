@@ -13,6 +13,7 @@
 		"document": false,
 		"FormData": false,
 		"location": false,
+		"moment": false,
 		"Q": false,
 		"require": false,
 		"requirejs": false,

@@ -64,9 +64,9 @@ a.no-style:active {
     font-weight: inherit;
 }
 
-input {
-	border: none;
-	padding: 0;
+input, textarea {
+	/* border: none; */
+	/* padding: 0; */
 }
 
 input[type=checkbox]:not(old),

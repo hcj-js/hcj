@@ -565,13 +565,14 @@
 	};
   };
 
-  var measureWidth = function ($el, w) {
+  var measureWidth = function ($el) {
 	var $sandbox = $('.sandbox');
 	var $clone = $el.clone();
-	$clone.css('width', w ? px(w) : '')
+	$clone.css('width', '')
 	  .css('height', '')
 	  .css('display', 'inline-block')
 	  .appendTo($sandbox);
+
 
 	var width = parseFloat($clone.css('width'));
 	$clone.remove();
@@ -607,9 +608,6 @@
 
 	var onRemove = [];
 	context.append = function (c, ctx) {
-	  if (!instance) {
-		instance = ctx;
-	  }
 	  ctx = ctx || {};
 	  try {
 		ctx.$el = ctx.$el || $el;
@@ -628,19 +626,22 @@
 	  }
 	};
 
+	var mapPx = function (s) {
+	  return s && stream.map(s, px);
+	};
 	$el.css('visibility', 'hidden')
 	  .css('pointer-events', 'initial')
 	  .css('position', 'absolute');
-	stream.onValue(context.widthCss || context.width, function (w) {
+	stream.onValue(context.widthCss || mapPx(context.width), function (w) {
 	  updateDomFunc($el, 'css', 'width', w);
 	});
-	stream.onValue(context.heightCss || context.height, function (h) {
+	stream.onValue(context.heightCss || mapPx(context.height), function (h) {
 	  updateDomFunc($el, 'css', 'height', h);
 	});
-	stream.onValue(context.topCss || context.top, function (t) {
+	stream.onValue(context.topCss || mapPx(context.top), function (t) {
 	  updateDomFunc($el, 'css', 'top', t);
 	});
-	stream.onValue(context.leftCss || context.left, function (l) {
+	stream.onValue(context.leftCss || mapPx(context.left), function (l) {
 	  updateDomFunc($el, 'css', 'left', l);
 	});
 	stream.combine([
@@ -655,16 +656,16 @@
 	var instance = {
 	  $el: $el,
 	};
-	var streams = build($el, context, function (wd) {
-	  var w = measureWidth($el, wd);
+	var streams = build($el, context, function (config) {
+	  var w = measureWidth($el, config);
 	  if (instance.minWidth) {
 		stream.push(instance.minWidth, w);
 	  }
 	  else {
 		instance.initialMinWidth = w;
 	  }
-	}, function () {
-	  var h = measureHeight($el);
+	}, function (config) {
+	  var h = measureHeight($el, config);
 	  if (instance.minHeight) {
 		stream.push(instance.minHeight, h);
 	  }
@@ -1065,34 +1066,21 @@
 
   var adjustPosition = function (minSize, position) {
 	minSize = minSize || {};
-	minSize.minWidth = minSize.minWidth || id;
-	minSize.minHeight = minSize.minHeight || id;
 	position = position || {};
-	position.top = position.top || onceZeroS;
-	position.left = position.left || onceZeroS;
-	position.width = position.width || id;
-	position.height = position.height || id;
-	return layout(function ($el, ctx, c) {
-	  var context = {
-		top: stream.create(),
-		left: stream.create(),
-		width: stream.create(),
-		height: stream.create(),
+	return function (c) {
+	  return function (ctx) {
+		ctx = $.extend({}, ctx, {
+		  top: position.top || ctx.top,
+		  left: position.left || ctx.left,
+		  width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
+		  height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
+		});
+		var i = c(ctx);
+		i.minWidth = minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth;
+		i.minHeight = minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight;
+		return i;
 	  };
-	  var i = ctx.append(c, context);
-	  stream.pushAll(position.top, context.top);
-	  stream.pushAll(position.left, context.left);
-	  stream.pushAll(stream.map(ctx.width, position.width), context.width);
-	  stream.pushAll(stream.map(ctx.height, position.height), context.height);
-	  return {
-		minWidth: stream.map(i.minWidth, function (mw) {
-		  return minSize.minWidth(mw);
-		}),
-		minHeight: stream.map(i.minHeight, function (mh) {
-		  return minSize.minHeight(mh);
-		}),
-	  };
-	});
+	};
   };
 
   var adjustMinSize = uncurryConfig(function (config) {
@@ -3135,6 +3123,13 @@
 	  };
 	});
   };
+  var cStreams = function (initialValues, f) {
+	var streams = initialValues.map(stream.once);
+	return f.apply(null, streams);
+  };
+  var cStream = function (initialValue, f) {
+	return cStreams([initialValue], f);
+  };
 
   var componentStreamWithExit = function (cStream, exit, entrance) {
 	var i;
@@ -4099,309 +4094,499 @@
 	};
   };
 
+  var formType = {
+	button: function (name, onClick) {
+	  return {
+		type: 'button',
+		enabledS: stream.once(true),
+		name: name,
+		onClick: onClick,
+	  };
+	},
+	checkbox: {
+	  type: 'checkbox',
+	},
+	date: {
+	  type: 'date',
+	},
+	// options is array of strings
+	dropdown: function (options) {
+	  return {
+		type: 'dropdown',
+		options: options,
+	  };
+	},
+	image: {
+	  type: 'image',
+	},
+	number: {
+	  type: 'number',
+	},
+	password: {
+	  type: 'password',
+	},
+	// options is array of objects with 'name' and 'value' properties
+	radios: function (options) {
+	  return {
+		type: 'radios',
+		options: options,
+	  };
+	},
+	text: {
+	  type: 'text',
+	},
+	textarea: {
+	  type: 'textarea',
+	},
+	time: {
+	  type: 'time',
+	},
+  };
+  var dateInputRegexp = /(\d*)-(\d*)-(\d*)/; // year month day
+  var parseDateInputValue = function (val) {
+	var match = dateInputRegexp.exec(val);
+	if (match) {
+	  var d = new Date();
+	  d.setYear(match[1]);
+	  d.setMonth(parseInt(match[2]) - 1);
+	  d.setDate(match[3]);
+	  return d;
+	}
+  };
+  var stringifyDateInputValue = function (date) {
+	if (!date) {
+	  return;
+	}
+	var year = date.getFullYear();
+	var month = date.getMonth() + 1;
+	if (month < 10) {
+	  month = "0" + month;
+	}
+	var day = date.getDate();
+	if (day < 10) {
+	  day = "0" + day;
+	}
+	return year + '-' + month + '-' + day;
+  };
+  var getFormElementBorderWidthH = function ($el) {
+	var width = 0;
+	width += parseFloat($el.css('padding-left'));
+	width += parseFloat($el.css('border-left-width'));
+	return width;
+  };
+  var getFormElementBorderWidthV = function ($el) {
+	var width = 0;
+	width += parseFloat($el.css('padding-top'));
+	width += parseFloat($el.css('border-top-width'));
+	return width;
+  };
+  var formElementBorderWidth = (function () {
+	var $input = $(document.createElement('input')).appendTo($('body'));
+	var width = getFormElementBorderWidthH($input);
+	$input.remove();
+	return width;
+  })();
+  var applyFormBorder = adjustPosition({
+	minWidth: function (mw) {
+	  return mw + (2 * formElementBorderWidth);
+	},
+	minHeight: function (mh) {
+	  return function (w) {
+		return mh(w) + (2 * formElementBorderWidth);
+	  };
+	},
+  }, {
+	width: function (w) {
+	  return w - 2 * formElementBorderWidth;
+	},
+	height: function (h) {
+	  return h - 2 * formElementBorderWidth;
+	},
+  });
+  var formComponent = {
+	button: function (k, s, t) {
+	  s = s || stream.create();
+	  return all([
+		and(function (i) {
+		  stream.map(t.enabledS, function (enabled) {
+			i.$el.prop('disabled', !enabled);
+		  });
+		}),
+		clickThis(function (ev) {
+		  if (!t.enabledS.lastValue) {
+			ev.preventDefault();
+			return;
+		  }
+		  t.onClick && t.onClick(ev, s, function () {
+			stream.push(t.enabledS, false);
+			return function () {
+			  stream.push(t.enabledS, true);
+			};
+		  });
+		}),
+	  ])(text({
+		str: t.name,
+		el: button,
+		measureWidth: true,
+	  }));
+	},
+	checkbox: function (k, s) {
+	  s = s || stream.create();
+	  return input(function ($el, ctx, mw, mh) {
+		$el.prop('id', k);
+		$el.prop('name', k);
+		$el.prop('type', 'checkbox');
+		stream.onValue(s, function (v) {
+		  $el.prop('checked', v ? 'checked' : '');
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, $el.val());
+		});
+		$el.on('change', function () {
+		  stream.push(s, $el.prop('checked'));
+		});
+		mw();
+		mh();
+	  });
+	},
+	date: function (k, s) {
+	  return all([
+		applyFormBorder,
+	  ])(input(function ($el, ctx, mw, mh) {
+		mw();
+		mh();
+		$el.prop('name', k);
+		$el.prop('type', 'date');
+		stream.onValue(s, function (v) {
+		  // this if-statement not tested
+		  if ((v && v.getTime()) !== ($el.val() && parseDateInputValue($el.val()).getTime())) {
+			$el.val(stringifyDateInputValue(v));
+		  }
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, parseDateInputValue($el.val()));
+		});
+		$el.on('change', function () {
+		  stream.push(s, parseDateInputValue($el.val()));
+		});
+	  }));
+	},
+	dropdown: function (k, s, type) {
+	  return select(function ($el, ctx, mw, mh) {
+		$el.prop('name', k);
+		type.options.map(function (option) {
+		  if ('string' === $.type(option)) {
+			option = {
+			  name: option,
+			  value: option,
+			};
+		  }
+		  $(document.createElement('option'))
+			.html(option.name)
+			.prop('value', option.value)
+			.appendTo($el);
+		});
+		if (!s.lastValue) {
+		  stream.push(s, $el.val());
+		}
+		stream.onValue(s, function (v) {
+		  if (v !== $el.val()) {
+			$el.val(v);
+		  }
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, $el.val());
+		});
+		$el.on('change', function () {
+		  stream.push(s, $el.val());
+		});
+		mw();
+		mh();
+	  });
+	},
+	image: function (k, s) {
+	  return input(function ($el, ctx, mw, mh) {
+		mw();
+		mh();
+		$el.prop('name', k);
+		$el.prop('type', 'file');
+		$el.prop('accept', 'image/*');
+		$el.on('change', function (ev) {
+		  var file = ev.target.files.length > 0 && ev.target.files[0];
+		  if (file) {
+			var reader = new FileReader();
+			reader.onload = function (e) {
+			  stream.push(s, e.target.result);
+			};
+			reader.readAsDataURL(ev.target.files[0]);
+		  }
+		});
+	  });
+	},
+	number: function (k, s) {
+	  return all([
+		applyFormBorder,
+	  ])(input(function ($el, ctx, mw, mh) {
+		mw();
+		mh();
+		$el.prop('name', k);
+		$el.prop('type', 'number');
+		stream.onValue(s, function (v) {
+		  if (v !== $el.val()) {
+			$el.val(v);
+		  }
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, $el.val());
+		});
+		$el.on('change', function () {
+		  stream.push(s, $el.val());
+		});
+	  }));
+	},
+	password: function (k, s) {
+	  return all([
+		applyFormBorder,
+	  ])(input(function ($el, ctx, mw, mh) {
+		mw();
+		mh();
+		$el.prop('name', k);
+		$el.prop('type', 'password');
+		stream.onValue(s, function (v) {
+		  if (v !== $el.val()) {
+			$el.val(v);
+		  }
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, $el.val());
+		});
+		$el.on('change', function () {
+		  stream.push(s, $el.val());
+		});
+		$el.on('keyup', function () {
+		  stream.push(s, $el.val());
+		});
+	  }));
+	},
+	radios: function (k, s, type) {
+	  return type.options.map(function (option) {
+		return input(function ($el, ctx, mw, mh) {
+		  $el.prop('id', option);
+		  $el.prop('value', option);
+		  $el.prop('name', k);
+		  $el.prop('type', 'radio');
+		  stream.onValue(s, function (v) {
+			$el.prop('checked', (v === option) ? 'checked' : '');
+		  });
+		  $el.on('change', function () {
+			if ($el.prop('checked')) {
+			  stream.push(s, option);
+			}
+		  });
+		  mw();
+		  mh();
+		});
+	  });
+	},
+	text: function (k, s) {
+	  return all([
+		applyFormBorder,
+	  ])(input(function ($el, ctx, mw, mh) {
+		mw();
+		mh();
+		$el.prop('name', k);
+		stream.onValue(s, function (v) {
+		  if (v !== $el.val()) {
+			$el.val(v);
+		  }
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, $el.val());
+		});
+		$el.on('change', function () {
+		  stream.push(s, $el.val());
+		});
+		$el.on('keyup', function () {
+		  stream.push(s, $el.val());
+		});
+	  }));
+	},
+	textarea: function (k, s) {
+	  return all([
+		applyFormBorder,
+	  ])(textarea(function ($el, ctx) {
+		var mw = stream.once(150);
+		var mh = stream.once(constant(50));
+		$el.prop('name', k);
+		stream.onValue(s, function (v) {
+		  if (v !== $el.val()) {
+			$el.val(v);
+		  }
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, $el.val());
+		});
+		$el.on('change', function () {
+		  stream.push(s, $el.val());
+		});
+		$el.on('keyup', function () {
+		  stream.push(s, $el.val());
+		});
+		var borderWidthH = getFormElementBorderWidthH($el);
+		var borderWidthV = getFormElementBorderWidthV($el);
+		var lastOuterWidth = $el.outerWidth() - 2 * borderWidthH;
+		var lastOuterHeight = $el.outerHeight() - 2 * borderWidthV;
+		$('body').on('mousemove', function () {
+		  // this handler is a memory leak, should unbind it on remove
+		  var borderWidthH = getFormElementBorderWidthH($el);
+		  var borderWidthV = getFormElementBorderWidthV($el);
+		  var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
+		  var currentOuterHeight = $el.outerHeight() - 2 * borderWidthV;
+		  console.log(lastOuterWidth);
+		  console.log(currentOuterWidth);
+		  if (lastOuterWidth !== currentOuterWidth) {
+			stream.push(mw, currentOuterWidth);
+			lastOuterWidth = currentOuterWidth;
+		  }
+		  if (lastOuterHeight !== currentOuterHeight) {
+			stream.push(mh, constant(currentOuterHeight));
+			lastOuterHeight = currentOuterHeight;
+		  }
+		});
+		$el.on('click', function () {
+		  var borderWidthH = getFormElementBorderWidthH($el);
+		  var borderWidthV = getFormElementBorderWidthV($el);
+		  stream.push(mw, $el.outerWidth() - 2 * borderWidthH);
+		  stream.push(mh, constant($el.outerHeight() - 2 * borderWidthV));
+		});
+		return {
+		  minWidth: mw,
+		  minHeight: mh,
+		};
+	  }));
+	},
+	time: function (k, s) {
+	  return all([
+		applyFormBorder,
+	  ])(input(function ($el, ctx, mw, mh) {
+		mw();
+		mh();
+		$el.prop('name', k);
+		$el.prop('type', 'time');
+		stream.onValue(s, function (v) {
+		  if (v !== $el.val()) {
+			$el.val(v);
+		  }
+		});
+		$el.on('blur', function () {
+		  // added blur as a trigger after autocomplete
+		  stream.push(s, $el.val());
+		});
+		$el.on('change', function () {
+		  stream.push(s, $el.val());
+		});
+	  }));
+	},
+  };
+  var buttonInput = constant(all([
+	minWidth(150),
+  ]));
+  var textInput = constant(all([
+	margin({
+	  top: 1,
+	  bottom: 1,
+	  left: 0,
+	  right: 0,
+	}),
+	border(color({
+	  r: 0,
+	  g: 0,
+	  b: 0,
+	}), {
+	  top: 2,
+	  bottom: 2,
+	  left: 2,
+	  right: 2,
+	}, 'inset'),
+	minWidth(150),
+  ]));
+  var textareaInput = constant(all([
+	textInput(),
+	minHeightAtLeast(100),
+  ]));
+  var formStyle = {
+	button: buttonInput,
+	checkbox: id,
+	date: textInput,
+	dropdown: buttonInput,
+	image: textInput,
+	number: textInput,
+	password: textInput,
+	radios: id,
+	text: textInput,
+	textarea: textInput,
+	time: textInput,
+  };
   // types - object where keys are field names, values are formType
   // properties
-  var formFor = function (types, names) {
-	names = names || {};
-	// defaults - optional object where keys are field names,
-	// values are undefined OR a default value
-	return function (defaults) {
-	  defaults = defaults || {};
-	  return function (mkOnSubmit) {
-		// style - function taking a formType and a component,
-		// returns a styled component
-		return function (style) {
-		  style = style || function (_, c) {
-			return c;
-		  };
-		  var elements = {
-			captcha: function (k, s) {
-			  return div(function ($el, ctx, mw, mh) {
-				$.getScript('https://www.google.com/recaptcha/api.js', function () {
-				  auth.grecaptchaP.then(function (grecaptcha) {
-					auth.grecaptchaSitekeyP.then(function (sitekey) {
-					  grecaptcha.render($el[0], {
-						sitekey: sitekey,
-						callback: function (v) {
-						  stream.push(s, v);
-						},
-					  });
-					  mh();
-					  mw();
-					});
-				  });
-				});
-			  });
-			},
-			checkbox: function (k, s) {
-			  return input(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('id', k);
-				$el.prop('name', k);
-				$el.prop('type', 'checkbox');
-				stream.onValue(s, function (v) {
-				  $el.prop('checked', v ? 'checked' : '');
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, $el.prop('checked'));
-				});
-			  });
-			},
-			date: function (k, s) {
-			  return input(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('name', k);
-				$el.prop('type', 'date');
-				stream.onValue(s, function (v) {
-				  $el.val(moment(v).format('YYYY-MM-DD'));
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, moment($el.val()).toDate());
-				});
-			  });
-			},
-			dropdown: function (k, s, type) {
-			  return select(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('name', k);
-				type.options.map(function (option) {
-				  if ('string' === $.type(option)) {
-					option = {
-					  name: option,
-					  value: option,
-					};
-				  }
-				  $(document.createElement('option'))
-					.html(option.name)
-					.prop('value', option.value)
-					.appendTo($el);
-				});
-				if (!s.lastValue) {
-				  stream.push(s, $el.val());
-				}
-				stream.onValue(s, function (v) {
-				  $el.val(v);
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, $el.val());
-				});
-			  });
-			},
-			image: function (k, s) {
-			  return input(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('name', k);
-				$el.prop('type', 'file');
-				$el.prop('accept', 'image/*');
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function (ev) {
-				  stream.push(s, ev.target.files[0]);
-				});
-			  });
-			},
-			number: function (k, s) {
-			  return input(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('name', k);
-				$el.prop('type', 'number');
-				stream.onValue(s, function (v) {
-				  $el.val(v);
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, $el.val());
-				});
-			  });
-			},
-			password: function (k, s) {
-			  return input(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('name', k);
-				$el.prop('type', 'password');
-				stream.onValue(s, function (v) {
-				  $el.val(v);
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, $el.val());
-				});
-			  });
-			},
-			radios: function (k, s, type) {
-			  return type.options.map(function (option) {
-				return input(function ($el, ctx, mw, mh) {
-				  mw();
-				  mh();
-				  $el.prop('id', option);
-				  $el.prop('value', option);
-				  $el.prop('name', k);
-				  $el.prop('type', 'radio');
-				  stream.onValue(s, function (v) {
-					if (v === option) {
-					  $el.prop('checked', v ? 'checked' : '');
-					}
-				  });
-				  $el.on('blur', function () {
-					// added blur as a trigger after autocomplete
-					stream.push(s, $el.val());
-				  });
-				  $el.on('change', function () {
-					if ($el.prop('checked')) {
-					  stream.push(s, option);
-					}
-				  });
-				});
-			  });
-			},
-			starRating: function (k, s) {
-			  return input(function ($el) {
-				$el.prop('name', k);
-				$el.prop('type', 'hidden');
-				stream.onValue(s, function (v) {
-				  $el.val(v);
-				});
-				return {
-				  minWidth: onceZeroS,
-				  minHeight: stream.once(constant(0)),
-				};
-			  });
-			},
-			text: function (k, s) {
-			  return input(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('name', k);
-				stream.onValue(s, function (v) {
-				  $el.val(v);
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, $el.val());
-				});
-				$el.on('keyup', function () {
-				  stream.push(s, $el.val());
-				});
-			  });
-			},
-			textarea: function (k, s) {
-			  return textarea(function ($el, ctx) {
-				var mw = stream.once($el.outerWidth());
-				// 20 is a fucking magic number, meh
-				var mh = stream.once(constant($el.outerHeight() + 20));
-				$el.prop('name', k);
-				stream.onValue(s, function (v) {
-				  $el.val(v);
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, $el.val());
-				});
-				$el.on('keyup', function () {
-				  stream.push(s, $el.val());
-				});
-				var lastOuterWidth = $el.outerWidth();
-				var lastOuterHeight = $el.outerHeight();
-				$('body').on('mousemove', function () {
-				  // this handler is a memory leak, should unbind it
-				  var currentOuterWidth = $el.outerWidth();
-				  var currentOuterHeight = $el.outerHeight();
-				  if (lastOuterWidth !== currentOuterWidth) {
-					stream.push(mw, currentOuterWidth);
-					lastOuterWidth = currentOuterWidth;
-				  }
-				  if (lastOuterHeight !== currentOuterHeight) {
-					stream.push(mh, constant(currentOuterHeight - 20));
-					lastOuterHeight = currentOuterHeight;
-				  }
-				});
-				$el.on('click', function () {
-				  stream.push(mw, $el.outerWidth());
-				  stream.push(mh, constant($el.outerHeight() - 20));
-				});
-				stream.onValue(ctx.width, function (w) {
-				  $el.css('width', px(w));
-				});
-				stream.onValue(ctx.height, function (h) {
-				  $el.css('height', px(h));
-				});
-				return {
-				  minWidth: mw,
-				  minHeight: mh,
-				};
-			  });
-			},
-			time: function (k, s) {
-			  return input(function ($el, ctx, mw, mh) {
-				mw();
-				mh();
-				$el.prop('name', k);
-				$el.prop('type', 'time');
-				stream.onValue(s, function (v) {
-				  $el.val(v);
-				});
-				$el.on('blur', function () {
-				  // added blur as a trigger after autocomplete
-				  stream.push(s, $el.val());
-				});
-				$el.on('change', function () {
-				  stream.push(s, $el.val());
-				});
-			  });
-			},
-		  };
-		  var keys = Object.keys(types);
-		  return function (f) {
-			var streamsObj = keys.reduce(function (obj, k) {
-			  var d = defaults[k];
-			  obj[k] = d ? stream.once(d) : stream.create();
-			  return obj;
-			}, {});
-			var inputsObj = keys.reduce(function (obj, k) {
-			  var type = types[k];
-			  obj[k] = type && style(type, elements[type.type](k, streamsObj[k], type, names[k]), names[k], k, streamsObj[k]);
-			  return obj;
-			}, {});
-			var submit = function (name) {
-			  return style(formType.button, pushButton(name));
+  var formFor = function (formType, formComponent) {
+	return function (types, names) {
+	  names = names || {};
+	  // defaults - optional object where keys are field names,
+	  // values are undefined OR a default value
+	  return function (defaults) {
+		defaults = defaults || {};
+		return function (mkOnSubmit) {
+		  // style - function taking a formType and a component,
+		  // returns a styled component
+		  return function (style) {
+			style = style || function (_, c) {
+			  return c;
 			};
-			var onSubmit = mkOnSubmit(streamsObj);
-			return layout(form, function ($el, ctx, c) {
-			  $el.on('submit', onSubmit.onSubmit);
-			  return ctx.append(c);
-			})(f(streamsObj, inputsObj, submit, onSubmit.resultS));
+			var keys = Object.keys(types);
+			return function (f) {
+			  var streamsObj = keys.reduce(function (obj, k) {
+				var d = defaults[k];
+				obj[k] = d ? stream.once(d) : stream.create();
+				return obj;
+			  }, {});
+			  var inputsObj = keys.reduce(function (obj, k) {
+				var type = types[k];
+				obj[k] = type && style(k, streamsObj[k], type, names[k])(formComponent[type.type](k, streamsObj[k], type, names[k]));
+				return obj;
+			  }, {});
+			  var disabledS = stream.once(false);
+			  var submit = function (name) {
+				return style('', stream.create(), formType.button(), name)(text({
+				  str: name,
+				  el: button,
+				  measureWidth: true,
+				}), name);
+			  };
+			  var onSubmit = mkOnSubmit(streamsObj, function () {
+				stream.push(disabledS, true);
+				return function () {
+				  stream.push(disabledS, false);
+				};
+			  });
+			  return layout(form, function ($el, ctx, c) {
+				$el.on('submit', function (ev) {
+				  if (disabledS.lastValue) {
+					ev.preventDefault();
+					return;
+				  }
+				  onSubmit.onSubmit(ev);
+				});
+				return ctx.append(c);
+			  })(f(streamsObj, inputsObj, submit, onSubmit.resultS));
+			};
 		  };
 		};
 	  };
@@ -4477,6 +4662,7 @@
 	  nothing: nothing,
 	  onThis: onThis,
 	  overlays: overlays,
+	  passthrough: passthrough,
 	  promiseComponent: promiseComponent,
 	  rectangle: rectangle,
 	  scope: scope,
@@ -4486,6 +4672,8 @@
 	  slider: slider,
 	  slideshow: slideshow,
 	  stack: stack,
+	  stream: cStream,
+	  streams: cStreams,
 	  submitThis: submitThis,
 	  tabs: tabs,
 	  text: text,
@@ -4513,7 +4701,11 @@
 	  ul: ul,
 	},
 	forms: {
+	  formComponent: formComponent,
+	  formElementBorderWidth: formElementBorderWidth,
 	  formFor: formFor,
+	  formStyle: formStyle,
+	  formType: formType,
 	},
 	funcs: {
 	  constant: constant,
