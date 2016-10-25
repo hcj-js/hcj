@@ -141,7 +141,7 @@ $(function () {
 	  p('&#8226; `leftOffset`: Stream giving the left coordinate of $el relative to the page.'),
 	  p('&#8226; `topOffset`: Stream giving the top coordinate of $el relative to the page.'),
 	  p('&#8226; `onRemove()`: Signs up a callback to run when this instance is removed.'),
-	  p('&#8226; `append()`: Takes a `component` and an optional `viewport`.  Constructs a context and renders the component.  Property added by the `component` constructor.'),
+	  p('&#8226; `append()`: Takes a `component` and an optional `viewport`.  Constructs a context and renders the component.'),
 	]),
 	stack([
 	  p('`instance` - Object with the following four properties:'),
