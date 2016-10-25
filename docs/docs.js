@@ -240,12 +240,12 @@ $(function () {
 	  "});",
 	]),
 
-	h2('Basic Example - Purple Margin'),
-	p('`purpleMargin :: Component -> Component`'),
-	p("Let's say we want to define a layout that adds a 10px purple margin.  This means the width and height of the child component will decrease by 20 pixels."),
-	p("The `context.child` function returns a context.  Now, here's the code for `purpleMargin`.  First, the background color is set.  Second, the child instance is defined.  Last, the layout's min size info is returned."),
+	h2('Basic Example - Purple Background'),
+	p('`purpleBackground :: Component -> Component`'),
+	p("Let's say we want to define a layout that adds a 10px margin and gives a purple background.  This means the width and height of the child component will decrease by 20 pixels."),
+	p("The `context.child` function returns a context.  Now, here's the code for `purpleBackground`.  First, the background color is set.  Second, the child instance is defined.  Last, the layout's min size info is returned."),
 	codeBlock([
-	  "var purpleMargin = layout(function ($el, context, c) {",
+	  "var purpleBackground = layout(function ($el, context, c) {",
 	  "  $el.css('background-color', '#FF00FF');",
 	  "&nbsp;",
 	  "  var instance = context.append(c, {",
@@ -1552,10 +1552,10 @@ $(function () {
 	title: 'Standard Library - Jso',
 	component: standardLibraryJso,
   }, {
-	title: 'API - Defining Components',
+	title: 'Defining Components',
 	component: definingComponents,
   }, {
-	title: 'API - Defining Layouts',
+	title: 'Defining Layouts',
 	component: definingLayouts,
   }, {
 	title: 'cs is not a function',
