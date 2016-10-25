@@ -675,20 +675,20 @@ $(function () {
 	  p("&#8226; If you push multiple values through a stream quickly (synchronously), intermediate values will be skipped."),
 	]),
 	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state in terms of input state as lightly as possible.'),
-	p('Note: to skip intermediate values, `setTimeout` calls are made.  When streams are defined in terms of each other, multiple `setTimeout` calls are made in sequence.  If you want to run some code after all stream operations have settled, you must call `stream.defer` instead of `setTimeout`.  If you want to defer the execution of a block of code and then push to a stream, call `stream.next` instead of `setTimeout`.  Otherwise, `stream.defer` calls will not know to wait for your code.'),
+	p('Note: to skip intermediate values, `setTimeout` calls are made.  When streams are defined in terms of each other, multiple `setTimeout` calls are made in sequence.  If you want to run some code after all stream operations are finished (e.g. after the page has finished rendering in response to some change), you must call `stream.defer` instead of `setTimeout`.  (Furthermore, when writing components and layouts, if you want to defer the execution of a block of code and then push to a stream, call `stream.next` instead of `setTimeout`.  Otherwise, `stream.defer` calls will not know to wait for your code.)'),
 
 	p('Here are the stream methods:'),
 
 	h2('combine'),
-	p('`combine : map Stream ts -> (ts -> x) -> Stream x`'),
-	p('Takes an array of streams, and a function.  Result stream is the application the function onto the latest values from all input streams.'),
+	p('`combine : [Stream a, Stream b, ...] -> ((a, b, ...) -> x) -> Stream x`'),
+	p('Takes an array of streams, and a function.  Result stream applies the function to the latest values from all input streams.'),
 
 	h2('combineInto'),
-	p('`combine : map Stream ts -> (ts -> x) -> Stream x -> IO ()`'),
+	p('`combine : [Stream a, Stream b, ...] -> ((a, b, ...) -> x) -> Stream x -> IO ()`'),
 	p('Imperative form of `combine`.  Takes an array of streams, a function, and a target stream, and pushes all values into the target stream.'),
 
 	h2('combineObject'),
-	p('`combineObject : {a: Stream x, b: Stream y, ...} -> Stream {a: x, b: y, ...}`'),
+	p('`combineObject : {x: Stream a, y: Stream b, ...} -> Stream {x: a, y: b, ...}`'),
 	p('Takes an object whose properties are streams, returns a stream of objects.'),
 
 	h2('create'),
@@ -731,7 +731,7 @@ $(function () {
 	p('Returns a promise that resolves as soon as there is a data point in the stream.'),
 
 	h2('prop'),
-	p('`prop : Stream {p: t} -> (p : String) -> Stream t`'),
+	p('`prop : Stream {x: a} -> ("x" : String) -> Stream a`'),
 	p('Maps over a stream of objects, accessing the specified key.  That type signature uses some made-up notation for polymorphic row types.'),
 
 	h2('push'),
@@ -767,171 +767,200 @@ $(function () {
 	]),
 
 	h2('splitObject'),
-	p('`splitObject : {a: x, b: y, ...} -> {a: Stream x, b: Stream y, ...}`'),
+	p('`splitObject : {x: a, y: b, ...} -> {x: Stream a, y: Stream a, ...}`'),
 	p('Takes an object, returns an object where each property is a stream initialized with the value from the input object.'),
   ]);
 
   var standardLibraryForms = docStack([
-	h2('HCJ Forms'),
-	p("Hcj takes the liberty of providing some reactive form components.  They aren't necessarily the best, but they seem to work."),
+	p("Hcj takes the liberty of providing some reactive form components."),
 
-	h3('formType'),
-	p('The object `window.hcj.forms.formType` is used for specifying form types.  Its values are the form type constructors.  These "constructors" are either form types, or functions that take some parameters and return form types.  They are as follows:'),
+	h2('formType'),
+	p('The object `window.hcj.forms.formType` is used for specifying form types.  Intuitively, a form type determines both the type that the user inputs, and the form element\'s logical internal type.  An HCJ form component maintains a stream of the latter type, pushing to it and/or updating the user-facing values of the former type(s).'),
+	p('Its values are the form type constructors.  These are either literally form types, or functions that take some parameters and return form types.  A form type is a row type, an object with at least a `type` property tagging the form type, and optionally extra properties determined by the tag.'),
+	p('Here are the form type constructors, with demos:'),
 	c.stream(0, function (s) {
-	  return stack([
-		pm('`button : (String, (Event, Stream, Disable)) -> FormType`'),
-		p('Takes a button title and an onClick handler, and returns a button FormType.  The onClick handler receives the click event, the form element\'s stream for pushing to, and a `disable` function, which "disables" the button and returns an `enable` function, which re-enables the button.  Click events will only be processed if the button is enabled.  The returned FormType has three extra properties: `enabledS`, a boolean stream telling whether the button is enabled, and `name` and `onClick`, the passed-in values.'),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.button('button', s, forms.formType.button('Button', function (ev, s, disable) {
-		  var enable = disable();
-		  stream.push(s, 1 + (s.lastValue || 0));
-		  setTimeout(function () {
-			enable();
-		  }, 1000);
-		}))),
-		c.componentStream(stream.map(s, function (str) {
-		  return p(str + ' presses');
-		})),
+	  return docStack([
+		h3('button'),
+		pm('`button : (String, (Event, Stream, Disable) -> IO ()) -> FormType`'),
+		p('Takes a button title and an onClick handler, and returns a button FormType.  The onClick handler receives the click event, the form element\'s stream for pushing to, and a `disable` function, which "disables" the button and returns an `enable` function, which re-enables the button.  Click events will only be processed if the button is enabled.  The returned FormType has three extra properties: `enabledS`, a boolean stream that tells whether the button is enabled and which you may push to, as well as `name` and `onClick`, the passed-in values.'),
+		p('The demo pushes 1 + the stream\'s last value onto the stream each time the button is pressed.  It also disables the button for a while.'),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.button('button', s, forms.formType.button('Button', function (ev, s, disable) {
+			var enable = disable();
+			stream.push(s, 1 + (s.lastValue || 0));
+			setTimeout(function () {
+			  enable();
+			}, 1000);
+		  }))),
+		  c.componentStream(stream.map(s, function (str) {
+			return p(str + ' presses');
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream(false, function (s) {
-	  return stack([
+	  return docStack([
+		h3('checkbox'),
 		pm('`checkbox : FormType`'),
-		p("A checkbox."),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.checkbox('checkbox', s)),
-		c.componentStream(stream.map(s, function (checked) {
-		  return p(checked ? 'checked' : 'unchecked');
-		})),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.checkbox('checkbox', s)),
+		  c.componentStream(stream.map(s, function (checked) {
+			return p(checked ? 'checked' : 'unchecked');
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream(null, function (s) {
-	  return stack([
-		pm('`date`'),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.date('date', s)),
-		c.componentStream(stream.map(s, function (d) {
-		  return p(d + '');
-		})),
+	  return docStack([
+		h3('date'),
+		pm('`date : FormType`'),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.date('date', s)),
+		  c.componentStream(stream.map(s, function (d) {
+			return p(d + '');
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream('a', function (s) {
-	  return stack([
+	  return docStack([
+		h3('dropdown'),
 		pm('`dropdown : Array({name: String, value: String}) -> FormType`'),
 		p('Takes an array of objects with `name` and `value` properties giving the options\' names and values.'),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.dropdown('dropdown', s, forms.formType.dropdown([{
-		  name: 'A',
-		  value: 'a',
-		}, {
-		  name: 'B',
-		  value: 'b',
-		}]))),
-		c.componentStream(stream.map(s, function (v) {
-		  return p(v);
-		})),
-	  ]);
-	}),
-	c.stream(null, function (s) {
-	  return stack([
-		pm('`image`'),
-		p('File with accept="image/*".  Will be changed to `file` function by hcj version 1.0.'),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.image('image', s)),
-		c.componentStream(stream.map(s, function (file) {
-		  return file ? c.all([
+		stack([
+		  c.all([
 			c.alignHLeft,
-		  ])(c.image({
-			src: file,
-		  })) : c.nothing;
-		})),
+		  ])(forms.formComponent.dropdown('dropdown', s, forms.formType.dropdown([{
+			name: 'A',
+			value: 'a',
+		  }, {
+			name: 'B',
+			value: 'b',
+		  }]))),
+		  c.componentStream(stream.map(s, function (v) {
+			return p(v);
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream(null, function (s) {
-	  return stack([
+	  return docStack([
+		h3('image'),
+		pm('`image : FormType`'),
+		p('File with accept="image/*".  Will be changed to `file` function by hcj version 1.0.'),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.image('image', s)),
+		  c.componentStream(stream.map(s, function (file) {
+			return file ? c.all([
+			  c.alignHLeft,
+			])(c.image({
+			  src: file,
+			})) : c.nothing;
+		  })),
+		]),
+	  ]);
+	}),
+	c.stream(null, function (s) {
+	  return docStack([
+		h3('number'),
 		pm('`number : FormType`'),
-		p("Number input."),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.number('number', s)),
-		c.componentStream(stream.map(s, function (number) {
-		  return p(number + '');
-		})),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.number('number', s)),
+		  c.componentStream(stream.map(s, function (number) {
+			return p(number + '');
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream(null, function (s) {
-	  return stack([
+	  return docStack([
+		h3('password'),
 		pm('`password : FormType`'),
-		p("Password input."),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.password('password', s)),
-		c.componentStream(stream.map(s, function (password) {
-		  var str = '';
-		  if (password) {
-			for (var i = 0; i < password.length; i++) {
-			  str += '*';
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.password('password', s)),
+		  c.componentStream(stream.map(s, function (password) {
+			var str = '';
+			if (password) {
+			  for (var i = 0; i < password.length; i++) {
+				str += '*';
+			  }
 			}
-		  }
-		  return p(str);
-		})),
-	  ]);
+			return p(str);
+		  })),
+			  ]),
+			  ]);
 	}),
 	c.stream(null, function (s) {
-	  return stack([
+	  return docStack([
+		h3('radios'),
 		pm('`radios : Array(String) -> FormType`'),
 		p('Takes an arrary of strings giving the buttons\' unique values.'),
-		c.all([
-		  c.alignHLeft,
-		])(stack(forms.formComponent.radios('radios', s, forms.formType.radios(['first', 'second'])))),
-		c.componentStream(stream.map(s, function (v) {
-		  return p(v || '');
-		})),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(stack(forms.formComponent.radios('radios', s, forms.formType.radios(['first', 'second'])))),
+		  c.componentStream(stream.map(s, function (v) {
+			return p(v || '');
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream(null, function (s) {
-	  return stack([
+	  return docStack([
+		h3('text'),
 		pm('`text : FormType`'),
-		p("Text input."),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.text('text', s)),
-		c.componentStream(stream.map(s, function (v) {
-		  return p(v || '');
-		})),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.text('text', s)),
+		  c.componentStream(stream.map(s, function (v) {
+			return p(v || '');
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream(null, function (s) {
-	  return stack([
+	  return docStack([
+		h3('textarea'),
 		pm('`textarea : FormType`'),
-		p("Textarea input."),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.textarea('textarea', s)),
-		c.componentStream(stream.map(s, function (v) {
-		  return v ? docStack(v.split(/[\r\n]+/).map(p)) : c.nothing;
-		})),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.textarea('textarea', s)),
+		  c.componentStream(stream.map(s, function (v) {
+			return v ? docStack(v.split(/[\r\n]+/).map(p)) : c.nothing;
+		  })),
+		]),
 	  ]);
 	}),
 	c.stream(null, function (s) {
-	  return stack([
+	  return docStack([
+		h3('time'),
 		pm('`time : FormType`'),
-		p("Time input."),
-		c.all([
-		  c.alignHLeft,
-		])(forms.formComponent.time('time', s)),
-		c.componentStream(stream.map(s, function (v) {
-		  return p(v || '');
-		})),
+		stack([
+		  c.all([
+			c.alignHLeft,
+		  ])(forms.formComponent.time('time', s)),
+		  c.componentStream(stream.map(s, function (v) {
+			return p(v || '');
+		  })),
+		]),
 	  ]);
 	}),
 
-	h3('formComponent'),
+	h2('formComponent'),
 	p('`formStyle.text : (String, Stream, FieldType) -> Component`'),
 	p("The `window.hcj.forms.formComponent` object has exactly the same keys as `window.hcj.forms.formType`.  Its values are functions that take parameters and return form inputs.  These parameters are the name/id of the element, the value stream, and the form type if needed."),
 	p("Note: the `window.hcj.forms.formComponent.radios` function returns not one component but an array of components."),
@@ -947,7 +976,7 @@ $(function () {
 	  "var dropdown = forms.formComponent.dropdown('dropdown', stream.create(), dropdownFormType);",
 	]),
 
-	h3('formStyle'),
+	h2('formStyle'),
 	p('`formStyle.text : (String, String, Stream, FieldType) -> (Component -> Component)`'),
 	p("The `window.hcj.forms.formStyle` object has exactly the same keys as `window.hcj.forms.formType`.  Its values are functions that take four paramaters: a field name, the name/id attribute, a stream, and an optional form type.  They return styles that should be applied to the `formComponent` output values."),
 	p("Note: the `window.hcj.formStyle.radios` function returns not a style, but a layout taking the entire array of radio buttons."),
@@ -957,7 +986,7 @@ $(function () {
 	  "var labeledText = forms.formStyle('Field Name')(text);",
 	]),
 
-	h3('formFor'),
+	h2('formFor'),
 	p("The `formFor` is a large curried function for generating forms.  It takes multiple parameters, and then returns a component."),
 	p("First, it takes a `formType` argument and a `formComponent` argument.  You can pass in `hcj.forms.formType` and `hcj.forms.formComponent`, or you can add additional properties to those objects corresponding to your form types first."),
 	p("Second, `types` the data model and optionally `names` the field names.  The first parameter `types` is an object whose values are form types.  The second parameter `names` is an object whose values are strings - except for `radio`, in which case the value must be an object with a String `name` property and an Array(String) `options` property."),
