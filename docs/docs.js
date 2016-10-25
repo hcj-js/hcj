@@ -339,7 +339,7 @@ $(function () {
   ]);
 
   var standardLibraryComponents = docStack([
-	p('Here, in no particular order, are the primitive components.  These are defined as described in the Defining Components section.'),
+	p('Here, in no particular order, are the standard library components.'),
 	p('These are found in the `window.hcj.component` object.'),
 
 	h2('text'),
@@ -1531,6 +1531,12 @@ $(function () {
 	title: 'Rendering Components',
 	component: renderingComponents,
   }, {
+	title: 'Defining Components',
+	component: definingComponents,
+  }, {
+	title: 'Defining Layouts',
+	component: definingLayouts,
+  }, {
 	title: 'Standard Library - Components',
 	component: standardLibraryComponents,
   }, {
@@ -1551,12 +1557,6 @@ $(function () {
   }, {
 	title: 'Standard Library - Jso',
 	component: standardLibraryJso,
-  }, {
-	title: 'API - Defining Components',
-	component: definingComponents,
-  }, {
-	title: 'API - Defining Layouts',
-	component: definingLayouts,
   }, {
 	title: 'cs is not a function',
 	component: csIsNotAFunction,
