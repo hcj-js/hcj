@@ -1097,8 +1097,10 @@ $(function () {
   ]);
 
   var standardLibraryJso = docStack([
-	p("Jso is a subset of json that can be evaluated as a functional programming language."),
-	p("Its intended use is to represent websites as a data structures, which can be evaluated both server-side to generate an initial render as well as SEO content, as well as client-side to produce the full interactive page."),
+	p("Jso is a functional programming language.  Its intended use is to represent websites as a data structures, which can be evaluated both server-side to generate an initial render and SEO content, as well as client-side to produce the full interactive page."),
+	p("The Jso language does not have a syntax of its own; one writes Jso expression trees in Javascript, Json, or a language of your choice.  It is weakly and statically typed - you do not declare types, but types of variables may not change."),
+	p("An expression in Jso can be a `string`, a `number`, a `date`, a `sum type`, a `product type`, an `identifier`, or a `function application`.  Jso's sum and probuct types, actually <i>tagged</i> sum and product types, provide it with algebraic data types, which are also used for Jso lambda abstractions."),
+	p("Evaluation is simple.  Strings, numbers, dates, and sum and product types (i.e. objects) evaluate to themselves.  An identifier evaluates to the corresponding value in the execution context."),
 	p("More documentation on Jso and reference implemenattions coming soon."),
   ]);
 
