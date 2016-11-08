@@ -126,42 +126,33 @@ $(function () {
 	p("HCJ's main purpose is element positioning.  Using a small subset of CSS styles, it enables you to build websites composably, arranging elements however you want within the space available.  The core algorithm is simple: first minimum dimensions are sent from child to parent, second actual dimensions are sent from parent to child.  There is a standard library of components that enable simple reactive programming and responsive design, and you can write your own components and layouts."),
 	p("Not all of the display methods available in CSS are implemented in HCJ's standard library.  Layouts that would correspond to float left and float right are not currently written.  Because HCJ is a javascript framework, page load times become noticable.  For SEO, we support rendering using PhantomJS; this can be done either server-side or as part of your build process."),
 	p("These docs themselves are written using HCJ, of course.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
+	p("The main reason you should not use HCJ of course, is that it might not work.  Working is relative to your abilitity to get things done.  If you do not know the internal codebase, then you cannot fix bugs and add features.  HCJ was pretty easy to write, you should just go write your own."),
+  ]);
+
+  var whyNotHCJ = docStack([
   ]);
 
   var aLittleVocab = docStack([
-	p("`component` - A function that takes a `context` and returns an `instance`.  The constructor for this type is a function called `component`, described in the Defining Components section."),
-	p("`layout` - Any function that takes one or more `components` and returns a new `component`."),
+	p("Basically a `component` is a rectangular reusable item that can be rendered into a web page.  Components are building blocks of this framework.  Technically a component is any function that takes a `context` and returns an `instance`."),
+	p("Furthermore, a `layout` is a function that takes one or more components and returns a component.  A `style` is a function that takes exactly one component and returns a component."),
 	stack([
-	  p("`context` - Object with the following nine properties:"),
-	  p("&#8226; `$el`: Element to append the instance to."),
-	  p('&#8226; `width`: Stream giving the width available to the instance.'),
-	  p('&#8226; `height`: Stream giving the height available to the instance.'),
-	  p('&#8226; `left`: Stream giving the left position of the instance relative to $el.'),
-	  p('&#8226; `top`: Stream giving the top position of the instance relative to $el.'),
-	  p('&#8226; `leftOffset`: Stream giving the left coordinate of $el relative to the page.'),
-	  p('&#8226; `topOffset`: Stream giving the top coordinate of $el relative to the page.'),
-	  p('&#8226; `onRemove()`: Signs up a callback to run when this instance is removed.'),
-	  p('&#8226; `append()`: Takes a `component` and an optional `viewport`.  Constructs a context and renders the component.'),
+	  p("A `context` indicates the screen area that a component has available to it, and provides the DOM node to render it into.  It has the following properties:"),
+	  p("&#8226; `$el`: Element to append something to (as a jquery object)."),
+	  p('&#8226; `width`: Stream giving the available width.'),
+	  p('&#8226; `height`: Stream giving the available height.'),
+	  p('&#8226; `left`: Stream giving the left position relative to $el.'),
+	  p('&#8226; `top`: Stream giving the top position relative to $el.'),
+	  p('&#8226; `leftOffset`: Stream giving the left position of $el relative to the window.'),
+	  p('&#8226; `topOffset`: Stream giving the top position of $el relative to the window.'),
 	]),
 	stack([
-	  p('`instance` - Object with the following four properties:'),
-	  p('&#8226; `$el`: The root element of the instance, as a jquery selector.'),
-	  p('&#8226; `minWidth`: Stream giving the instance\'s min width'),
-	  p('&#8226; `minHeight`: Stream of functions that, given a width, return the min height of the instance at that width'),
-	  p("&#8226; `remove()`: Runs its context's onRemove methods, and removes $el from the dom"),
+	  p('An `instance` is returned by a component when it is passed a context.  It indicates the minimum dimensions of the instance, provides access to its root element, and also provides a function to fully remove the instance from the DOM.  It has the following properties:'),
+	  p('&#8226; `$el`: The root element of the instance (as a jquery object).'),
+	  p('&#8226; `minWidth`: Stream giving the instance\'s minimum width.'),
+	  p('&#8226; `minHeight`: Stream of functions that, given a width, return the instance\'s minimum height at that width.'),
+	  p("&#8226; `remove()`: Removes the instance from the DOM."),
 	]),
-	stack([
-	  p("`viewport` - Object passed into the `context::append` method.  It has the following optional properties, all streams:"),
-	  p("&#8226; `$el`: Element to append instance to.  Default value is the instance's root element."),
-	  p("&#8226; `width`: Width of the viewport, as a number.  If present, used instead of this component's width."),
-	  p("&#8226; `height`: Height of the viewport.  If present, used instead of this component's height."),
-	  p("&#8226; `left`: Left coordinate of the viewport.  If present, used instead of 0."),
-	  p("&#8226; `top`: Top coordinate of the viewport.  If present, used instead of 0."),
-	  p("&#8226; `widthCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '100%'.  Needed for css transitions to work correctly."),
-	  p("&#8226; `heightCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '100%'."),
-	  p("&#8226; `topCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '0px'."),
-	  p("&#8226; `leftCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '0px'."),
-	]),
+	p("Streams here are defined as HCJ streams, which are described in the \"API - Streams\" section."),
   ]);
 
   var libraryModules = docStack([
@@ -175,18 +166,18 @@ $(function () {
   ]);
 
   var definingComponents = docStack([
-	p("The `hcj.component.component` function is used to define components.  It is a curried function that takes two arguments.  The first is the component's tag name.  The second is a `build` method, run each time the component is rendered."),
-	p("Four arguments are provided to the build method.  The first, `$el`, the created root element of the component as a JQuery selector.  The second, `context`, is the context that the component is being rendered into.  The third and fourth, `pushMeasureWidth` and `pushMeasureHeight`, may be used optionally to imperatively push values into the instance's `minWidth` and `minHeight` streams."),
-	p("The build method may return an object with two properties: `minWidth` and `minHeight`.  The `minWidth` property is a stream of numbers, and the `minHeight` property is a stream of functions which take a width and return the required height at that width.  You should either return these properties OR call the `pushMeasureWidth` and `pushMeasureHeight` functions, not both."),
-	p("The `window.hcj.element` namespace gives you the `component` constructor applied to many common tag names such as `a` and `div`."),
-	p("Just so you know, internally the `pushMeasureWidth` function clones the root element of the instance, append the clone to a hidden sandbox, removes any width property, measures the clone's width, removes the clone from the sandbox, and pushes the width into the `minWidth` stream.  Similarly, the `pushMeasureHeight` pushes a function into the `minHeight` stream which takes a width, clones the root element of the instance, appends the clone to a sandbox, removes any height property, sets the width to the provided value, measures the height, removes the clone, and returns the height."),
-	p("For example:"),
+	p("We provide a handy `hcj.component.component` function for defining components.  It takes two arguments, an optional tag name (which defaults to 'div') and a \"build\" method, and returns a component."),
+	p("The build method initializes the component, and provides its minimum dimensions.  Four arguments are passed to it.  The first, `$el`, the created root element of the component (as a jquery object).  The second, `context`, is the context as it was passed into the component.  The third and fourth, `pushMeasureWidth` and `pushMeasureHeight`, may optionally be used to imperatively push values into the instance's `minWidth` and `minHeight` streams."),
+	p("It may return an object with `minWidth`, `minHeight`, and/or `onRemove` properties.  The `minWidth` and `minHeight` properties are streams of numbers, and streams of functions from numbers to numbers, respectively.  The `onRemove` property is a function that deconstructs the instance.  The build method must either return `minWidth` and `minHeight` properties or call the `pushMeasureWidth` and `pushMeasureHeight` functions, and there is not a warning message if this is not done."),
+	p("Internally, the `pushMeasureWidth` and `pushMeasureHeight` functions clone the element, attach the clone to a DOM sandbox, measure its size, remove the clone from the sandbox, and return the size."),
+	p("What the `hcj.component.component` function does in addition to providing you with those two imperative methods is to create an element of the designated tag name and append it to the context's root element each time the component is rendered, and remove that element, run your `onRemove` action when the instance's `remove` method is called, and also set the component's `top`, `width`, ."),
+	h3("Captcha Example:"),
 	codeBlock([
-	  "// captcha component",
+	  "// component for the imaginary SomeCaptcha",
 	  "&nbsp;",
-	  "var el = window.hcj.element;",
+	  "var c = window.hcj.component;",
 	  "&nbsp;",
-	  "var captcha = el.div(function ($el, context, pushMeasureWidth, pushMeasureHeight) {",
+	  "var captcha = c.component('div', function ($el, context, pushMeasureWidth, pushMeasureHeight) {",
 	  "  var someCaptcha = SomeCaptcha.render($el).then(function () {",
 	  "    pushMeasureWidth();",
 	  "    context.onRemove(function () {",
@@ -197,34 +188,59 @@ $(function () {
 	  "  pushMeasureHeight();",
 	  "});",
 	]),
-	p("This component runs pushMeasureWidth on render for programmer convenience and page load time.  Once the captcha is loaded, the width is measured again."),
+	p("As you can see, it's pretty easy to incorporate third party content into an HCJ application."),
   ]);
 
   var renderingComponents = docStack([
-	p('To render a component, pass it to the `rootComponent` function.  For example:'),
-	codeBlock([
-	  "var c = hcj.component;",
-	  "var color = hcj.color;",
-	  "&nbsp;",
-	  "var page = c.all([",
-	  "  c.margin(10),",
-	  "  c.backgroundColor(color.create({",
-	  "    r: 200,",
-	  "    g: 253,",
-	  "    b: 53,",
-	  "  }),",
-	  "])(c.text('Hello World'));",
-	  "&nbsp;",
-	  "var rootInstance = hcj.rootComponent(page);",
+	p('To render a component, pass it to the `rootComponent` function.  The following renders a simple page:'),
+    codeBlock([
+      "&lt;!DOCTYPE HTML&gt;",
+      "&lt;html&gt;",
+      "    &lt;head&gt;",
+      "        &lt;title&gt;Hcj Demo&lt;/title&gt;",
+      "        &lt;link rel=\"stylesheet\" type=\"text/css\" href=\"hcj.css\"&gt;",
+      "    &lt;/head&gt;",
+      "    &lt;body&gt;",
+      "        &lt;script src=\"https://code.jquery.com/jquery-3.1.0.js\"&gt;&lt;/script&gt;",
+      "        &lt;script src=\"hcj.min.js\"&gt;&lt;/script&gt;",
+      "        &lt;script&gt;",
+      "         var c = hcj.component;",
+      "         var color = hcj.color;",
+      "&nbsp;",
+      "         var page = c.all([",
+      "             c.margin(10),",
+      "             c.backgroundColor(color.create({",
+      "                 r: 200,",
+      "                 g: 253,",
+      "                 b: 53,",
+      "             })),",
+      "         ])(c.text('Hello World'));",
+      "&nbsp;",
+      "         var rootInstance = hcj.rootComponent(page);",
+      "        &lt;/script&gt;",
+      "    &lt;/body&gt;",
+      "&lt;/html&gt;",
 	]),
 	p("Currently, it's only possible to render a component by making it a root component of the page.  Multiple root components may be used to display some modal dialogs."),
-	p("Font loading is important.  The DOM does not contain any APIs for font loading, but there are several font loaders on the internet."),
+	p("Font loading is important.  The DOM does not contain any APIs for font loading, but there are several font loaders on the internet.  We haven't found a solution that works perfectly."),
   ]);
 
   var definingLayouts = docStack([
-	p("A layout is any function that takes components as arguments and returns a component.  The `hcj.component.layout` function is a helper method for making layouts.  It should almost always be used - it applies pointer-events: none and overflow: hidden to the layout element.  You pass it one argument, the layout's `buildLayout` function."),
+	p("A layout again is any function that takes components as arguments and returns a component.  It can position elements inside of it however it wants, but the key property is that it indicates to them how big of a viewport they have and where it is on screen.  All layouts in the standard api use absolute positioning and the top, left, width, and height and some other properties to position elements.  However, you could use hcj with `display: flexbox` and other CSS layout methods, as long as you write functions that describe the viewports that child components get rendered into.  Hcj.js provides two built-in methods for defining layouts: `hcj.component.layout` and `hcj.component.container`.  Technically at no point does `container` return a layout, but we describe it here anyway because it's similar to `layout` which does."),
 	p("The arguments to your `buildLayout` function are somewhat dynamic.  The first two arguments, $el and context, are passed through from the layout component's own `build` method.  The remaining arguments are the child components, as they are passed in to the layout."),
 	p("The `buildLayout` function is not passed `pushMeasureWidth` and `pushMeasureHeight` must return an object with `minWidth` and `minHeight` streams."),
+	stack([
+	  p("`viewport` - Object passed into the `context::append` method.  It has the following optional properties, all streams:"),
+	  p("&#8226; `$el`: Element to append instance to.  Default value is the instance's root element."),
+	  p("&#8226; `width`: Width of the viewport, as a number.  If present, used instead of this component's width."),
+	  p("&#8226; `height`: Height of the viewport.  If present, used instead of this component's height."),
+	  p("&#8226; `left`: Left coordinate of the viewport.  If present, used instead of 0."),
+	  p("&#8226; `top`: Top coordinate of the viewport.  If present, used instead of 0."),
+	  p("&#8226; `widthCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '100%'.  Needed for css transitions to work correctly."),
+	  p("&#8226; `heightCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '100%'."),
+	  p("&#8226; `topCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '0px'."),
+	  p("&#8226; `leftCss`: String value to use for the child component's width property.  If present, used instead of either mapping (+ 'px') over the viewport's `width` stream if present or using '0px'."),
+	]),
 
 	h2('Very Basic Example'),
 	p('`someLayout :: Component -> Component`'),
@@ -677,14 +693,14 @@ $(function () {
 	p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state in terms of input state as lightly as possible.'),
 	p('Note: to skip intermediate values, `setTimeout` calls are made.  When streams are defined in terms of each other, multiple `setTimeout` calls are made in sequence.  If you want to run some code after all stream operations are finished (e.g. after the page has finished rendering in response to some change), you must call `stream.defer` instead of `setTimeout`.  (Furthermore, when writing components and layouts, if you want to defer the execution of a block of code and then push to a stream, call `stream.next` instead of `setTimeout`.  Otherwise, `stream.defer` calls will not know to wait for your code.)'),
 
-	p('Here are the stream methods:'),
+	p('Here are the stream functions.  These are all properties of the `window.hcj.stream` object:'),
 
 	h2('combine'),
-	p('`combine : [Stream a, Stream b, ...] -> ((a, b, ...) -> x) -> Stream x`'),
+	p('`combine : ([Stream a, Stream b, ...], ((a, b, ...) -> x)) -> Stream x`'),
 	p('Takes an array of streams, and a function.  Result stream applies the function to the latest values from all input streams.'),
 
 	h2('combineInto'),
-	p('`combine : [Stream a, Stream b, ...] -> ((a, b, ...) -> x) -> Stream x -> IO ()`'),
+	p('`combine : ([Stream a, Stream b, ...], ((a, b, ...) -> x), Stream x) -> IO ()`'),
 	p('Imperative form of `combine`.  Takes an array of streams, a function, and a target stream, and pushes all values into the target stream.'),
 
 	h2('combineObject'),
@@ -692,8 +708,8 @@ $(function () {
 	p('Takes an object whose properties are streams, returns a stream of objects.'),
 
 	h2('create'),
-	p('`create : a -> Stream a`'),
-	p('Creates a stream, and (optionally) initializes it using the argument passed in.  The `push` or `pushAll` functions can be used to push in additional points into the stream.'),
+	p('`create : Maybe a -> Stream a`'),
+	p('Creates a stream, and initializes it using the optional argument passed in.  The `push` or `pushAll` functions can be used to push in additional points into the stream.'),
 	p('Example:'),
 	codeBlock([
 	  "var onceFiftyS = stream.create(50);",
@@ -1097,8 +1113,9 @@ $(function () {
   ]);
 
   var standardLibraryJso = docStack([
-	p("Jso is a functional programming language.  Its intended use is to represent websites as a data structures, which can be evaluated both server-side to generate an initial render and SEO content, as well as client-side to produce the full interactive page."),
-	p("The Jso language does not have a syntax of its own; one writes Jso expression trees in Javascript, Json, or a language of your choice.  It is weakly and statically typed - you do not declare types, but types of variables may not change."),
+	p("Jso is a functional programming language for expressing web pages."),
+	p("Why a programming language?  Currently multiple languages and programming styles are required to build websites.  While ReactJS can be rendered both client side and server side in advanced ways, other javascript frameworks must be combined with server side templates.  Additionally, CSS must be written to achieve responsive design."),
+	p("The Jso language does not have its own syntax.  Instead, Jso expression trees are written in other programming languages, so it sort of inherits their syntax."),
 	p("An expression in Jso can be a `string`, a `number`, a `date`, a `sum type`, a `product type`, an `identifier`, or a `function application`.  Jso's sum and probuct types, actually <i>tagged</i> sum and product types, provide it with algebraic data types, which are also used for Jso lambda abstractions."),
 	p("Evaluation is simple.  Strings, numbers, dates, and sum and product types (i.e. objects) evaluate to themselves.  An identifier evaluates to the corresponding value in the execution context."),
 	p("More documentation on Jso and reference implemenattions coming soon."),
@@ -1111,6 +1128,7 @@ $(function () {
   var version2 = docStack([
 	p('Remove JQuery dependency, making hcj smaller and more agnostic'),
 	p('Document Jso (see https://github.com/jeffersoncarpenter/casesplit)'),
+	p('Measure text width with canvas measureText method instead of appending the text to an invisible dom element'),
 	p('Add JSDoc comments'),
 	p('Add some float left and float right functionality'),
 	p('Automatically apply CSS transitions / make sure they work'),
@@ -1119,12 +1137,12 @@ $(function () {
   ]);
 
   var support = docStack([
-	p("Join #hcj on Freenode.  Our community is small but active."),
+	p("Join #hcj on Freenode, or leave an issue on the Github repository."),
 	p('<iframe src="https://kiwiirc.com/client/irc.freenode.net/?&theme=basic#hcj" style="border:0; width:100%; height:450px;"></iframe>'),
   ]);
 
   var testPage = docStack([
-	p("Demo of the standard library components."),
+	p("Demo of some of the components that come with hcj."),
 
 	h2("text"),
 	p("Display all kinds of text."),
@@ -1521,13 +1539,10 @@ $(function () {
 	title: "Introduction",
 	component: introduction,
   }, {
-	title: 'Install',
-	component: install,
-  }, {
-	title: 'Terminology',
+	title: 'Basic Concepts',
 	component: aLittleVocab,
   }, {
-	title: 'Test Page',
+	title: 'Example Page',
 	component: testPage,
   }, {
 	title: 'Rendering Components',
@@ -1539,22 +1554,22 @@ $(function () {
 	title: 'Defining Layouts',
 	component: definingLayouts,
   }, {
-	title: 'Standard Library - Components',
-	component: standardLibraryComponents,
-  }, {
-	title: 'Standard Library - Layouts',
-	component: standardLibraryLayouts,
-  }, {
-	title: 'Standard Library - Styles',
-	component: standardLibraryComponentModifiers,
-  }, {
-	title: 'Standard Library - Streams',
+	title: 'API - Streams',
 	component: standardLibraryStreams,
   }, {
-	title: 'Standard Library - Forms',
+	title: 'API - Components',
+	component: standardLibraryComponents,
+  }, {
+	title: 'API - Layouts',
+	component: standardLibraryLayouts,
+  }, {
+	title: 'API - Styles',
+	component: standardLibraryComponentModifiers,
+  }, {
+	title: 'API - Forms',
 	component: standardLibraryForms,
   }, {
-	title: 'Standard Library - Colors',
+	title: 'API - Colors',
 	component: standardLibraryColors,
   }, {
 	title: 'Standard Library - Jso',
@@ -1623,8 +1638,8 @@ $(function () {
 	  }),
 	])(docStack([
 	  h1('hcj.js'),
-	  p('A website library for hackers'),
-	  p('v0.1'),
+	  p('v0.2'),
+	  p('Do not use.'),
 	  c.componentStream(stream.map(currentPageS, function (index) {
 		var p = pages[index];
 		return c.all([
@@ -1634,22 +1649,22 @@ $(function () {
 		  p.component,
 		]));
 	  // }), function (i, ctx) {
-	  // 	var deferred = $.Deferred();
-	  // 	stream.defer(function () {
-	  // 	  i.$el.css('left', -ctx.width.lastValue + 'px');
-	  // 	  setTimeout(function () {
-	  // 		deferred.resolve();
-	  // 	  }, 1000);
-	  // 	});
-	  // 	return deferred.promise();
+	  //	var deferred = $.Deferred();
+	  //	stream.defer(function () {
+	  //	  i.$el.css('left', -ctx.width.lastValue + 'px');
+	  //	  setTimeout(function () {
+	  //		deferred.resolve();
+	  //	  }, 1000);
+	  //	});
+	  //	return deferred.promise();
 	  // }, function (i, ctx) {
-	  // 	stream.defer(function () {
-	  // 	  i.$el.css('left', ctx.width.lastValue / 2 + 'px');
-	  // 	  setTimeout(function () {
-	  // 		i.$el.css('transition', 'left 1s');
-	  // 		// i.$el.css('left', '0px');
-	  // 	  });
-	  // 	});
+	  //	stream.defer(function () {
+	  //	  i.$el.css('left', ctx.width.lastValue / 2 + 'px');
+	  //	  setTimeout(function () {
+	  //		i.$el.css('transition', 'left 1s');
+	  //		// i.$el.css('left', '0px');
+	  //	  });
+	  //	});
 	  })),
 	])),
   ]));

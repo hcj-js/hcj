@@ -570,11 +570,11 @@
 	var $clone = $el.clone();
 	$clone.css('width', '')
 	  .css('height', '')
+	  .css('position', 'absolute')
 	  .css('display', 'inline-block')
 	  .appendTo($sandbox);
 
-
-	var width = parseFloat($clone.css('width'));
+	var width = Math.max($clone.outerWidth(true), $clone[0].scrollWidth);
 	$clone.remove();
 
 	return width;
@@ -592,7 +592,7 @@
 		.css('height', '')
 		.appendTo($sandbox);
 
-	  var height = parseFloat($clone.css('height'));
+	  var height = Math.max($clone.outerHeight(true), $clone[0].scrollHeight);
 	  ws[w] = height;
 
 	  $clone.remove();
@@ -602,56 +602,8 @@
   };
 
   var componentFunc = function (name, build, context) {
-	var $el = $(document.createElement(name));
-
-	$el.css('pointer-events', 'initial');
-
-	var onRemove = [];
-	context.append = function (c, ctx) {
-	  ctx = ctx || {};
-	  try {
-		ctx.$el = ctx.$el || $el;
-		ctx.width = ctx.width || context.width;
-		ctx.height = ctx.height || context.height;
-		ctx.top = ctx.top || onceZeroS;
-		ctx.left = ctx.left || onceZeroS;
-		ctx.topOffset = stream.combine([context.topOffset, context.top], add);
-		ctx.leftOffset = stream.combine([context.leftOffset, context.left], add);
-		ctx.onRemove = onRemove.push;
-		stream = stream;
-		return c(ctx);
-	  }
-	  catch (e) {
-		debugger;
-	  }
-	};
-
-	var mapPx = function (s) {
-	  return s && stream.map(s, px);
-	};
-	$el.css('visibility', 'hidden')
-	  .css('pointer-events', 'initial')
-	  .css('position', 'absolute');
-	stream.onValue(context.widthCss || mapPx(context.width), function (w) {
-	  updateDomFunc($el, 'css', 'width', w);
-	});
-	stream.onValue(context.heightCss || mapPx(context.height), function (h) {
-	  updateDomFunc($el, 'css', 'height', h);
-	});
-	stream.onValue(context.topCss || mapPx(context.top), function (t) {
-	  updateDomFunc($el, 'css', 'top', t);
-	});
-	stream.onValue(context.leftCss || mapPx(context.left), function (l) {
-	  updateDomFunc($el, 'css', 'left', l);
-	});
-	stream.combine([
-	  context.width,
-	  context.height,
-	  context.top,
-	  context.left,
-	], function () {
-	  updateDomFunc($el, 'css', 'visibility', 'initial');
-	});
+	var $el = $(document.createElement(name))
+		  .appendTo(context.$el);
 
 	var instance = {
 	  $el: $el,
@@ -682,52 +634,46 @@
 	  stream.push(instance.minHeight, instance.initialMinHeight);
 	}
 
-	if (context.useMinWidth) {
-	  stream.pushAll(instance.minWidth, context.width);
-	}
-	if (context.useMinHeight) {
-	  stream.pushAll(stream.combine([
-		instance.minHeight,
-		context.width,
-	  ], function (mh, w) {
-		return mh(w);
-	  }), context.height);
-	}
-
 	instance.remove = function () {
-	  onRemove.map(apply());
+	  if (streams.onRemove) {
+		streams.onRemove();
+	  }
 	  $el.remove();
 	};
-	context.onRemove(instance.remove);
-
-	$el.appendTo(context.$el);
 
 	return instance;
   };
 
-  var component = function (name) {
+  var component = function (name, build) {
+	if (!build) {
+	  build = name;
+	  name = 'div';
+	}
+	return function (context) {
+	  return componentFunc(name, build, context);
+	};
+  };
+  var curryComponent = function (name) {
 	return function (build) {
-	  return function (context) {
-		return componentFunc(name, build, context);
-	  };
+	  return component(name, build);
 	};
   };
 
-  var a = component('a');
-  var button = component('button');
-  var div = component('div');
-  var form = component('form');
-  var iframe = component('iframe');
-  var img = component('img');
-  var input = component('input');
-  var label = component('label');
-  var li = component('li');
-  var option = component('option');
-  var p = component('p');
-  var pre = component('pre');
-  var select = component('select');
-  var textarea = component('textarea');
-  var ul = component('ul');
+  var a = curryComponent('a');
+  var button = curryComponent('button');
+  var div = curryComponent('div');
+  var form = curryComponent('form');
+  var iframe = curryComponent('iframe');
+  var img = curryComponent('img');
+  var input = curryComponent('input');
+  var label = curryComponent('label');
+  var li = curryComponent('li');
+  var option = curryComponent('option');
+  var p = curryComponent('p');
+  var pre = curryComponent('pre');
+  var select = curryComponent('select');
+  var textarea = curryComponent('textarea');
+  var ul = curryComponent('ul');
 
   var _scrollbarWidth = function () {
 	var parent, child, width;
@@ -741,27 +687,61 @@
 
 	return width;
   };
-  var layoutRecurse = function ($el, ctx, cs) {
-	if ($.isArray(cs)) {
-	  return cs.map(function (c) {
-		return layoutRecurse($el, ctx, c);
-	  });
-	}
-	else {
-	  if (!$.isFunction (cs)) {
-		console.log('cs is not a function');
+
+  var mapPx = function (s) {
+	return s && stream.map(s, px);
+  };
+  var layoutAppend = function (childInstances, $el, context, c, ctx, noPositionAbsolute) {
+	ctx = ctx || {};
+	try {
+	  ctx.$el = ctx.$el || $el;
+	  ctx.width = ctx.width || context.width;
+	  ctx.height = ctx.height || context.height;
+	  ctx.top = ctx.top || onceZeroS;
+	  ctx.left = ctx.left || onceZeroS;
+	  ctx.topOffset = stream.combine([context.topOffset, context.top], add);
+	  ctx.leftOffset = stream.combine([context.leftOffset, context.left], add);
+	  var i = c(ctx);
+	  childInstances.push(i);
+	  // todo: replace with some isInstance function
+	  if (!i || !i.minWidth || !i.minHeight) {
+		console.log('not a component');
 		debugger;
 	  }
-	  return function (context) {
-		var i = cs(context);
-		// todo: replace with some isInstance function
-		if (!i || !i.minWidth || !i.minHeight) {
-		  console.log('not a component');
-		  debugger;
-		}
-		return i;
-	  };
+	  if (noPositionAbsolute === undefined) {
+		i.$el.css('position', 'absolute');
+		stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
+		  updateDomFunc(i.$el, 'css', 'width', w);
+		});
+		stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
+		  updateDomFunc(i.$el, 'css', 'height', h);
+		});
+		stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
+		  updateDomFunc(i.$el, 'css', 'top', t);
+		});
+		stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
+		  updateDomFunc(i.$el, 'css', 'left', l);
+		});
+	  }
+	  return i;
 	}
+	catch (e) {
+	  debugger;
+	}
+  };
+  var layoutRecurse = function (childInstances, $el, context, cs) {
+	if ($.isArray(cs)) {
+	  return cs.map(function (c) {
+		return layoutRecurse(childInstances, $el, context, c);
+	  });
+	}
+	if (!$.isFunction (cs)) {
+	  console.log('cs is not a function');
+	  debugger;
+	}
+	return function (ctx, noPositionAbsolute) {
+	  return layoutAppend(childInstances, $el, context, cs, ctx, noPositionAbsolute);
+	};
   };
 
   var layout = function (elArg, buildLayoutArg) {
@@ -770,9 +750,22 @@
 	return function () {
 	  var args = Array.prototype.slice.call(arguments);
 	  return el(function ($el, ctx) {
-		$el.css('pointer-events', 'none')
+		var childInstances = [];
+		$el.css('position', 'absolute')
+		  .css('pointer-events', 'none')
 		  .css('overflow', 'hidden');
-		return buildLayout.apply(null, [$el, ctx].concat(layoutRecurse($el, ctx, args)));
+		var i = buildLayout.apply(null, [$el, ctx].concat(layoutRecurse(childInstances, $el, ctx, args)));
+		return {
+		  $el: i.$el,
+		  minWidth: i.minWidth,
+		  minHeight: i.minHeight,
+		  remove: function () {
+			childInstances.map(function (i) {
+			  return i.remove();
+			});
+			i.remove();
+		  },
+		};
 	  });
 	};
   };
@@ -780,10 +773,25 @@
   var container = function (elArg, buildContainerArg) {
 	var el = buildContainerArg ? elArg : div;
 	var buildContainer = buildContainerArg || elArg;
-	return div(function ($el, ctx) {
-	  return buildContainer($el, ctx, function (cs) {
-		return layoutRecurse($el, ctx, cs);
+	return div(function ($el, context) {
+	  var childInstances = [];
+	  $el.css('position', 'absolute')
+		.css('pointer-events', 'none')
+		.css('overflow', 'hidden');
+	  var i = buildContainer($el, context, function (c, ctx, noPositionAbsolute) {
+		return layoutAppend(childInstances, $el, context, c, ctx, noPositionAbsolute);
 	  });
+	  return {
+		$el: i.$el,
+		minWidth: i.minWidth,
+		minHeight: i.minHeight,
+		remove: function () {
+		  childInstances.map(function (i) {
+			return i.remove();
+		  });
+		  i.remove();
+		},
+	  };
 	});
   };
 
@@ -796,6 +804,7 @@
   };
 
   var rootLayout = layout(function ($el, ctx, c) {
+	var i = c();
 	stream.combine([
 	  ctx.width,
 	  ctx.height,
@@ -804,8 +813,20 @@
 	], function () {
 	  stream.push(displayedS, true);
 	  updateDomFunc($('body'), 'css', 'height', 'auto');
+	  stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
+		updateDomFunc(i.$el, 'css', 'width', w);
+	  });
+	  stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
+		updateDomFunc(i.$el, 'css', 'height', h);
+	  });
+	  stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
+		updateDomFunc(i.$el, 'css', 'top', t);
+	  });
+	  stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
+		updateDomFunc(i.$el, 'css', 'left', l);
+	  });
 	});
-	return ctx.append(c);
+	return i;
   });
 
   var ensureSandbox = function () {
@@ -861,7 +882,6 @@
 		stream.push(height, mhAtWW);
 	  }
 	});
-	var onRemove = [];
 	var i = rootLayout(c)({
 	  $el: $('body'),
 	  width: width,
@@ -870,7 +890,6 @@
 	  left: onceZeroS,
 	  topOffset: onceZeroS,
 	  leftOffset: onceZeroS,
-	  onRemove: onRemove.push,
 	});
 	i.$el.css('position', 'absolute')
 	  .css('top', '0px')
@@ -890,11 +909,6 @@
 		}, 500);
 	  }
 	});
-	var remove = i.remove;
-	i.remove = function () {
-	  onRemove.map(apply());
-	  remove();
-	};
 	stream.pushAll(i.minHeight, minHeight);
 	stream.combine([
 	  width,
@@ -1024,7 +1038,7 @@
   var minWidth = function (mw) {
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('minWidth');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: stream.once(mw),
 		minHeight: i.minHeight,
@@ -1034,7 +1048,7 @@
   var minHeight = function (mh) {
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('minHeight');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: i.minWidth,
 		minHeight: stream.once(constant(mh)),
@@ -1044,7 +1058,7 @@
   var withDimensions = function (mw, mh) {
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withDimensions');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: stream.once(mw),
 		minHeight: stream.once(constant(mh)),
@@ -1057,7 +1071,7 @@
 	  if (f) {
 		f($el);
 	  }
-	  return ctx.append(c);
+	  return c();
 	});
   };
   var wrap = function (el) {
@@ -1067,25 +1081,23 @@
   var adjustPosition = function (minSize, position) {
 	minSize = minSize || {};
 	position = position || {};
-	return function (c) {
-	  return function (ctx) {
-		ctx = $.extend({}, ctx, {
-		  top: position.top || ctx.top,
-		  left: position.left || ctx.left,
-		  width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
-		  height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
-		});
-		var i = c(ctx);
-		i.minWidth = minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth;
-		i.minHeight = minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight;
-		return i;
-	  };
-	};
+	return layout(function ($el, ctx, c) {
+	  ctx = $.extend({}, ctx, {
+		top: position.top || ctx.top,
+		left: position.left || ctx.left,
+		width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
+		height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
+	  });
+	  var i = c(ctx);
+	  i.minWidth = minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth;
+	  i.minHeight = minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight;
+	  return i;
+	});
   };
 
   var adjustMinSize = uncurryConfig(function (config) {
 	return layout(function ($el, ctx, c) {
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: stream.map(i.minWidth, function (mw) {
 		  return config.mw(mw);
@@ -1279,7 +1291,7 @@
 	  $el.addClass('crop');
 	  $el.css('overflow', 'hidden');
 	  var props = stream.create();
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: stream.prop(props, 'top'),
 		left: stream.prop(props, 'left'),
 		width: stream.prop(props, 'width'),
@@ -1326,7 +1338,7 @@
 	  $el.addClass('keepAspectRatio');
 	  $el.css('overflow', 'hidden');
 	  var props = stream.create();
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: stream.prop(props, 'top'),
 		left: stream.prop(props, 'left'),
 		width: stream.prop(props, 'width'),
@@ -1426,7 +1438,6 @@
 	  });
 	  $el.on('load', function () {
 		var aspectRatio = $el[0].naturalWidth / $el[0].naturalHeight;
-		console.log(config.minHeight);
 		var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
 			  (config.hasOwnProperty('minHeight') && config.minHeight && config.minHeight * aspectRatio) ||
 			  $el[0].naturalWidth;
@@ -1460,12 +1471,12 @@
 	  if (!config.defaultStyle) {
 		$el.addClass('no-style');
 	  }
-	  return ctx.append(c);
+	  return c();
 	});
   });
 
   var empty = function (el) {
-	return component(el)(function ($el, ctx) {
+	return component(el, function ($el, ctx) {
 	  $el.addClass('empty');
 	  return {
 		minWidth: onceZeroS,
@@ -1977,7 +1988,7 @@
 		};
 	  });
 	  var is = cs.concat(cs).concat(cs).map(function (c, index) {
-		return ctx.append(c, contexts[index]);
+		return c(contexts[index]);
 	  });
 
 	  // the state
@@ -2163,7 +2174,7 @@
 		  width: stream.create(),
 		};
 		contexts.push(context);
-		return ctx.append(c, context);
+		return c(context);
 	  });
 	  var allMinWidths = mapMinWidths(is, ctx);
 	  var allMinHeights = mapMinHeights(is, ctx);
@@ -2228,7 +2239,7 @@
 	  var context = {
 		top: stream.create(),
 	  };
-	  var i = ctx.append(c, context);
+	  var i = c(context);
 	  i.$el.css('transition', 'top ' + config.transition);
 	  var pushed = false;
 	  stream.push(context.top, config.top);
@@ -2259,7 +2270,7 @@
 	config.transition = config.transition || '1s';
 	config.margin = config.margin || 0;
 	return layout(function ($el, ctx, c) {
-	  var i = ctx.append(c);
+	  var i = c();
 	  var pushed = false;
 	  i.$el.css('opacity', 0);
 	  setTimeout(function () {
@@ -2356,7 +2367,7 @@
 		};
 	  });
 	  var is = cs.map(function (c, index) {
-		var i = ctx.append(c, ctxs[index]);
+		var i = c(ctxs[index]);
 		stream.pushAll(i.minWidth, ctx.width);
 		return i;
 	  });
@@ -2490,7 +2501,7 @@
 		  height: stream.create(),
 		};
 		contexts.push(context);
-		return ctx.append(c, context);
+		return c(context);
 	  });
 	  if (config.transition) {
 		var transition = config.transition + 's';
@@ -2551,7 +2562,7 @@
 	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
 	config.transition = config.transition || 0;
 	return function (actionS) {
-	  return container(function ($el, ctx, child) {
+	  return container(function ($el, ctx, append) {
 		var mw = stream.once(0);
 		var mh = stream.once(constant(0));
 		var contexts = [];
@@ -2619,7 +2630,7 @@
 			top: stream.create(),
 			height: stream.create(),
 		  };
-		  var i = ctx.append(child(c), context);
+		  var i = append(c, context);
 
 		  cs[index] = c;
 		  mwDeleteListeners[index] = stream.onValue(i.minWidth, tryPushContexts);
@@ -2719,7 +2730,7 @@
 	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('margin');
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: stream.once(top),
 		left: stream.once(left),
 		width: stream.map(ctx.width, function (w) {
@@ -2787,7 +2798,7 @@
 	  stream.push(rightS, right);
 	});
 	return layout(function ($el, ctx, c) {
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: topS,
 		left: leftS,
 		height: stream.combine([
@@ -2843,9 +2854,9 @@
 		  width: stream.create(),
 		  left: stream.create(),
 		};
-		var lI = ctx.append(l, lCtx);
-		var rI = ctx.append(r, rCtx);
-		var mI = ctx.append(m, mCtx);
+		var lI = l(lCtx);
+		var rI = r(rCtx);
+		var mI = m(mCtx);
 		stream.combine([
 		  lI.minWidth,
 		  rI.minWidth,
@@ -2920,9 +2931,9 @@
 		  height: stream.create(),
 		  top: stream.create(),
 		};
-		var tI = ctx.append(t, tCtx);
-		var bI = ctx.append(b, bCtx);
-		var mI = ctx.append(m, mCtx);
+		var tI = t(tCtx);
+		var bI = b(bCtx);
+		var mI = m(mCtx);
 		stream.combine([
 		  tI.minHeight,
 		  bI.minHeight,
@@ -3056,7 +3067,7 @@
 	  $el.addClass('border');
 	  // overflow hidden is necessary to prevent cutting off corners
 	  // of border if there is a border radius
-	  var i = ctx.append(c, {
+	  var i = c({
 		width: stream.map(ctx.width, function (w) {
 		  return w - left - right;
 		}),
@@ -3089,16 +3100,11 @@
 
   var componentStream = function (cStream) {
 	var error = new Error();
-	return container(function ($el, ctx) {
+	return container(function ($el, ctx, append) {
 	  $el.addClass('componentStream');
 	  var i;
 	  var unpushMW;
 	  var unpushMH;
-	  ctx.onRemove(function () {
-		if (i) {
-		  i.remove();
-		}
-	  });
 	  var minWidth = stream.create();
 	  var minHeight = stream.create();
 	  var iStream = stream.reduce(cStream, function (i, c) {
@@ -3111,7 +3117,7 @@
 		if (unpushMH) {
 		  unpushMH();
 		}
-		i = ctx.append(c, {
+		i = append(c, {
 		  widthCss: stream.once('100%'),
 		  heightCss: stream.once('100%'),
 		});
@@ -3122,6 +3128,11 @@
 	  return {
 		minWidth: minWidth,
 		minHeight: minHeight,
+		onRemove: function () {
+		  if (i) {
+			i.remove();
+		  }
+		},
 	  };
 	});
   };
@@ -3141,7 +3152,7 @@
 	  d.resolve();
 	  return d.promise();
 	};
-	return container(function ($el, context) {
+	return container(function ($el, context, append) {
 	  $el.addClass('component-stream-with-exit');
 	  var localCStream = stream.create();
 	  stream.pushAll(cStream, localCStream);
@@ -3161,7 +3172,7 @@
 		  widthCss: stream.once('100%'),
 		  heightCss: stream.once('100%'),
 		};
-		i = context.append(c, ctx);
+		i = append(c, ctx);
 		i.$el.css('transition', 'inherit');
 		i.$el.css('display', 'none');
 		i.$el.prependTo($el);
@@ -3177,15 +3188,15 @@
 	  stream.map(localCStream, function (c) {
 		instanceC(c);
 	  });
-	  context.onRemove(function () {
-		stream.end(localCStream);
-		if (i) {
-		  i.remove();
-		}
-	  });
 	  return {
 		minWidth: minWidthS,
 		minHeight: minHeightS,
+		onRemove: function () {
+		  stream.end(localCStream);
+		  if (i) {
+			i.remove();
+		  }
+		},
 	  };
 	});
   };
@@ -3222,7 +3233,7 @@
 	  return layout(function ($el, context, c) {
 		$el.addClass('modalDialog');
 
-		var i = context.append(c, {
+		var i = c({
 		  top: stream.once(0),
 		  left: stream.once(0),
 		  width: stream.map(windowWidth, function (ww) {
@@ -3266,7 +3277,7 @@
 	return layout(function ($el, ctx, c) {
 	  $el.css('overflow', 'hidden')
 		.addClass('toggle-height');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: i.minWidth,
 		minHeight: stream.combine([
@@ -3290,8 +3301,8 @@
 		height: stream.create(),
 		top: stream.create(),
 	  };
-	  var panelI = ctx.append(panel, panelCtx);
-	  var sourceI = ctx.append(source);
+	  var panelI = panel(panelCtx);
+	  var sourceI = source();
 	  useMinHeight(panelCtx, panelI);
 	  stream.pushAll(ctx.height, panelCtx.top);
 	  return {
@@ -3315,7 +3326,7 @@
 	  if (config.panelHeightS) {
 		stream.pushAll(context.height, config.panelHeightS);
 	  }
-	  var i = ctx.append(panel, context);
+	  var i = panel(context);
 	  $el.css('overflow', 'hidden');
 	  i.$el.css('transition', 'top ' + config.transition)
 		.css('z-index', 1000);
@@ -3338,8 +3349,8 @@
 		left: stream.create(),
 		top: stream.create(),
 	  };
-	  var panelI = ctx.append(panel, panelCtx);
-	  var sourceI = ctx.append(source);
+	  var panelI = panel(panelCtx);
+	  var sourceI = source();
 	  useMinWidth(panelCtx, panelI);
 	  stream.combineInto([
 		ctx.height,
@@ -3366,7 +3377,7 @@
 		minHeight: sourceI.minHeight,
 	  };
 	})(source, layout(function ($el, ctx, panel) {
-	  var i = ctx.append(panel, {
+	  var i = panel({
 		left: stream.combine([
 		  onOffS,
 		  ctx.width,
@@ -3440,7 +3451,7 @@
 		widthCss: stream.once('100%'),
 		heightCss: stream.once('100%'),
 	  };
-	  var i = context.append(c, ctx);
+	  var i = c(ctx);
 	  stream.combine([
 		windowScroll,
 		str,
@@ -3566,7 +3577,7 @@
 			height: stream.create(),
 		  };
 		  contexts.push(context);
-		  return ctx.append(c, context);
+		  return c(context);
 		});
 
 		var minWidthsS = stream.combine(is.map(function (i) {
@@ -3727,7 +3738,7 @@
 	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withMinWidthStream');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: $.isFunction(getMinWidthStream) ? getMinWidthStream(i, ctx) : getMinWidthStream,
 		minHeight: i.minHeight,
@@ -3751,7 +3762,7 @@
 	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withMinHeightStream');
-	  var i = ctx.append(c);
+	  var i = c();
 	  var minHeightS = $.isFunction(getMinHeightStream) ? getMinHeightStream(i, ctx) : getMinHeightStream;
 	  return {
 		minWidth: i.minWidth,
@@ -3788,7 +3799,7 @@
 		height: stream.create(),
 		top: stream.create(),
 	  };
-	  var i = ctx.append(c, context);
+	  var i = c(context);
 	  stream.pushAll(stream.combine([
 		i.minHeight,
 		ctx.width,
@@ -3848,7 +3859,7 @@
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('largest-width-that-fits');
 	  var is = cs.map(function (c) {
-		return ctx.append(c);
+		return c();
 	  });
 	  var allMinWidths = mapMinWidths(is);
 	  var allMinHeights = mapMinHeights(is);
@@ -3894,7 +3905,7 @@
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('overlays');
 	  var is = cs.map(function (c) {
-		return ctx.append(c);
+		return c();
 	  });
 	  var chooseLargest = function (streams) {
 		return stream.combine(streams, function () {
@@ -4173,38 +4184,125 @@
 	return year + '-' + month + '-' + day;
   };
   var getFormElementBorderWidthH = function ($el) {
+	return ($el.outerWidth() - parseFloat($el.css('width'))) / 2;
 	var width = 0;
 	width += parseFloat($el.css('padding-left'));
 	width += parseFloat($el.css('border-left-width'));
 	return width;
   };
   var getFormElementBorderWidthV = function ($el) {
+	return ($el.outerHeight() - parseFloat($el.css('height'))) / 2;
 	var width = 0;
 	width += parseFloat($el.css('padding-top'));
 	width += parseFloat($el.css('border-top-width'));
 	return width;
   };
   var formElementBorderWidth = (function () {
-	var $input = $(document.createElement('input')).appendTo($('body'));
+	var $input = $(document.createElement('input'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
 	var width = getFormElementBorderWidthH($input);
 	$input.remove();
 	return width;
   })();
-  var applyFormBorder = adjustPosition({
-	minWidth: function (mw) {
-	  return mw + (2 * formElementBorderWidth);
-	},
-	minHeight: function (mh) {
-	  return function (w) {
-		return mh(w) + (2 * formElementBorderWidth);
-	  };
-	},
-  }, {
+  var formElementBorderHeight = (function () {
+	var $input = $(document.createElement('input'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var height = getFormElementBorderWidthV($input);
+	$input.remove();
+	return height;
+  })();
+  var formTextareaBorderWidth = (function () {
+	var $input = $(document.createElement('textarea'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = getFormElementBorderWidthH($input);
+	$input.remove();
+	return width;
+  })();
+  var formTextareaBorderHeight = (function () {
+	var $input = $(document.createElement('textarea'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var height = getFormElementBorderWidthV($input);
+	$input.remove();
+	return height;
+  })();
+  var formCheckboxMarginH = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'checkbox')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-left'));
+	width += parseFloat($input.css('margin-right'));
+	$input.remove();
+	return width;
+  })();
+  var formCheckboxMarginV = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'checkbox')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-top'));
+	width += parseFloat($input.css('margin-bottom'));
+	$input.remove();
+	return width;
+  })();
+  var formRadioMarginH = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'radio')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-left'));
+	width += parseFloat($input.css('margin-right'));
+	$input.remove();
+	return width;
+  })();
+  var formRadioMarginV = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'radio')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-top'));
+	width += parseFloat($input.css('margin-bottom'));
+	$input.remove();
+	return width;
+  })();
+  var applyFormBorder = adjustPosition({}, {
 	width: function (w) {
 	  return w - 2 * formElementBorderWidth;
 	},
 	height: function (h) {
-	  return h - 2 * formElementBorderWidth;
+	  return h - 2 * formElementBorderHeight;
+	},
+  });
+  var applyTextareaBorder = adjustPosition({}, {
+	width: function (w) {
+	  return w - 2 * formTextareaBorderWidth;
+	},
+	height: function (h) {
+	  return h - 2 * formTextareaBorderHeight;
+	},
+  });
+  var applyCheckboxBorder = adjustPosition({}, {
+	width: function (w) {
+	  return w - formCheckboxMarginH;
+	},
+	height: function (h) {
+	  return h - formCheckboxMarginV;
+	},
+  });
+  var applyRadioBorder = adjustPosition({}, {
+	width: function (w) {
+	  return w - formRadioMarginH;
+	},
+	height: function (h) {
+	  return h - formRadioMarginV;
 	},
   });
   var formComponent = {
@@ -4236,7 +4334,9 @@
 	},
 	checkbox: function (k, s) {
 	  s = s || stream.create();
-	  return input(function ($el, ctx, mw, mh) {
+	  return all([
+		applyCheckboxBorder,
+	  ])(input(function ($el, ctx, mw, mh) {
 		$el.prop('id', k);
 		$el.prop('name', k);
 		$el.prop('type', 'checkbox');
@@ -4252,7 +4352,7 @@
 		});
 		mw();
 		mh();
-	  });
+	  }));
 	},
 	date: function (k, s) {
 	  return all([
@@ -4379,7 +4479,9 @@
 	},
 	radios: function (k, s, type) {
 	  return type.options.map(function (option) {
-		return input(function ($el, ctx, mw, mh) {
+		return all([
+		  applyRadioBorder,
+		])(input(function ($el, ctx, mw, mh) {
 		  $el.prop('id', option);
 		  $el.prop('value', option);
 		  $el.prop('name', k);
@@ -4394,7 +4496,7 @@
 		  });
 		  mw();
 		  mh();
-		});
+		}));
 	  });
 	},
 	text: function (k, s) {
@@ -4423,10 +4525,8 @@
 	},
 	textarea: function (k, s) {
 	  return all([
-		applyFormBorder,
+		applyTextareaBorder,
 	  ])(textarea(function ($el, ctx) {
-		var mw = stream.once(150);
-		var mh = stream.once(constant(50));
 		$el.prop('name', k);
 		stream.onValue(s, function (v) {
 		  if (v !== $el.val()) {
@@ -4446,29 +4546,37 @@
 		var borderWidthH = getFormElementBorderWidthH($el);
 		var borderWidthV = getFormElementBorderWidthV($el);
 		var lastOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-		var lastOuterHeight = $el.outerHeight() - 2 * borderWidthV;
+		var lastOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+		var mw = stream.once(lastOuterWidth + 2 * borderWidthH);
+		var mh = stream.once(constant(lastOuterHeight + 2 * borderWidthV));
 		$('body').on('mousemove', function () {
 		  // this handler is a memory leak, should unbind it on remove
 		  var borderWidthH = getFormElementBorderWidthH($el);
 		  var borderWidthV = getFormElementBorderWidthV($el);
 		  var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-		  var currentOuterHeight = $el.outerHeight() - 2 * borderWidthV;
-		  console.log(lastOuterWidth);
-		  console.log(currentOuterWidth);
+		  var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
 		  if (lastOuterWidth !== currentOuterWidth) {
-			stream.push(mw, currentOuterWidth);
+			stream.push(mw, currentOuterWidth + 2 * borderWidthH);
 			lastOuterWidth = currentOuterWidth;
 		  }
 		  if (lastOuterHeight !== currentOuterHeight) {
-			stream.push(mh, constant(currentOuterHeight));
+			stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
 			lastOuterHeight = currentOuterHeight;
 		  }
 		});
 		$el.on('click', function () {
 		  var borderWidthH = getFormElementBorderWidthH($el);
 		  var borderWidthV = getFormElementBorderWidthV($el);
-		  stream.push(mw, $el.outerWidth() - 2 * borderWidthH);
-		  stream.push(mh, constant($el.outerHeight() - 2 * borderWidthV));
+		  var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
+		  var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+		  if (lastOuterWidth !== currentOuterWidth) {
+			stream.push(mw, currentOuterWidth + 2 * borderWidthH);
+			lastOuterWidth = currentOuterWidth;
+		  }
+		  if (lastOuterHeight !== currentOuterHeight) {
+			stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
+			lastOuterHeight = currentOuterHeight;
+		  }
 		});
 		return {
 		  minWidth: mw,
@@ -4588,7 +4696,7 @@
 				  }
 				  onSubmit.onSubmit(ev);
 				});
-				return ctx.append(c);
+				return c();
 			  })(f(streamsObj, inputsObj, submit, onSubmit.resultS));
 			};
 		  };
