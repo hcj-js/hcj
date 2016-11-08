@@ -64,17 +64,6 @@ a.no-style:active {
     font-weight: inherit;
 }
 
-input, textarea {
-	/* border: none; */
-	/* padding: 0; */
-}
-
-input[type=checkbox]:not(old),
-input[type=radio   ]:not(old){
-  margin    : 0;
-  padding   : 0;
-}
-
 strong {
 	font-weight: bold;
 }
@@ -88,4 +77,8 @@ p {
 
 body {
 	height: 100000px;
+}
+
+* {
+	pointer-events: initial;
 }

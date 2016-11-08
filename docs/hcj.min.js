@@ -1646,11 +1646,11 @@ function waitForWebfonts(fonts, callback) {
 	var $clone = $el.clone();
 	$clone.css('width', '')
 	  .css('height', '')
+	  .css('position', 'absolute')
 	  .css('display', 'inline-block')
 	  .appendTo($sandbox);
 
-
-	var width = parseFloat($clone.css('width'));
+	var width = Math.max($clone.outerWidth(true), $clone[0].scrollWidth);
 	$clone.remove();
 
 	return width;
@@ -1668,7 +1668,7 @@ function waitForWebfonts(fonts, callback) {
 		.css('height', '')
 		.appendTo($sandbox);
 
-	  var height = parseFloat($clone.css('height'));
+	  var height = Math.max($clone.outerHeight(true), $clone[0].scrollHeight);
 	  ws[w] = height;
 
 	  $clone.remove();
@@ -1678,56 +1678,8 @@ function waitForWebfonts(fonts, callback) {
   };
 
   var componentFunc = function (name, build, context) {
-	var $el = $(document.createElement(name));
-
-	$el.css('pointer-events', 'initial');
-
-	var onRemove = [];
-	context.append = function (c, ctx) {
-	  ctx = ctx || {};
-	  try {
-		ctx.$el = ctx.$el || $el;
-		ctx.width = ctx.width || context.width;
-		ctx.height = ctx.height || context.height;
-		ctx.top = ctx.top || onceZeroS;
-		ctx.left = ctx.left || onceZeroS;
-		ctx.topOffset = stream.combine([context.topOffset, context.top], add);
-		ctx.leftOffset = stream.combine([context.leftOffset, context.left], add);
-		ctx.onRemove = onRemove.push;
-		stream = stream;
-		return c(ctx);
-	  }
-	  catch (e) {
-		debugger;
-	  }
-	};
-
-	var mapPx = function (s) {
-	  return s && stream.map(s, px);
-	};
-	$el.css('visibility', 'hidden')
-	  .css('pointer-events', 'initial')
-	  .css('position', 'absolute');
-	stream.onValue(context.widthCss || mapPx(context.width), function (w) {
-	  updateDomFunc($el, 'css', 'width', w);
-	});
-	stream.onValue(context.heightCss || mapPx(context.height), function (h) {
-	  updateDomFunc($el, 'css', 'height', h);
-	});
-	stream.onValue(context.topCss || mapPx(context.top), function (t) {
-	  updateDomFunc($el, 'css', 'top', t);
-	});
-	stream.onValue(context.leftCss || mapPx(context.left), function (l) {
-	  updateDomFunc($el, 'css', 'left', l);
-	});
-	stream.combine([
-	  context.width,
-	  context.height,
-	  context.top,
-	  context.left,
-	], function () {
-	  updateDomFunc($el, 'css', 'visibility', 'initial');
-	});
+	var $el = $(document.createElement(name))
+		  .appendTo(context.$el);
 
 	var instance = {
 	  $el: $el,
@@ -1758,52 +1710,46 @@ function waitForWebfonts(fonts, callback) {
 	  stream.push(instance.minHeight, instance.initialMinHeight);
 	}
 
-	if (context.useMinWidth) {
-	  stream.pushAll(instance.minWidth, context.width);
-	}
-	if (context.useMinHeight) {
-	  stream.pushAll(stream.combine([
-		instance.minHeight,
-		context.width,
-	  ], function (mh, w) {
-		return mh(w);
-	  }), context.height);
-	}
-
 	instance.remove = function () {
-	  onRemove.map(apply());
+	  if (streams.onRemove) {
+		streams.onRemove();
+	  }
 	  $el.remove();
 	};
-	context.onRemove(instance.remove);
-
-	$el.appendTo(context.$el);
 
 	return instance;
   };
 
-  var component = function (name) {
+  var component = function (name, build) {
+	if (!build) {
+	  build = name;
+	  name = 'div';
+	}
+	return function (context) {
+	  return componentFunc(name, build, context);
+	};
+  };
+  var curryComponent = function (name) {
 	return function (build) {
-	  return function (context) {
-		return componentFunc(name, build, context);
-	  };
+	  return component(name, build);
 	};
   };
 
-  var a = component('a');
-  var button = component('button');
-  var div = component('div');
-  var form = component('form');
-  var iframe = component('iframe');
-  var img = component('img');
-  var input = component('input');
-  var label = component('label');
-  var li = component('li');
-  var option = component('option');
-  var p = component('p');
-  var pre = component('pre');
-  var select = component('select');
-  var textarea = component('textarea');
-  var ul = component('ul');
+  var a = curryComponent('a');
+  var button = curryComponent('button');
+  var div = curryComponent('div');
+  var form = curryComponent('form');
+  var iframe = curryComponent('iframe');
+  var img = curryComponent('img');
+  var input = curryComponent('input');
+  var label = curryComponent('label');
+  var li = curryComponent('li');
+  var option = curryComponent('option');
+  var p = curryComponent('p');
+  var pre = curryComponent('pre');
+  var select = curryComponent('select');
+  var textarea = curryComponent('textarea');
+  var ul = curryComponent('ul');
 
   var _scrollbarWidth = function () {
 	var parent, child, width;
@@ -1817,27 +1763,61 @@ function waitForWebfonts(fonts, callback) {
 
 	return width;
   };
-  var layoutRecurse = function ($el, ctx, cs) {
-	if ($.isArray(cs)) {
-	  return cs.map(function (c) {
-		return layoutRecurse($el, ctx, c);
-	  });
-	}
-	else {
-	  if (!$.isFunction (cs)) {
-		console.log('cs is not a function');
+
+  var mapPx = function (s) {
+	return s && stream.map(s, px);
+  };
+  var layoutAppend = function (childInstances, $el, context, c, ctx, noPositionAbsolute) {
+	ctx = ctx || {};
+	try {
+	  ctx.$el = ctx.$el || $el;
+	  ctx.width = ctx.width || context.width;
+	  ctx.height = ctx.height || context.height;
+	  ctx.top = ctx.top || onceZeroS;
+	  ctx.left = ctx.left || onceZeroS;
+	  ctx.topOffset = stream.combine([context.topOffset, context.top], add);
+	  ctx.leftOffset = stream.combine([context.leftOffset, context.left], add);
+	  var i = c(ctx);
+	  childInstances.push(i);
+	  // todo: replace with some isInstance function
+	  if (!i || !i.minWidth || !i.minHeight) {
+		console.log('not a component');
 		debugger;
 	  }
-	  return function (context) {
-		var i = cs(context);
-		// todo: replace with some isInstance function
-		if (!i || !i.minWidth || !i.minHeight) {
-		  console.log('not a component');
-		  debugger;
-		}
-		return i;
-	  };
+	  if (noPositionAbsolute === undefined) {
+		i.$el.css('position', 'absolute');
+		stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
+		  updateDomFunc(i.$el, 'css', 'width', w);
+		});
+		stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
+		  updateDomFunc(i.$el, 'css', 'height', h);
+		});
+		stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
+		  updateDomFunc(i.$el, 'css', 'top', t);
+		});
+		stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
+		  updateDomFunc(i.$el, 'css', 'left', l);
+		});
+	  }
+	  return i;
 	}
+	catch (e) {
+	  debugger;
+	}
+  };
+  var layoutRecurse = function (childInstances, $el, context, cs) {
+	if ($.isArray(cs)) {
+	  return cs.map(function (c) {
+		return layoutRecurse(childInstances, $el, context, c);
+	  });
+	}
+	if (!$.isFunction (cs)) {
+	  console.log('cs is not a function');
+	  debugger;
+	}
+	return function (ctx, noPositionAbsolute) {
+	  return layoutAppend(childInstances, $el, context, cs, ctx, noPositionAbsolute);
+	};
   };
 
   var layout = function (elArg, buildLayoutArg) {
@@ -1846,9 +1826,22 @@ function waitForWebfonts(fonts, callback) {
 	return function () {
 	  var args = Array.prototype.slice.call(arguments);
 	  return el(function ($el, ctx) {
-		$el.css('pointer-events', 'none')
+		var childInstances = [];
+		$el.css('position', 'absolute')
+		  .css('pointer-events', 'none')
 		  .css('overflow', 'hidden');
-		return buildLayout.apply(null, [$el, ctx].concat(layoutRecurse($el, ctx, args)));
+		var i = buildLayout.apply(null, [$el, ctx].concat(layoutRecurse(childInstances, $el, ctx, args)));
+		return {
+		  $el: i.$el,
+		  minWidth: i.minWidth,
+		  minHeight: i.minHeight,
+		  remove: function () {
+			childInstances.map(function (i) {
+			  return i.remove();
+			});
+			i.remove();
+		  },
+		};
 	  });
 	};
   };
@@ -1856,10 +1849,25 @@ function waitForWebfonts(fonts, callback) {
   var container = function (elArg, buildContainerArg) {
 	var el = buildContainerArg ? elArg : div;
 	var buildContainer = buildContainerArg || elArg;
-	return div(function ($el, ctx) {
-	  return buildContainer($el, ctx, function (cs) {
-		return layoutRecurse($el, ctx, cs);
+	return div(function ($el, context) {
+	  var childInstances = [];
+	  $el.css('position', 'absolute')
+		.css('pointer-events', 'none')
+		.css('overflow', 'hidden');
+	  var i = buildContainer($el, context, function (c, ctx, noPositionAbsolute) {
+		return layoutAppend(childInstances, $el, context, c, ctx, noPositionAbsolute);
 	  });
+	  return {
+		$el: i.$el,
+		minWidth: i.minWidth,
+		minHeight: i.minHeight,
+		remove: function () {
+		  childInstances.map(function (i) {
+			return i.remove();
+		  });
+		  i.remove();
+		},
+	  };
 	});
   };
 
@@ -1872,6 +1880,7 @@ function waitForWebfonts(fonts, callback) {
   };
 
   var rootLayout = layout(function ($el, ctx, c) {
+	var i = c();
 	stream.combine([
 	  ctx.width,
 	  ctx.height,
@@ -1880,8 +1889,20 @@ function waitForWebfonts(fonts, callback) {
 	], function () {
 	  stream.push(displayedS, true);
 	  updateDomFunc($('body'), 'css', 'height', 'auto');
+	  stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
+		updateDomFunc(i.$el, 'css', 'width', w);
+	  });
+	  stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
+		updateDomFunc(i.$el, 'css', 'height', h);
+	  });
+	  stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
+		updateDomFunc(i.$el, 'css', 'top', t);
+	  });
+	  stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
+		updateDomFunc(i.$el, 'css', 'left', l);
+	  });
 	});
-	return ctx.append(c);
+	return i;
   });
 
   var ensureSandbox = function () {
@@ -1937,7 +1958,6 @@ function waitForWebfonts(fonts, callback) {
 		stream.push(height, mhAtWW);
 	  }
 	});
-	var onRemove = [];
 	var i = rootLayout(c)({
 	  $el: $('body'),
 	  width: width,
@@ -1946,7 +1966,6 @@ function waitForWebfonts(fonts, callback) {
 	  left: onceZeroS,
 	  topOffset: onceZeroS,
 	  leftOffset: onceZeroS,
-	  onRemove: onRemove.push,
 	});
 	i.$el.css('position', 'absolute')
 	  .css('top', '0px')
@@ -1966,11 +1985,6 @@ function waitForWebfonts(fonts, callback) {
 		}, 500);
 	  }
 	});
-	var remove = i.remove;
-	i.remove = function () {
-	  onRemove.map(apply());
-	  remove();
-	};
 	stream.pushAll(i.minHeight, minHeight);
 	stream.combine([
 	  width,
@@ -2100,7 +2114,7 @@ function waitForWebfonts(fonts, callback) {
   var minWidth = function (mw) {
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('minWidth');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: stream.once(mw),
 		minHeight: i.minHeight,
@@ -2110,7 +2124,7 @@ function waitForWebfonts(fonts, callback) {
   var minHeight = function (mh) {
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('minHeight');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: i.minWidth,
 		minHeight: stream.once(constant(mh)),
@@ -2120,7 +2134,7 @@ function waitForWebfonts(fonts, callback) {
   var withDimensions = function (mw, mh) {
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withDimensions');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: stream.once(mw),
 		minHeight: stream.once(constant(mh)),
@@ -2133,7 +2147,7 @@ function waitForWebfonts(fonts, callback) {
 	  if (f) {
 		f($el);
 	  }
-	  return ctx.append(c);
+	  return c();
 	});
   };
   var wrap = function (el) {
@@ -2143,25 +2157,23 @@ function waitForWebfonts(fonts, callback) {
   var adjustPosition = function (minSize, position) {
 	minSize = minSize || {};
 	position = position || {};
-	return function (c) {
-	  return function (ctx) {
-		ctx = $.extend({}, ctx, {
-		  top: position.top || ctx.top,
-		  left: position.left || ctx.left,
-		  width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
-		  height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
-		});
-		var i = c(ctx);
-		i.minWidth = minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth;
-		i.minHeight = minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight;
-		return i;
-	  };
-	};
+	return layout(function ($el, ctx, c) {
+	  ctx = $.extend({}, ctx, {
+		top: position.top || ctx.top,
+		left: position.left || ctx.left,
+		width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
+		height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
+	  });
+	  var i = c(ctx);
+	  i.minWidth = minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth;
+	  i.minHeight = minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight;
+	  return i;
+	});
   };
 
   var adjustMinSize = uncurryConfig(function (config) {
 	return layout(function ($el, ctx, c) {
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: stream.map(i.minWidth, function (mw) {
 		  return config.mw(mw);
@@ -2355,7 +2367,7 @@ function waitForWebfonts(fonts, callback) {
 	  $el.addClass('crop');
 	  $el.css('overflow', 'hidden');
 	  var props = stream.create();
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: stream.prop(props, 'top'),
 		left: stream.prop(props, 'left'),
 		width: stream.prop(props, 'width'),
@@ -2393,13 +2405,16 @@ function waitForWebfonts(fonts, callback) {
 	  };
 	});
   };
+  var aspectRatio = function (w, h) {
+	return (h === 0) ? 1 : (w / h);
+  };
   var keepAspectRatio = uncurryConfig(function (config) {
 	config = config || {};
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('keepAspectRatio');
 	  $el.css('overflow', 'hidden');
 	  var props = stream.create();
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: stream.prop(props, 'top'),
 		left: stream.prop(props, 'left'),
 		width: stream.prop(props, 'width'),
@@ -2411,11 +2426,8 @@ function waitForWebfonts(fonts, callback) {
 		ctx.width,
 		ctx.height,
 	  ], function (mw, mh, w, h) {
-		var ar = mw / mh(mw);
-		var AR = w / h;
-		if (Number.isNaN(ar) || Number.isNaN(AR)) {
-		  console.log('keepAspectRatio aspect ratio NaN');
-		}
+		var ar = aspectRatio(mw, mh(mw));
+		var AR = aspectRatio(w, h);
 		// container is wider
 		if ((!config.fill && AR > ar) ||
 			(config.fill && AR < ar)) {
@@ -2472,13 +2484,14 @@ function waitForWebfonts(fonts, callback) {
 		  stream.push(minWidth, config.minWidth);
 		}
 		else if (config.minHeight) {
-		  stream.push(minWidth, config.minHeight * mw / mh(mw));
+		  var ar = aspectRatio(mw, mh(mw));
+		  stream.push(minWidth, config.minHeight * ar);
 		}
 		else {
 		  stream.push(minWidth, mw);
 		}
 		stream.push(minHeight, function (w) {
-		  return w / (mw / mh(mw));
+		  return w / aspectRatio(w, mh(mw));
 		});
 	  });
 	  return {
@@ -2501,8 +2514,8 @@ function waitForWebfonts(fonts, callback) {
 	  });
 	  $el.on('load', function () {
 		var aspectRatio = $el[0].naturalWidth / $el[0].naturalHeight;
-		var mw = config.minWidth ||
-			  (config.minHeight && config.minHeight * aspectRatio) ||
+		var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
+			  (config.hasOwnProperty('minHeight') && config.minHeight && config.minHeight * aspectRatio) ||
 			  $el[0].naturalWidth;
 		if (config.minWidth === 0 || config.minHeight === 0) {
 		  mw = 0;
@@ -2534,12 +2547,12 @@ function waitForWebfonts(fonts, callback) {
 	  if (!config.defaultStyle) {
 		$el.addClass('no-style');
 	  }
-	  return ctx.append(c);
+	  return c();
 	});
   });
 
   var empty = function (el) {
-	return component(el)(function ($el, ctx) {
+	return component(el, function ($el, ctx) {
 	  $el.addClass('empty');
 	  return {
 		minWidth: onceZeroS,
@@ -3051,7 +3064,7 @@ function waitForWebfonts(fonts, callback) {
 		};
 	  });
 	  var is = cs.concat(cs).concat(cs).map(function (c, index) {
-		return ctx.append(c, contexts[index]);
+		return c(contexts[index]);
 	  });
 
 	  // the state
@@ -3237,7 +3250,7 @@ function waitForWebfonts(fonts, callback) {
 		  width: stream.create(),
 		};
 		contexts.push(context);
-		return ctx.append(c, context);
+		return c(context);
 	  });
 	  var allMinWidths = mapMinWidths(is, ctx);
 	  var allMinHeights = mapMinHeights(is, ctx);
@@ -3302,7 +3315,7 @@ function waitForWebfonts(fonts, callback) {
 	  var context = {
 		top: stream.create(),
 	  };
-	  var i = ctx.append(c, context);
+	  var i = c(context);
 	  i.$el.css('transition', 'top ' + config.transition);
 	  var pushed = false;
 	  stream.push(context.top, config.top);
@@ -3333,7 +3346,7 @@ function waitForWebfonts(fonts, callback) {
 	config.transition = config.transition || '1s';
 	config.margin = config.margin || 0;
 	return layout(function ($el, ctx, c) {
-	  var i = ctx.append(c);
+	  var i = c();
 	  var pushed = false;
 	  i.$el.css('opacity', 0);
 	  setTimeout(function () {
@@ -3430,7 +3443,7 @@ function waitForWebfonts(fonts, callback) {
 		};
 	  });
 	  var is = cs.map(function (c, index) {
-		var i = ctx.append(c, ctxs[index]);
+		var i = c(ctxs[index]);
 		stream.pushAll(i.minWidth, ctx.width);
 		return i;
 	  });
@@ -3564,7 +3577,7 @@ function waitForWebfonts(fonts, callback) {
 		  height: stream.create(),
 		};
 		contexts.push(context);
-		return ctx.append(c, context);
+		return c(context);
 	  });
 	  if (config.transition) {
 		var transition = config.transition + 's';
@@ -3625,7 +3638,7 @@ function waitForWebfonts(fonts, callback) {
 	config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
 	config.transition = config.transition || 0;
 	return function (actionS) {
-	  return container(function ($el, ctx, child) {
+	  return container(function ($el, ctx, append) {
 		var mw = stream.once(0);
 		var mh = stream.once(constant(0));
 		var contexts = [];
@@ -3693,7 +3706,7 @@ function waitForWebfonts(fonts, callback) {
 			top: stream.create(),
 			height: stream.create(),
 		  };
-		  var i = ctx.append(child(c), context);
+		  var i = append(c, context);
 
 		  cs[index] = c;
 		  mwDeleteListeners[index] = stream.onValue(i.minWidth, tryPushContexts);
@@ -3793,7 +3806,7 @@ function waitForWebfonts(fonts, callback) {
 	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('margin');
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: stream.once(top),
 		left: stream.once(left),
 		width: stream.map(ctx.width, function (w) {
@@ -3861,7 +3874,7 @@ function waitForWebfonts(fonts, callback) {
 	  stream.push(rightS, right);
 	});
 	return layout(function ($el, ctx, c) {
-	  var i = ctx.append(c, {
+	  var i = c({
 		top: topS,
 		left: leftS,
 		height: stream.combine([
@@ -3917,9 +3930,9 @@ function waitForWebfonts(fonts, callback) {
 		  width: stream.create(),
 		  left: stream.create(),
 		};
-		var lI = ctx.append(l, lCtx);
-		var rI = ctx.append(r, rCtx);
-		var mI = ctx.append(m, mCtx);
+		var lI = l(lCtx);
+		var rI = r(rCtx);
+		var mI = m(mCtx);
 		stream.combine([
 		  lI.minWidth,
 		  rI.minWidth,
@@ -3994,9 +4007,9 @@ function waitForWebfonts(fonts, callback) {
 		  height: stream.create(),
 		  top: stream.create(),
 		};
-		var tI = ctx.append(t, tCtx);
-		var bI = ctx.append(b, bCtx);
-		var mI = ctx.append(m, mCtx);
+		var tI = t(tCtx);
+		var bI = b(bCtx);
+		var mI = m(mCtx);
 		stream.combine([
 		  tI.minHeight,
 		  bI.minHeight,
@@ -4130,7 +4143,7 @@ function waitForWebfonts(fonts, callback) {
 	  $el.addClass('border');
 	  // overflow hidden is necessary to prevent cutting off corners
 	  // of border if there is a border radius
-	  var i = ctx.append(c, {
+	  var i = c({
 		width: stream.map(ctx.width, function (w) {
 		  return w - left - right;
 		}),
@@ -4163,16 +4176,11 @@ function waitForWebfonts(fonts, callback) {
 
   var componentStream = function (cStream) {
 	var error = new Error();
-	return container(function ($el, ctx) {
+	return container(function ($el, ctx, append) {
 	  $el.addClass('componentStream');
 	  var i;
 	  var unpushMW;
 	  var unpushMH;
-	  ctx.onRemove(function () {
-		if (i) {
-		  i.remove();
-		}
-	  });
 	  var minWidth = stream.create();
 	  var minHeight = stream.create();
 	  var iStream = stream.reduce(cStream, function (i, c) {
@@ -4185,7 +4193,7 @@ function waitForWebfonts(fonts, callback) {
 		if (unpushMH) {
 		  unpushMH();
 		}
-		i = ctx.append(c, {
+		i = append(c, {
 		  widthCss: stream.once('100%'),
 		  heightCss: stream.once('100%'),
 		});
@@ -4196,6 +4204,11 @@ function waitForWebfonts(fonts, callback) {
 	  return {
 		minWidth: minWidth,
 		minHeight: minHeight,
+		onRemove: function () {
+		  if (i) {
+			i.remove();
+		  }
+		},
 	  };
 	});
   };
@@ -4215,7 +4228,7 @@ function waitForWebfonts(fonts, callback) {
 	  d.resolve();
 	  return d.promise();
 	};
-	return container(function ($el, context) {
+	return container(function ($el, context, append) {
 	  $el.addClass('component-stream-with-exit');
 	  var localCStream = stream.create();
 	  stream.pushAll(cStream, localCStream);
@@ -4235,7 +4248,7 @@ function waitForWebfonts(fonts, callback) {
 		  widthCss: stream.once('100%'),
 		  heightCss: stream.once('100%'),
 		};
-		i = context.append(c, ctx);
+		i = append(c, ctx);
 		i.$el.css('transition', 'inherit');
 		i.$el.css('display', 'none');
 		i.$el.prependTo($el);
@@ -4251,15 +4264,15 @@ function waitForWebfonts(fonts, callback) {
 	  stream.map(localCStream, function (c) {
 		instanceC(c);
 	  });
-	  context.onRemove(function () {
-		stream.end(localCStream);
-		if (i) {
-		  i.remove();
-		}
-	  });
 	  return {
 		minWidth: minWidthS,
 		minHeight: minHeightS,
+		onRemove: function () {
+		  stream.end(localCStream);
+		  if (i) {
+			i.remove();
+		  }
+		},
 	  };
 	});
   };
@@ -4296,7 +4309,7 @@ function waitForWebfonts(fonts, callback) {
 	  return layout(function ($el, context, c) {
 		$el.addClass('modalDialog');
 
-		var i = context.append(c, {
+		var i = c({
 		  top: stream.once(0),
 		  left: stream.once(0),
 		  width: stream.map(windowWidth, function (ww) {
@@ -4340,7 +4353,7 @@ function waitForWebfonts(fonts, callback) {
 	return layout(function ($el, ctx, c) {
 	  $el.css('overflow', 'hidden')
 		.addClass('toggle-height');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: i.minWidth,
 		minHeight: stream.combine([
@@ -4365,8 +4378,8 @@ function waitForWebfonts(fonts, callback) {
 		height: stream.create(),
 		top: stream.create(),
 	  };
-	  var panelI = ctx.append(panel, panelCtx);
-	  var sourceI = ctx.append(source);
+	  var panelI = panel(panelCtx);
+	  var sourceI = source();
 	  useMinHeight(panelCtx, panelI);
 	  stream.pushAll(ctx.height, panelCtx.top);
 	  return {
@@ -4390,7 +4403,8 @@ function waitForWebfonts(fonts, callback) {
 	  if (config.panelHeightS) {
 		stream.pushAll(context.height, config.panelHeightS);
 	  }
-	  var i = ctx.append(panel, context);
+	  var i = panel(context);
+	  $el.css('overflow', 'hidden');
 	  i.$el.css('transition', 'top ' + config.transition)
 		.css('z-index', 1000);
 	  return i;
@@ -4412,14 +4426,16 @@ function waitForWebfonts(fonts, callback) {
 		left: stream.create(),
 		top: stream.create(),
 	  };
-	  var panelI = ctx.append(panel, panelCtx);
-	  var sourceI = ctx.append(source);
+	  var panelI = panel(panelCtx);
+	  var sourceI = source();
 	  useMinWidth(panelCtx, panelI);
 	  stream.combineInto([
 		ctx.height,
 		windowHeight,
-	  ], function (sh, wh) {
-		return wh - sh;
+		panelI.minWidth,
+		panelI.minHeight,
+	  ], function (sh, wh, mw, mh) {
+		return Math.max(wh - sh, mh(mw));
 	  }, panelCtx.height);
 	  stream.pushAll(ctx.height, panelCtx.top);
 	  stream.combineInto([
@@ -4438,7 +4454,7 @@ function waitForWebfonts(fonts, callback) {
 		minHeight: sourceI.minHeight,
 	  };
 	})(source, layout(function ($el, ctx, panel) {
-	  var i = ctx.append(panel, {
+	  var i = panel({
 		left: stream.combine([
 		  onOffS,
 		  ctx.width,
@@ -4512,7 +4528,7 @@ function waitForWebfonts(fonts, callback) {
 		widthCss: stream.once('100%'),
 		heightCss: stream.once('100%'),
 	  };
-	  var i = context.append(c, ctx);
+	  var i = c(ctx);
 	  stream.combine([
 		windowScroll,
 		str,
@@ -4638,7 +4654,7 @@ function waitForWebfonts(fonts, callback) {
 			height: stream.create(),
 		  };
 		  contexts.push(context);
-		  return ctx.append(c, context);
+		  return c(context);
 		});
 
 		var minWidthsS = stream.combine(is.map(function (i) {
@@ -4799,7 +4815,7 @@ function waitForWebfonts(fonts, callback) {
 	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withMinWidthStream');
-	  var i = ctx.append(c);
+	  var i = c();
 	  return {
 		minWidth: $.isFunction(getMinWidthStream) ? getMinWidthStream(i, ctx) : getMinWidthStream,
 		minHeight: i.minHeight,
@@ -4823,7 +4839,7 @@ function waitForWebfonts(fonts, callback) {
 	}
 	return layout(function ($el, ctx, c) {
 	  $el.addClass('withMinHeightStream');
-	  var i = ctx.append(c);
+	  var i = c();
 	  var minHeightS = $.isFunction(getMinHeightStream) ? getMinHeightStream(i, ctx) : getMinHeightStream;
 	  return {
 		minWidth: i.minWidth,
@@ -4860,7 +4876,7 @@ function waitForWebfonts(fonts, callback) {
 		height: stream.create(),
 		top: stream.create(),
 	  };
-	  var i = ctx.append(c, context);
+	  var i = c(context);
 	  stream.pushAll(stream.combine([
 		i.minHeight,
 		ctx.width,
@@ -4920,7 +4936,7 @@ function waitForWebfonts(fonts, callback) {
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('largest-width-that-fits');
 	  var is = cs.map(function (c) {
-		return ctx.append(c);
+		return c();
 	  });
 	  var allMinWidths = mapMinWidths(is);
 	  var allMinHeights = mapMinHeights(is);
@@ -4966,7 +4982,7 @@ function waitForWebfonts(fonts, callback) {
 	return layout(function ($el, ctx, cs) {
 	  $el.addClass('overlays');
 	  var is = cs.map(function (c) {
-		return ctx.append(c);
+		return c();
 	  });
 	  var chooseLargest = function (streams) {
 		return stream.combine(streams, function () {
@@ -5245,38 +5261,125 @@ function waitForWebfonts(fonts, callback) {
 	return year + '-' + month + '-' + day;
   };
   var getFormElementBorderWidthH = function ($el) {
+	return ($el.outerWidth() - parseFloat($el.css('width'))) / 2;
 	var width = 0;
 	width += parseFloat($el.css('padding-left'));
 	width += parseFloat($el.css('border-left-width'));
 	return width;
   };
   var getFormElementBorderWidthV = function ($el) {
+	return ($el.outerHeight() - parseFloat($el.css('height'))) / 2;
 	var width = 0;
 	width += parseFloat($el.css('padding-top'));
 	width += parseFloat($el.css('border-top-width'));
 	return width;
   };
   var formElementBorderWidth = (function () {
-	var $input = $(document.createElement('input')).appendTo($('body'));
+	var $input = $(document.createElement('input'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
 	var width = getFormElementBorderWidthH($input);
 	$input.remove();
 	return width;
   })();
-  var applyFormBorder = adjustPosition({
-	minWidth: function (mw) {
-	  return mw + (2 * formElementBorderWidth);
-	},
-	minHeight: function (mh) {
-	  return function (w) {
-		return mh(w) + (2 * formElementBorderWidth);
-	  };
-	},
-  }, {
+  var formElementBorderHeight = (function () {
+	var $input = $(document.createElement('input'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var height = getFormElementBorderWidthV($input);
+	$input.remove();
+	return height;
+  })();
+  var formTextareaBorderWidth = (function () {
+	var $input = $(document.createElement('textarea'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = getFormElementBorderWidthH($input);
+	$input.remove();
+	return width;
+  })();
+  var formTextareaBorderHeight = (function () {
+	var $input = $(document.createElement('textarea'))
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var height = getFormElementBorderWidthV($input);
+	$input.remove();
+	return height;
+  })();
+  var formCheckboxMarginH = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'checkbox')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-left'));
+	width += parseFloat($input.css('margin-right'));
+	$input.remove();
+	return width;
+  })();
+  var formCheckboxMarginV = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'checkbox')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-top'));
+	width += parseFloat($input.css('margin-bottom'));
+	$input.remove();
+	return width;
+  })();
+  var formRadioMarginH = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'radio')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-left'));
+	width += parseFloat($input.css('margin-right'));
+	$input.remove();
+	return width;
+  })();
+  var formRadioMarginV = (function () {
+	var $input = $(document.createElement('input'))
+		  .prop('type', 'radio')
+		  .appendTo($('body'))
+		  .css('position', 'absolute');
+	var width = 0;
+	width += parseFloat($input.css('margin-top'));
+	width += parseFloat($input.css('margin-bottom'));
+	$input.remove();
+	return width;
+  })();
+  var applyFormBorder = adjustPosition({}, {
 	width: function (w) {
 	  return w - 2 * formElementBorderWidth;
 	},
 	height: function (h) {
-	  return h - 2 * formElementBorderWidth;
+	  return h - 2 * formElementBorderHeight;
+	},
+  });
+  var applyTextareaBorder = adjustPosition({}, {
+	width: function (w) {
+	  return w - 2 * formTextareaBorderWidth;
+	},
+	height: function (h) {
+	  return h - 2 * formTextareaBorderHeight;
+	},
+  });
+  var applyCheckboxBorder = adjustPosition({}, {
+	width: function (w) {
+	  return w - formCheckboxMarginH;
+	},
+	height: function (h) {
+	  return h - formCheckboxMarginV;
+	},
+  });
+  var applyRadioBorder = adjustPosition({}, {
+	width: function (w) {
+	  return w - formRadioMarginH;
+	},
+	height: function (h) {
+	  return h - formRadioMarginV;
 	},
   });
   var formComponent = {
@@ -5308,7 +5411,9 @@ function waitForWebfonts(fonts, callback) {
 	},
 	checkbox: function (k, s) {
 	  s = s || stream.create();
-	  return input(function ($el, ctx, mw, mh) {
+	  return all([
+		applyCheckboxBorder,
+	  ])(input(function ($el, ctx, mw, mh) {
 		$el.prop('id', k);
 		$el.prop('name', k);
 		$el.prop('type', 'checkbox');
@@ -5324,7 +5429,7 @@ function waitForWebfonts(fonts, callback) {
 		});
 		mw();
 		mh();
-	  });
+	  }));
 	},
 	date: function (k, s) {
 	  return all([
@@ -5451,7 +5556,9 @@ function waitForWebfonts(fonts, callback) {
 	},
 	radios: function (k, s, type) {
 	  return type.options.map(function (option) {
-		return input(function ($el, ctx, mw, mh) {
+		return all([
+		  applyRadioBorder,
+		])(input(function ($el, ctx, mw, mh) {
 		  $el.prop('id', option);
 		  $el.prop('value', option);
 		  $el.prop('name', k);
@@ -5466,7 +5573,7 @@ function waitForWebfonts(fonts, callback) {
 		  });
 		  mw();
 		  mh();
-		});
+		}));
 	  });
 	},
 	text: function (k, s) {
@@ -5495,10 +5602,8 @@ function waitForWebfonts(fonts, callback) {
 	},
 	textarea: function (k, s) {
 	  return all([
-		applyFormBorder,
+		applyTextareaBorder,
 	  ])(textarea(function ($el, ctx) {
-		var mw = stream.once(150);
-		var mh = stream.once(constant(50));
 		$el.prop('name', k);
 		stream.onValue(s, function (v) {
 		  if (v !== $el.val()) {
@@ -5518,29 +5623,37 @@ function waitForWebfonts(fonts, callback) {
 		var borderWidthH = getFormElementBorderWidthH($el);
 		var borderWidthV = getFormElementBorderWidthV($el);
 		var lastOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-		var lastOuterHeight = $el.outerHeight() - 2 * borderWidthV;
+		var lastOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+		var mw = stream.once(lastOuterWidth + 2 * borderWidthH);
+		var mh = stream.once(constant(lastOuterHeight + 2 * borderWidthV));
 		$('body').on('mousemove', function () {
 		  // this handler is a memory leak, should unbind it on remove
 		  var borderWidthH = getFormElementBorderWidthH($el);
 		  var borderWidthV = getFormElementBorderWidthV($el);
 		  var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-		  var currentOuterHeight = $el.outerHeight() - 2 * borderWidthV;
-		  console.log(lastOuterWidth);
-		  console.log(currentOuterWidth);
+		  var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
 		  if (lastOuterWidth !== currentOuterWidth) {
-			stream.push(mw, currentOuterWidth);
+			stream.push(mw, currentOuterWidth + 2 * borderWidthH);
 			lastOuterWidth = currentOuterWidth;
 		  }
 		  if (lastOuterHeight !== currentOuterHeight) {
-			stream.push(mh, constant(currentOuterHeight));
+			stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
 			lastOuterHeight = currentOuterHeight;
 		  }
 		});
 		$el.on('click', function () {
 		  var borderWidthH = getFormElementBorderWidthH($el);
 		  var borderWidthV = getFormElementBorderWidthV($el);
-		  stream.push(mw, $el.outerWidth() - 2 * borderWidthH);
-		  stream.push(mh, constant($el.outerHeight() - 2 * borderWidthV));
+		  var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
+		  var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+		  if (lastOuterWidth !== currentOuterWidth) {
+			stream.push(mw, currentOuterWidth + 2 * borderWidthH);
+			lastOuterWidth = currentOuterWidth;
+		  }
+		  if (lastOuterHeight !== currentOuterHeight) {
+			stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
+			lastOuterHeight = currentOuterHeight;
+		  }
 		});
 		return {
 		  minWidth: mw,
@@ -5660,12 +5773,421 @@ function waitForWebfonts(fonts, callback) {
 				  }
 				  onSubmit.onSubmit(ev);
 				});
-				return ctx.append(c);
+				return c();
 			  })(f(streamsObj, inputsObj, submit, onSubmit.resultS));
 			};
 		  };
 		};
 	  };
+	};
+  };
+
+  var shallowCopy = function (oldObj) {
+	var newObj = {};
+	for(var i in oldObj) {
+	  if(oldObj.hasOwnProperty(i)) {
+		newObj[i] = oldObj[i];
+	  }
+	}
+	return newObj;
+  };
+
+  var jsoScrollTo = function (position, duration) {
+	$('html body').animate({
+	  scrollTop: position,
+	}, duration);
+  };
+  var runJso = function (bar, bodyColumn, db) {
+	return function (me, profile) {
+	  var evalAllWithContext = function (ns, context) {
+		return ns.map(function (n) {
+		  return evalWithContext(n, context);
+		});
+	  };
+
+	  var evalWithContext = function (javVal, context) {
+		context = context || {};
+		// do a shallow copy first, in case the same variable name is used
+		// multiple times, i.e. properties would be overwritten
+		var createContext = function (props) {
+		  var ctx = shallowCopy(context);
+		  props.map(function (prop) {
+			ctx[prop.key] = prop.value;
+		  });
+		  return ctx;
+		};
+		var evalAll = function (javVal) {
+		  return evalAllWithContext(javVal, context);
+		};
+		var evalVal = function (javVal) {
+		  return javVal && evalWithContext(javVal, context);
+		};
+		var javNull = {
+		  null: null,
+		};
+		return caseSplit({
+		  action: caseSplit({
+			scrollTo: function (obj) {
+			  var positionS = evalVal(obj.positionS);
+			  var duration = evalVal(obj.duration || javNull);
+			  return function () {
+				jsoScrollTo(positionS.lastValue + 'px', duration);
+			  };
+			},
+		  }),
+		  all: function (obj) {
+			return obj.fs.reduce(function (v, fVal) {
+			  return evalVal(fVal)(v);
+			}, evalVal(obj.v));
+		  },
+		  array: caseSplit({
+			evalEach: function (obj) {
+			  return obj.map(evalVal);
+			},
+			map: function (obj) {
+			  return evalVal(obj.source).map(function (item) {
+				var ctx = createContext([{
+				  key: obj.name,
+				  value: item,
+				}]);
+				return evalWithContext(obj.value, ctx);
+			  });
+			},
+		  }),
+		  apply: function (obj) {
+			var f = evalVal(obj.f);
+			var args = evalAll(obj.args);
+			return evalWithContext(f.value, createContext(f.args.map(function (arg, index) {
+			  return {
+				key: arg.identifier,
+				value: args[index] || arg.default,
+			  };
+			})));
+		  },
+		  auth: caseSplit({
+			loggedIn: !!me,
+		  }),
+		  bool: caseSplit({
+			constant: id,
+		  }),
+		  case: function (obj) {
+			var result = {};
+			result[obj.key] = evalVal(obj.value);
+			return result;
+		  },
+		  component: caseSplit({
+			alignLRM: function (obj) {
+			  return alignLRM()({
+				l: evalVal(obj.l),
+				r: evalVal(obj.r),
+				m: evalVal(obj.m),
+			  });
+			},
+			alignTBM: function (obj) {
+			  return alignTBM()({
+				t: evalVal(obj.t),
+				b: evalVal(obj.b),
+				m: evalVal(obj.m),
+			  });
+			},
+			all: function (obj) {
+			  return all(evalAll(obj.mods))(evalVal(obj.c));
+			},
+			bar: caseSplit({
+			  h: function (x) {
+				return bar.h(x);
+			  },
+			  v: function (x) {
+				return bar.v(x);
+			  },
+			}),
+			grid: function (obj) {
+			  var config = obj.config || {};
+			  return grid({
+				surplusWidthFunc: caseSplit({
+				  centerSurplusWidth: constant(hcj.funcs.surplusWidth.center),
+				  evenSplitSurplusWidth: constant(hcj.funcs.surplusWidth.evenlySplit),
+				  ignoreSurplusWidth: constant(hcj.funcs.surplusWidth.ignore),
+				  giveToNth: hcj.funcs.surplusWidth.giveToNth,
+				})(config.surplusWidthFunc || {
+				  ignoreSurplusWidth: null,
+				}),
+				surplusHeightFunc: caseSplit({
+				  evenSplitSurplusHeight: constant(hcj.funcs.surplusHeight.evenlySplit),
+				  ignoreSurplusHeight: constant(hcj.funcs.surplusHeight.ignore),
+				  giveToNth: hcj.funcs.surplusHeight.giveToNth,
+				})(obj.config.surplusHeightFunc || {
+				  ignoreSurplusHeight: null,
+				}),
+				padding: config.padding,
+				useFullWidth: config.useFullWidth,
+				rowOrColumn: config.rowOrColumn,
+				rowHeight: caseSplit({
+				  useMaxHeight: constant(hcj.funcs.rowHeight.useMaxHeight),
+				  useNthMinHeight: hcj.funcs.rowHeight.useNthMinHeight,
+				})(config.rowHeight || {
+				  useMaxHeight: null,
+				}),
+			  })(evalVal(obj.cs));
+			},
+			image: function (obj) {
+			  return keepAspectRatio({
+				fill: evalVal(obj.fill),
+				left: evalVal(obj.left),
+				right: evalVal(obj.right),
+				top: evalVal(obj.top),
+				bottom: evalVal(obj.bottom),
+			  })(image({
+				src: evalVal(obj.src),
+				minWidth: evalVal(obj.minWidth),
+				minHeight: evalVal(obj.minHeight),
+			  }));
+			},
+			overlays: function (obj) {
+			  return overlays({})(evalVal(obj.cs));
+			},
+			stack: function (obj) {
+			  obj.config = obj.config || {};
+			  return stack({
+				surplusHeightFunc: caseSplit({
+				  evenSplitSurplusHeight: constant(hcj.funcs.surplusHeight.evenlySplit),
+				  ignoreSurplusHeight: constant(hcj.funcs.surplusHeight.ignore),
+				  giveToNth: hcj.funcs.surplusHeight.giveToNth,
+				})(obj.config.surplusHeightFunc || {
+				  ignoreSurplusHeight: null,
+				}),
+				padding: evalVal(obj.padding || obj.config.padding), // remove first case
+			  })(evalVal(obj.cs));
+			},
+			text: function (obj) {
+			  return text('' + evalVal(obj.str), (obj.fonts || []).concat(obj.font ? [obj.font] : []));
+			},
+			textSpans: function (obj) {
+			  return text(obj.spans.map(function (span) {
+				var obj = span.font || {};
+				obj.str = evalVal(span.str);
+				return obj;
+			  }), (obj.fonts || []).concat(obj.font ? [obj.font] : []));
+			},
+		  }),
+		  componentMod: caseSplit({
+			$css: function (obj) {
+			  return $css(obj.style, obj.value);
+			},
+			backgroundColor: function (obj) {
+			  return backgroundColor(evalVal(obj.backgroundColor), evalVal(obj.fontColor));
+			},
+			bodyColumn: function () {
+			  return bodyColumn;
+			},
+			border: function (obj) {
+			  var all = evalVal(obj.all);
+			  return border(evalVal(obj.color), {
+				left: evalVal(obj.left) || all,
+				right: evalVal(obj.right) || all,
+				top: evalVal(obj.top) || all,
+				bottom: evalVal(obj.bottom) || all,
+				radius: evalVal(obj.radius),
+			  });
+			},
+			clickThis: function (obj) {
+			  return clickThis(evalVal(obj));
+			},
+			fadeIn: function (obj) {
+			  return fadeIn({
+				margin: evalVal(obj.margin),
+			  });
+			},
+			fontColor: function (obj) {
+			  return backgroundColor({
+				font: evalVal(obj),
+			  });
+			},
+			keepAspectRatio: function (obj) {
+			  return keepAspectRatio({
+				fill: evalVal(obj.fill),
+			  });
+			},
+			link: function () {
+			  return link;
+			},
+			linkTo: function (obj) {
+			  return linkTo(evalVal(obj));
+			},
+			margin: function (obj) {
+			  var all = evalVal(obj.all);
+			  return margin({
+				left: evalVal(obj.left) || all,
+				right: evalVal(obj.right) || all,
+				top: evalVal(obj.top) || all,
+				bottom: evalVal(obj.bottom) || all,
+			  });
+			},
+			minHeightAtLeast: function (obj) {
+			  return minHeightAtLeast(evalVal(obj));
+			},
+			minWidthAtLeast: function (obj) {
+			  return minWidthAtLeast(evalVal(obj));
+			},
+			minHeight: function (obj) {
+			  return minHeight(evalVal(obj));
+			},
+			minWidth: function (obj) {
+			  return minWidth(evalVal(obj));
+			},
+			slideIn: function () {
+			  return slideIn();
+			},
+		  }),
+		  constant: id,
+		  effect: function (effect) {
+			return componentStream(stream.map(caseSplit({
+			  db: caseSplit({
+				find: function (obj) {
+				  return stream.fromPromise(db[obj.table].find(evalVal(obj.query)).then(function (results) {
+					return results;
+				  }));
+				},
+			  }),
+			  stream: function (obj) {
+				return evalVal(obj);
+			  },
+			})(effect.eff), function (r) {
+			  return evalWithContext(effect.withResult, createContext([{
+				key: effect.name,
+				value: r,
+			  }]));
+			}));
+		  },
+		  id: function () {
+			return id;
+		  },
+		  letIn: function (obj) {
+			var arr = [];
+			obj.lets.map(function (l) {
+			  arr.push({
+				key: l.name,
+				value: evalWithContext(l.value, createContext(arr)),
+			  });
+			});
+			return evalWithContext(obj.value, createContext(arr));
+		  },
+		  handler: caseSplit({
+			pushToStream: function (obj) {
+			  var s = evalVal(obj);
+			  return function (ev) {
+				stream.push(s, ev);
+			  };
+			},
+		  }),
+		  ifThenElse: function (obj) {
+			return evalVal(evalVal(obj.if) ? obj.then : obj.else);
+		  },
+		  identifier: function (obj) {
+			return context[obj];
+		  },
+		  null: function () {
+			return null;
+		  },
+		  number: caseSplit({
+			constant: id,
+			difference: function (obj) {
+			  var ns = evalAll([
+				obj.a,
+				obj.b,
+			  ]);
+			  return ns[0] - ns[1];
+			},
+			max: function (obj) {
+			  var ns = evalAll([
+				obj.a,
+				obj.b,
+			  ]);
+			  return Math.max(ns[0], ns[1]);
+			},
+			min: function (obj) {
+			  var ns = evalAll([
+				obj.a,
+				obj.b,
+			  ]);
+			  return Math.min(ns[0], ns[1]);
+			},
+			product: function (obj) {
+			  var ns = evalAll([
+				obj.a,
+				obj.b,
+			  ]);
+			  return ns[0] * ns[1];
+			},
+			quotient: function (obj) {
+			  var ns = evalAll([
+				obj.a,
+				obj.b,
+			  ]);
+			  return ns[0] / ns[1];
+			},
+			sum: function (obj) {
+			  var ns = evalAll([
+				obj.a,
+				obj.b,
+			  ]);
+			  return ns[0] + ns[1];
+			},
+		  }),
+		  object: caseSplit({
+			create: function (objs) {
+			  var a = {};
+			  objs.map(function (prop) {
+				a[prop.key] = evalVal(prop.value);
+			  });
+			  return a;
+			},
+			dynamicProperties: function () {
+			  throw 'do later';
+			},
+		  }),
+		  onEvent: function (obj) {
+			return onThis(obj.event)(evalVal(obj.handler));
+		  },
+		  prop: function (obj) {
+			return evalVal(obj.object)[obj.key];
+		  },
+		  stream: caseSplit({
+			create: function () {
+			  return stream.create();
+			},
+			map: function (obj) {
+			  return stream.map(evalVal(obj.source), function (value) {
+				return evalWithContext(obj.value, createContext([{
+				  key: obj.name,
+				  value: value,
+				}]));
+			  });
+			},
+			reduce: function (obj) {
+			  return stream.reduce(evalVal(obj.source), function (prevValue, currentValue) {
+				return evalWithContext(obj.value, createContext([{
+				  key: obj.prevName,
+				  value: prevValue,
+				}, {
+				  key: obj.currentName,
+				  value: currentValue,
+				}]));
+			  }, evalVal(obj.initialValue));
+			},
+			windowHeight: function () {
+			  return hcj.viewport.heightS;
+			},
+			windowWidth: function () {
+			  return hcj.viewport.widthS;
+			},
+		  }),
+		  string: caseSplit({
+			constant: id,
+		  }),
+		})(javVal);
+	  };
+	  return evalWithContext;
 	};
   };
 
@@ -5701,6 +6223,7 @@ function waitForWebfonts(fonts, callback) {
 	  backgroundColor: backgroundColor,
 	  bar: bar,
 	  border: border,
+	  box: rectangle,
 	  changeThis: changeThis,
 	  clickThis: clickThis,
 	  component: component,
@@ -5740,7 +6263,6 @@ function waitForWebfonts(fonts, callback) {
 	  overlays: overlays,
 	  passthrough: passthrough,
 	  promiseComponent: promiseComponent,
-	  rectangle: rectangle,
 	  scope: scope,
 	  sideBySide: sideBySide,
 	  sideSlidingPanel: sideSlidingPanel,
@@ -5757,7 +6279,7 @@ function waitForWebfonts(fonts, callback) {
 	  wrap: wrap,
 	},
 	// Remember, elements are not components.  This is why they are
-	// under 'el' and not 'c.'  If you want an empty component, use
+	// under 'el' and not 'c'.  If you want an empty component, use
 	// 'c.empty'.
 	element: {
 	  a: a,
@@ -5806,6 +6328,9 @@ function waitForWebfonts(fonts, callback) {
 		giveToNth: giveHeightToNth,
 	  },
 	},
+	jsoAction: {
+	  scrollTo: jsoScrollTo,
+	},
 	rootComponent: rootComponent,
 	routing: {
 	  matchStrings: matchStrings,
@@ -5814,6 +6339,7 @@ function waitForWebfonts(fonts, callback) {
 	  routeToComponentF: routeToComponentF,
 	  routeToFirst: routeToFirst,
 	},
+	runJso: runJso,
 	stream: stream,
 	unit: {
 	  px: px,
