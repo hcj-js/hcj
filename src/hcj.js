@@ -649,6 +649,9 @@
 	  build = name;
 	  name = 'div';
 	}
+	if ($.isFunction(name)) {
+	  debugger;
+	}
 	return function (context) {
 	  return componentFunc(name, build, context);
 	};
@@ -708,8 +711,8 @@
 		console.log('not a component');
 		debugger;
 	  }
-	  if (noPositionAbsolute === undefined) {
-		i.$el.css('position', 'absolute');
+	  i.$el.css('position', 'absolute');
+	  if (!noPositionAbsolute) {
 		stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
 		  updateDomFunc(i.$el, 'css', 'width', w);
 		});
@@ -745,11 +748,11 @@
   };
 
   var layout = function (elArg, buildLayoutArg) {
-	var el = buildLayoutArg ? elArg : div;
+	var el = buildLayoutArg ? elArg : 'div';
 	var buildLayout = buildLayoutArg || elArg;
 	return function () {
 	  var args = Array.prototype.slice.call(arguments);
-	  return el(function ($el, ctx) {
+	  return component(el, function ($el, ctx) {
 		var childInstances = [];
 		$el.css('position', 'absolute')
 		  .css('pointer-events', 'none')
@@ -771,9 +774,9 @@
   };
 
   var container = function (elArg, buildContainerArg) {
-	var el = buildContainerArg ? elArg : div;
+	var el = buildContainerArg ? elArg : 'div';
 	var buildContainer = buildContainerArg || elArg;
-	return div(function ($el, context) {
+	return component(el, function ($el, context) {
 	  var childInstances = [];
 	  $el.css('position', 'absolute')
 		.css('pointer-events', 'none')
@@ -1066,7 +1069,7 @@
 	});
   };
   var passthrough = function (f, el) {
-	return layout(el || div, function ($el, ctx, c) {
+	return layout(el || 'div', function ($el, ctx, c) {
 	  $el.addClass('passthrough');
 	  if (f) {
 		f($el);
@@ -1462,7 +1465,7 @@
 		href: config,
 	  };
 	}
-	return layout(a, function ($el, ctx, c) {
+	return layout('a', function ($el, ctx, c) {
 	  $el.prop('href', config.href);
 	  $el.css('pointer-events', 'initial');
 	  if (config.target) {
@@ -4688,7 +4691,7 @@
 				  stream.push(disabledS, false);
 				};
 			  });
-			  return layout(form, function ($el, ctx, c) {
+			  return layout('form', function ($el, ctx, c) {
 				$el.on('submit', function (ev) {
 				  if (disabledS.lastValue) {
 					ev.preventDefault();
@@ -5151,6 +5154,8 @@
 	  clickThis: clickThis,
 	  component: component,
 	  componentStream: componentStreamWithExit,
+	  compose: all,
+	  container: container,
 	  crop: crop,
 	  cssStream: cssStream,
 	  dimensions: withDimensions,
@@ -5253,6 +5258,10 @@
 	},
 	jsoAction: {
 	  scrollTo: jsoScrollTo,
+	},
+	measure: {
+	  height: measureHeight,
+	  width: measureWidth,
 	},
 	rootComponent: rootComponent,
 	routing: {

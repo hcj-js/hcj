@@ -1,9 +1,9 @@
-function waitForWebfonts(fonts, callback) {
+function waitForWebfonts(fonts, callback, maxTime) {
   if (fonts.length === 0) {
 	callback();
 	return;
   }
-  var maxTime = 10 * 1000;
+  maxTime = maxTime || 10 * 1000;
   var startTime = new Date().getTime();
   var loadedFonts = 0;
   var callbackIsRun = false;
