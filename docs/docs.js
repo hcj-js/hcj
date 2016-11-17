@@ -133,7 +133,7 @@ $(function () {
   ]);
 
   var aLittleVocab = docStack([
-    p("Basically a `component` is a rectangular reusable item that can be rendered into a web page.  Components are building blocks of this framework.  Technically a component is any function that takes a `context` and returns an `instance`."),
+    p("A `component` is a rectangular reusable item that can be rendered into a web page.  Components are building blocks of this framework.  Technically a component is any function that takes a `context` and returns an `instance`."),
     p("Furthermore, a `container` is any component that happens to contain other components.  A `layout` is a function that takes one or more components and returns a component.  A `style` is a layout that takes exactly one component and returns a component."),
     stack([
       p("A `context` indicates the screen area that a component has available to it, and provides the DOM node to render it into.  It has the following properties:"),
@@ -142,8 +142,8 @@ $(function () {
       p('&#8226; `height`: Stream giving the available height.'),
       p('&#8226; `left`: Stream giving the left position relative to $el.'),
       p('&#8226; `top`: Stream giving the top position relative to $el.'),
-      p('&#8226; `leftOffset`: Stream giving the left position of $el relative to the window.'),
-      p('&#8226; `topOffset`: Stream giving the top position of $el relative to the window.'),
+      p('&#8226; `leftOffset`: Stream giving the left position of $el relative to the page.'),
+      p('&#8226; `topOffset`: Stream giving the top position of $el relative to the page.'),
     ]),
     stack([
       p('An `instance` is returned by a component when it is passed a context.  It indicates the minimum dimensions of the instance, provides access to its root element, and also provides a function to fully remove the instance from the DOM.  It has the following properties:'),
@@ -248,8 +248,9 @@ $(function () {
   var definingLayouts = docStack([
     p("The `hcj.component.container` method is for defining layouts and other containers.  It takes an optional string argument giving its tag name, followed by a build method."),
     p("`container : (Maybe String, BuildContainer) -> Component`"),
+    p("`type BuildContainer = (JQuery, Context, Append) -> {minWidth, minHeight, onRemove}`"),
+    p("`type Append = (Component, Viewport, Maybe) -> Instance`"),
     p("The build method takes three arguments.  The first two, `$el` and `context`, are passed through from the `component` call that is made internally.  The third argument, `append`, is a function used to append child components to the container."),
-    p("`append : (Component, Viewport, Maybe) -> Instance`"),
     p("The `append` function takes three arguments: the `component` to append, a `viewport`, and a `noPositionChildren` flag."),
     p("The append function's `viewport` argument is an object that is enriched into a `context` and then passed into the append function's `component` argument.  It has the following optional properties:"),
     stack([
