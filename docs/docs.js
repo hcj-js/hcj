@@ -180,12 +180,12 @@ $(function () {
     p("The build method initializes the component and indicates its minimum dimensions.  It is passed two arguments: `$el`, the created root element of the component (as a jquery object), and `context`, the context as it was passed into the component."),
     p("It returns an object with `minWidth` and `minHeight` properties, and an optional `onRemove` property.  The `minWidth` and `minHeight` properties are streams of numbers, and streams of functions from numbers to numbers, respectively.  Any returned `onRemove` function will be called when the instance's `remove` function is called."),
     p("To measure elements' minimum sizes, HCJ provides `hcj.measure.width` and `hcj.measure.height`.  These functions take JQuery selectors of elements, and return numbers and functions from numbers to numbers, respectively.  They clone the element, attach the clone to a sandbox, set a couple CSS properties, measure it, remove the clone, and return the size."),
-    p("Here's a picture showing how the `component` function creates a component given a name and a build method:"),
-    c.all([
-      c.alignHLeft,
-    ])(c.image({
-      src: './window.hcj.component.component.png',
-    })),
+    // p("Here's a picture showing how the `component` function creates a component given a name and a build method:"),
+    // c.all([
+    //   c.alignHLeft,
+    // ])(c.image({
+    //   src: './window.hcj.component.component.png',
+    // })),
     h3("Example:"),
     codeBlock([
       "// component for the imaginary SomeCaptcha",
@@ -265,12 +265,12 @@ $(function () {
       p("&#8226; `leftCss`: Stream of string values to use to the 'left' property.  Needed for CSS transitions to work correctly.  Defaults to mapping (+ 'px') over the viewport's `left`, or '0px'."),
     ]),
     p("If the `noPositionChildren` flag is not undefined, then the child component's `top`, `width`, `left`, and `height` properties will not be set to the CSS values described above.  Indeed, you can write an HCJ container that positions elements using flexbox, as long as it correctly indicates their contexts given its context, as well as its minimum dimensions given theirs."),
-    p("Here is a picture roughly showing what goes on in the `container` method:"),
-    c.all([
-      c.alignHLeft,
-    ])(c.image({
-      src: './window.hcj.component.container.png',
-    })),
+    // p("Here is a picture roughly showing what goes on in the `container` method:"),
+    // c.all([
+    //   c.alignHLeft,
+    // ])(c.image({
+    //   src: './window.hcj.component.container.png',
+    // })),
 
     h2('Example - Top Margin'),
     p('`someLayout :: Component -> Component`'),
