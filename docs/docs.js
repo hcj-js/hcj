@@ -1185,14 +1185,11 @@ $(function () {
   ]);
 
   var version2 = docStack([
-    p('Remove JQuery dependency, making hcj smaller and more agnostic'),
-    p('Document Jso (see https://github.com/jeffersoncarpenter/casesplit)'),
-    p('Measure text width with canvas measureText method instead of appending the text to an invisible dom element'),
-    p('Add JSDoc comments'),
-    p('Add some float left and float right functionality'),
-    p('Automatically apply CSS transitions / make sure they work'),
-    p('See if using canvas to measure text is faster than placing a DOM element in a sandbox'),
-    p('CSS approximations of components and layouts for server-side rendering'),
+    p('Improve text measurement by using the canvas measureText method instead of the current strategy of appending the text to an invisible dom element.  Use this to implement a float left/right layout.'),
+    p('Figure out how to integrate CSS transitions properly.'),
+    p('Remove JQuery dependency, making hcj smaller and more agnostic.'),
+    p('Add more comments.'),
+    p('Turing-complete JSON subset that can be evaluated server-side to HTML/CSS and client-side to an HCJ component.'),
   ]);
 
   var support = docStack([
@@ -1637,7 +1634,7 @@ $(function () {
     title: 'cs is not a function',
     component: csIsNotAFunction,
   }, {
-    title: 'Planned Features',
+    title: 'Possible Future Development',
     component: version2,
   }, {
     title: 'Community',
