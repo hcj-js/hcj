@@ -122,7 +122,7 @@ $(function () {
     ]),
     p("The browser is a common cross-platform code target.  It can make web requests, receive input through form elements, play sounds, render content with opengl, and much more.  These features are all available through DOM apis.  DOM code is written in HTML, CSS, and/or Javascript, and can run on any platform that implements the browser."),
     p("Conveniently, the DOM's apis for element positioning are total.  This means it is impossible to write a page that sends your browser's renderer into an infinite loop; furthermore it's easy to live-edit pages in your browser's element inspector.  However, as total languages are not turing complete, and as any web developer will tell you, it gets tedious to write HTML and CSS by hand."),
-    p("Therefore, many applications use Javascript frameworks like Ember, Backbone, Knockout, and others to display views based on application state and handle user input.  HCJ is such a javascript framework.  The reason it's called hcj.js is that it is intend as a pure javascript framework, automating the creation of HTML nodes and application of CSS styles.  By calling DOM apis, the HCJ framework allows for easy assembly of complex websites using pure Javascript, or alternately even pure JSON."),
+    p("Therefore, many applications use Javascript frameworks like Ember, Backbone, Knockout, and others to display views based on application state and handle user input.  HCJ is such a javascript framework.  The reason it's called hcj.js is that it is intend as a pure javascript framework, calling DOM apis to automate the creation of HTML nodes and application of CSS styles.  The HCJ framework enables easy assembly of complex websites using pure Javascript, or alternately even pure JSON."),
     p("HCJ's main purpose is element positioning.  Using a small subset of CSS styles, it enables you to build websites composably, arranging elements however you want within the space available.  The core algorithm is simple: first minimum dimensions are sent from child to parent, second actual dimensions are sent from parent to child.  There is an assortment of components that enable simple reactive programming and responsive design, and you can easily write your own components and layouts."),
     p("Not all of the display methods available in CSS are implemented by hcj.js.  Layouts that would correspond to float left and float right are not currently written.  Because HCJ is a javascript framework, page load times become noticable.  For SEO, we support rendering using PhantomJS; this can be done either server-side or as part of your build process."),
     p("These docs themselves are written using hcj.js, of course.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
@@ -134,10 +134,11 @@ $(function () {
 
   var aLittleVocab = docStack([
     p("A `component` is a rectangular reusable item that can be rendered into a web page.  Components are building blocks of this framework.  Technically a component is any function that takes a `context` and returns an `instance`."),
-    p("Furthermore, a `container` is any component that happens to contain other components.  A `layout` is a function that takes one or more components and returns a component.  A `style` is a layout that takes exactly one component and returns a component."),
+    p("Furthermore, a `container` is any component that happens to contain other components.  A `layout` is any function that takes one or more components and returns a component.  A `style` is any function that takes exactly one component and returns a component."),
+    p("When rendering a component, the `context` and the `instance` indicate constraints and dimensions.  A container must use DOM styles to position its child components respecting their minimum dimensions, pass them contexts that correctly indicate their actual dimensions, and give them DOM styles to prevent overflow if that is desired."),
     stack([
-      p("A `context` indicates the screen area that a component has available to it, and provides the DOM node to render it into.  It has the following properties:"),
-      p("&#8226; `$el`: Element to append something to (as a jquery object)."),
+      p("The `context` indicates the screen area that an instance has available to it, and also provides the DOM node to render it into.  It has the following properties:"),
+      p("&#8226; `$el`: Element to append instance to (as a jquery object)."),
       p('&#8226; `width`: Stream giving the available width.'),
       p('&#8226; `height`: Stream giving the available height.'),
       p('&#8226; `left`: Stream giving the left position relative to $el.'),
@@ -146,14 +147,14 @@ $(function () {
       p('&#8226; `topOffset`: Stream giving the top position of $el relative to the page.'),
     ]),
     stack([
-      p('An `instance` is returned by a component when it is passed a context.  It indicates the minimum dimensions of the instance, provides access to its root element, and also provides a function to fully remove the instance from the DOM.  It has the following properties:'),
+      p('The `instance` is returned by a component when it is passed a context.  It indicates the minimum dimensions of the content, provides access to its root element for positioning, and also provides a function to fully remove the instance from the DOM.  It has the following properties:'),
       p('&#8226; `$el`: The root element of the instance (as a jquery object).'),
       p('&#8226; `minWidth`: Stream giving the instance\'s minimum width.'),
       p('&#8226; `minHeight`: Stream of functions that, given a width, return the instance\'s minimum height at that width.'),
       p("&#8226; `remove()`: Removes the instance from the DOM."),
     ]),
-    p("Streams here are defined as HCJ streams, which are described in the \"API - Streams\" section."),
-    p("Here is a diagram showing the context that would have been passed into the blue component:"),
+    p("Streams here are defined as HCJ streams, which are described in the \"Streams\" section."),
+    p("Here is a diagram showing the context that was passed into a component returning the blue instance:"),
     c.all([
       c.alignHLeft,
     ])(c.image({
@@ -713,9 +714,8 @@ $(function () {
   ]);
 
   var standardLibraryStreams = docStack([
-    p("All programming is asynchronous.  There is the code that's run when your computer boots, and then there are interrupts."),
-    p("HCJ provides its own grimy little stream implementation.  The reasons for choosing this over another implementation like Bacon or Reactive Extensions are speed and control over the stream semantics."),
-    p("An hcj stream (or just, stream) is nothing more than a way to get the most recent available data from point A into point B.  A stream is an object with two properties:"),
+    p("In order for nested elements to communicate dimensions with each other, a common stream interface is needed.  There is no native Javascript stream implementation, and for this kind of application certain performance characteristics are preferred, so HCJ specifies a stream interface to use, and also provides a grimy little implementation of it."),
+    p("An hcj stream is an object with two properties:"),
     stack([
       p("&#8226; lastValue: the most recent data point"),
       p("&#8226; listeners: array of functions that are run when there is new data (private member, do not access)"),
@@ -726,7 +726,6 @@ $(function () {
       p("&#8226; If you push one value through a stream multiple times, it will only be hanlded the first time."),
       p("&#8226; If you push multiple values through a stream quickly (synchronously), intermediate values will be skipped."),
     ]),
-    p('So, the internal stream library is certainly not for aggregating financial transactions, but rather for maintaining output state in terms of input state as lightly as possible.'),
     p('Note: to skip intermediate values, `setTimeout` calls are made.  When streams are defined in terms of each other, multiple `setTimeout` calls are made in sequence.  If you want to run some code after all stream operations are finished (e.g. after the page has finished rendering in response to some change), you must call `stream.defer` instead of `setTimeout`.  (Furthermore, when writing components and layouts, if you want to defer the execution of a block of code and then push to a stream, call `stream.next` instead of `setTimeout`.  Otherwise, `stream.defer` calls will not know to wait for your code.)'),
 
     p('Here are the stream functions.  These are all properties of the `window.hcj.stream` object:'),
@@ -1149,12 +1148,36 @@ $(function () {
   ]);
 
   var standardLibraryJso = docStack([
-    p("Jso is a functional programming language for expressing web pages."),
-    p("Why a programming language?  Currently multiple languages and programming styles are required to build websites.  While ReactJS can be rendered both client side and server side in advanced ways, other javascript frameworks must be combined with server side templates.  Additionally, CSS must be written to achieve responsive design."),
-    p("The Jso language does not have its own syntax.  Instead, Jso expression trees are written in other programming languages, so it sort of inherits their syntax."),
-    p("An expression in Jso can be a `string`, a `number`, a `date`, a `sum type`, a `product type`, an `identifier`, or a `function application`.  Jso's sum and probuct types, actually <i>tagged</i> sum and product types, provide it with algebraic data types, which are also used for Jso lambda abstractions."),
-    p("Evaluation is simple.  Strings, numbers, dates, and sum and product types (i.e. objects) evaluate to themselves.  An identifier evaluates to the corresponding value in the execution context."),
-    p("More documentation on Jso and reference implemenattions coming soon."),
+    p("Jso"),
+    p("Jso is a functional programming language for expressing websites."),
+    p("Why a programming language?  Because currently multiple languages and programming styles are required to build websites.  While ReactJS can be rendered both client side and server side in some advanced ways, most javascript frameworks must be combined with server side templates.  Additionally, CSS must usually be written."),
+    p("The Jso language is very basic.  It does not have a syntax.  You write Jso expression trees in a language of your choice, such as JSON."),
+    p("In other words (and ignore this bit if it does not make sense), when you point to a file and say that it is a Jso program, you must have a Jso interpreter in mind that can read the file as Jso and execute it."),
+    p("The key innovation of Jso is that a Jso program has two sets of semantics simultaneously, i.e. two interpretations.  It has both server side semantics and client side semantics.  Any new kind of Jso functionality that you add, you must implement twice: once on the server and once on the client."),
+    h2("Jso Types"),
+    p("Jso is a dynamically typed language; types are not declared in Jso programs.  However, types are as core a concept as in any language.  A Jso type can be `atomic`, a `tagged product`, a `tagged sum`, an `array`, a `promise`, a `stream`, or a `function`."),
+    h3("Atomic Types"),
+    p("Jso's atomic types are `string`, `number`, `date`, and `boolean`."),
+    p("These correspond to string, double, date, and boolean types that you will find in most programming languages.  We take the liberty of not specifying these types any further.  Use your native language's features.  Marshalling between C# dates in the C# jso evaluator and Javascript dates in the Javascript jso evaluator should not be a problem."),
+    h3("Tagged Products"),
+    p("A tagged product type is a logical `and`.  Specifically it is set of key-type pairs, where the keys are strings.  Values of product types are sets of key-value pairs, where all of the values have the correspoinding types."),
+    p("Jso exhibits row polymorphism.  If a program has a certain sum or product type, it will also have any sum or product type with strictly more properties.  However, using this fact is not recommended due to the logical nature of sum and product types."),
+    h3("Tagged Sums"),
+    p("A tagged sum is a logical `or`.  Like a tagged product, a tagged sum is a set of key-type pairs.  A value of a sum types is a single key-value pair chosen from the set."),
+    h3("Arrays"),
+    p("A Jso array is a javascript array, see MDN."),
+    h3("Promises"),
+    p("A Jso promise is a type that has different semantics server side than it does client side.  Client side, a promise is a standard promise, see MDN.  Server side, the server must simply carry out the action as it renders the page, and the Jso value is the resulting value."),
+    h3("Streams"),
+    p("Streams also have different semantics server side than they do client side.  Client side, a stream value is an HCJ stream.  Server side, a stream value is the initial value on page load."),
+    h3("Etc"),
+    p("It is easy to define additional types.  All you have to do is specify both client side representations and server side representations, and implement any core functions to the type both client side and server side."),
+    h2("Jso Terms"),
+    p(""),
+    p("The server side is more diverse than the client side, so that is what we will discuss here."),
+    p("A jso term can be a `literal`, a `function application`, or an `identifier`."),
+    p("A literal is an instance of a type written out by hand.  Usually, literal atomic types are corresponding values from the native language."),
+    p("Evaluation is simple.  Literals evaluate to themselves."),
   ]);
 
   var csIsNotAFunction = docStack([
@@ -1173,7 +1196,7 @@ $(function () {
   ]);
 
   var support = docStack([
-    p("Join #hcj on Freenode, or leave a message on the Github repository."),
+    p("Join #hcj on Freenode, or leave a message on the Github repository.  We can't promise that HCJ is the best implementation of what we're going for, nor that we will be the best maintainers of it, but if you should submit an issue or make a pull request we will make some kind of effort to address it properly."),
     p('<iframe src="https://kiwiirc.com/client/irc.freenode.net/?&theme=basic#hcj" style="border:0; width:100%; height:450px;"></iframe>'),
   ]);
 
@@ -1578,20 +1601,20 @@ $(function () {
     title: 'Basic Concepts',
     component: aLittleVocab,
   }, {
-    title: 'Example Page',
+    title: 'Examples',
     component: testPage,
   }, {
     title: 'Using HCJ',
     component: renderingComponents,
+  }, {
+    title: 'Streams',
+    component: standardLibraryStreams,
   }, {
     title: 'Defining Components',
     component: definingComponents,
   }, {
     title: 'Defining Layouts',
     component: definingLayouts,
-  }, {
-    title: 'API - Streams',
-    component: standardLibraryStreams,
   }, {
     title: 'API - Components',
     component: standardLibraryComponents,
@@ -1608,9 +1631,9 @@ $(function () {
     title: 'API - Colors',
     component: standardLibraryColors,
   }, {
-  //     title: 'Jso',
-  //     component: standardLibraryJso,
-  // }, {
+      title: 'Jso',
+      component: standardLibraryJso,
+  }, {
     title: 'cs is not a function',
     component: csIsNotAFunction,
   }, {
