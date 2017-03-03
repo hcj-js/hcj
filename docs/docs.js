@@ -1628,12 +1628,6 @@ $(function () {
     title: 'API - Colors',
     component: standardLibraryColors,
   }, {
-      title: 'Jso',
-      component: standardLibraryJso,
-  }, {
-    title: 'cs is not a function',
-    component: csIsNotAFunction,
-  }, {
     title: 'Possible Future Development',
     component: version2,
   }, {
