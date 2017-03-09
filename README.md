@@ -2,7 +2,7 @@
 
 Javascript library for web app frontend templating.
 
-Pre-release.
+Do not use.
 
 ## Install ##
 
@@ -12,10 +12,10 @@ Pre-release.
 
 Docs are located at http://hcj-js.github.io/hcj/index.html
 
-The docs also happen to be a simple HCJ example application.  Their
-source is in the `docs` directory.  In that directory, `docs.html` is
-the root HTML file; the `index.html` file is generated from it by
-running `make docs`.
+The docs are an HCJ example application.  Their source is in the
+`docs` directory.  The `docs.html` template file is the root HTML file
+that you edit; `index.html` is generated from it by running `make
+docs`.
 
 Running `make docs` uses Phantom JS, a headless webkit web browser, to
 render each page of the HCJ docs, concatenate the page contents, and
