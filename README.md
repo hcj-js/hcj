@@ -8,6 +8,21 @@ Do not use.
 
 `git clone https://github.com/jeffersoncarpenter/hcj.git`
 
+## Contributing ##
+
+To build HCJ from the sources in the `src` directory, run `make`.  You
+will need the following software installed (in addition to `make`, of
+course):
+
+* uglifyjs
+
+To rebuild the docs' SEO content, run `make docs`.  For this you will
+additionally need:
+
+* node
+* npm
+* phantomjs
+
 ## Docs ##
 
 Docs are located at http://hcj-js.github.io/hcj/index.html
