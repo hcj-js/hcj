@@ -12,7 +12,7 @@ while ! grep -m1 'up' < ./nodelog; do
 done
 
 # use phantomjs to get page content
-phantomjs build.js > output
+phantomjs -platform offscreen build.js > output
 
 # kill node server
 kill $pid
