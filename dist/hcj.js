@@ -264,15 +264,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
 	  return stream.create(v);
 	},
 	push: function (s, v) {
-	  if (Number.isNaN(v)) {
-		debugger;
-	  }
 	  streamDeferFunc.next(function () {
 		if (s.lastValue !== v) {
 		  s.lastValue = v;
-		  if (Number.isNaN(v)) {
-			debugger;
-		  }
 		  for (var i = 0; i < s.listeners.length; i++) {
 			if (s.listeners[i]) {
 			  s.listeners[i](v);
@@ -553,6 +547,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
   stream.push(windowHash, location.pathname);
 
   // this stream assumes only one rootComponent per web page!
+  // todo: change this into a promise
+  // todo: see if it's possible to replace this with hcj.stream.defer
   var displayedS = stream.once(false);
 
   var updateDomEls = [];
@@ -921,11 +917,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
   var countComponentsRendered = 0;
   var rootComponent = function (c, config) {
-	// var debugAndRepeat = function () {
-	//   debugger;
-	//   stream.defer(debugAndRepeat);
-	// };
-	// stream.defer(debugAndRepeat);
 	config = config || {};
 	ensureSandbox();
 	var scrollbarWidth = _scrollbarWidth();
@@ -980,16 +971,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
 	  .addClass('root-component-' + countComponentsRendered);
 	countComponentsRendered += 1;
 	var elHeight = i.$el.css('height');
-	stream.map(displayedS, function (displayed) {
-	  if (displayed) {
-		setTimeout(function () {
-		  $('.server-content').css('display', 'none');
-		  console.log('did it');
-		  console.log('golly look at this endearing debug output');
-		  $('.huge').css('display', 'none');
-		}, 500);
-	  }
-	});
 	stream.pushAll(i.minHeight, minHeight);
 	stream.combine([
 	  width,
