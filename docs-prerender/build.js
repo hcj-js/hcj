@@ -6,13 +6,17 @@ var url = 'http://localhost:7000/docs.html';
 
 // output the console message after a special string
 var done = false;
-page.onConsoleMessage =function (message) {
+page.onConsoleMessage = function (message) {
   if (done) {
     console.log(message);
     phantom.exit();
   }
-  if (message === 'PRERENDER DONE') {
+  else if (message === 'PRERENDER DONE') {
     done = true;
+  }
+  else {
+    console.log('UNEXPECTED MESSAGE');
+    console.log(message);
   }
 };
 
