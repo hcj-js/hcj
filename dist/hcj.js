@@ -5265,6 +5265,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       toggleHeight: toggleHeight,
       wrap: wrap,
     },
+    displayedS: displayedS,
     // Remember, elements are not components.  This is why they are
     // under 'el' and not 'c'.  If you want an empty component, use
     // 'c.empty'.
