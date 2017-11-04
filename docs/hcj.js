@@ -963,7 +963,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       topOffset: onceZeroS,
       leftOffset: onceZeroS,
     });
-    i.$el.css('position', 'absolute')
+    i.$el.css('position', 'relative')
       .css('top', '0px')
       .css('left', '0px')
       .css('background-color', config.noBackground ? '' : 'white')
