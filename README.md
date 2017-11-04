@@ -6,7 +6,7 @@ Do not use.
 
 ## Install ##
 
-`git clone https://github.com/jeffersoncarpenter/hcj.git`
+`git clone https://github.com/hcj-js/hcj.git`
 
 ## Contributing ##
 
