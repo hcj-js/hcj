@@ -1615,8 +1615,8 @@
           //         }, 0)) ||
           //         300;
           var mw = config.minWidth ||
-                  (config.measureWidth && measureWidth($el)) ||
-                  300;
+                (config.measureWidth && measureWidth($el)) ||
+                300;
           var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
             // TODO: loop over spans
             var fontSize = config.size || parseInt($el.css('font-size'));
@@ -1628,13 +1628,13 @@
             stream.defer(function () {
               var mh = (config.minHeight && constant(config.minHeight)) ||
                     measureHeight($el);
-                    // measureTextHeight(strs.map(function (c) {
-                    //   return {
-                    //     words: c.words.slice(0),
-                    //     font: c.font,
-                    //     size: c.size || config.size,
-                    //   };
-                    // }), config.lineHeight);
+              // measureTextHeight(strs.map(function (c) {
+              //   return {
+              //     words: c.words.slice(0),
+              //     font: c.font,
+              //     size: c.size || config.size,
+              //   };
+              // }), config.lineHeight);
               stream.push(mhS, mh);
             });
           }
