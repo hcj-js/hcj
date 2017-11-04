@@ -930,12 +930,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     ], function (ww, wh, mh) {
       var mhAtWW = mh(ww);
       var mhAtScrollbarWW = mh(ww - scrollbarWidth);
-      if (document.body.scrollHeight > window.innerHeight) {
-        // this if statement does not work, document.body.scrollHeight should actually be a stream
-        stream.push(width, ww - scrollbarWidth);
-        stream.push(height, mhAtScrollbarWW);
-        return;
-      }
       if (mhAtWW > wh) {
         if (mhAtScrollbarWW > wh) {
           $('body').css('overflow-y', 'initial');
