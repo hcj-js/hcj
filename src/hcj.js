@@ -4164,18 +4164,20 @@
     return year + '-' + month + '-' + day;
   };
   var getFormElementBorderWidthH = function ($el) {
-    return ($el.outerWidth() - parseFloat($el.css('width'))) / 2;
-    var width = 0;
-    width += parseFloat($el.css('padding-left'));
-    width += parseFloat($el.css('border-left-width'));
-    return width;
+    return (
+      $el.outerWidth()
+        + parseFloat($el.css('margin-left'))
+        + parseFloat($el.css('margin-right'))
+        - parseFloat($el.css('width')))
+      / 2;
   };
   var getFormElementBorderWidthV = function ($el) {
-    return ($el.outerHeight() - parseFloat($el.css('height'))) / 2;
-    var width = 0;
-    width += parseFloat($el.css('padding-top'));
-    width += parseFloat($el.css('border-top-width'));
-    return width;
+    return (
+      $el.outerHeight()
+        + parseFloat($el.css('margin-top'))
+        + parseFloat($el.css('margin-bottom'))
+        - parseFloat($el.css('height')))
+      / 2;
   };
   var formElementBorderWidth = (function () {
     var $input = $(document.createElement('input'))
