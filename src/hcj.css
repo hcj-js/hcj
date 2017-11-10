@@ -81,4 +81,5 @@ body {
 
 * {
 	pointer-events: initial;
+	text-decoration: inherit;
 }
