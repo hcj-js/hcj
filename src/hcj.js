@@ -3674,13 +3674,15 @@
           var top = 0;
           rows.map(function (row) {
             row.height = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
-            row.top = top;
             index += row.cells.length;
-            top += row.height + config.padding;
           });
           if (config.bottomToTop) {
             rows = rows.slice(0).reverse();
           }
+          rows.map(function (row) {
+            row.top = top;
+            top += row.height + config.padding;
+          });
           rows = config.surplusHeightFunc(gridHeight, rows, config);
           rows.map(function (row, i) {
             var positions = row.cells.map(function (cell) {
