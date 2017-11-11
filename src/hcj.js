@@ -4707,18 +4707,18 @@ var formFor = function (submitButtonFormTypeF, formComponent) {
           var applyStyle = function (kind, c) {
             return (style[kind] || id)(c);
           };
-          var keys = Object.keys(fields);
+          var names = Object.keys(fields);
           return function (f) {
-            var streamsObj = keys.reduce(function (obj, k) {
-              var d = defaults[k];
-              obj[k] = d ? stream.once(d) : stream.create();
-              return obj;
-            }, {});
-            var inputsObj = keys.reduce(function (obj, k) {
-              var type = fields[k];
-              obj[k] = type && applyStyle(k, streamsObj[k], type, titles[k])(formComponent[type.type](k, streamsObj[k], type));
-              return obj;
-            }, {});
+            var fieldStreams = {};
+            var fieldInputs = {};
+            names.map(function (name) {
+              var defalutValue = defaults[name];
+              var stream = defaultValue ? stream.once(defaultValue) : stream.create();
+              var title = titles[name];
+              var type = fields[name];
+              fieldStreams[name] = stream;
+              fieldInputs[name] = type && applyStyle(title, name, stream, type)(formComponent[type.type](name, stream, type));
+            });
             var disabledS = stream.once(false);
             var submit = function (name) {
               return applyStyle('', stream.create(), submitButtonFormTypeF(), name)(text({
@@ -4727,7 +4727,7 @@ var formFor = function (submitButtonFormTypeF, formComponent) {
                 measureWidth: true,
               }), name);
             };
-            var onSubmit = mkOnSubmit(streamsObj, function () {
+            var onSubmit = mkOnSubmit(fieldStreams, function () {
               stream.push(disabledS, true);
               return function () {
                 stream.push(disabledS, false);
@@ -4742,7 +4742,7 @@ var formFor = function (submitButtonFormTypeF, formComponent) {
                 onSubmit.onSubmit(ev);
               });
               return c();
-            })(f(streamsObj, inputsObj, submit, onSubmit.resultS));
+            })(f(fieldStreams, fieldInputs, submit, onSubmit.resultS));
           };
         };
       };
