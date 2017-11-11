@@ -4094,7 +4094,7 @@
       return {
         type: 'button',
         enabledS: stream.once(true),
-        name: name,
+        name: name || '',
         onClick: onClick,
       };
     },
@@ -4288,7 +4288,7 @@
     },
   });
   var formComponent = {
-    button: function (k, s, t) {
+    button: function (_, s, t) {
       s = s || stream.create();
       return all([
         and(function (i) {
@@ -4628,23 +4628,87 @@
     textarea: textInput,
     time: textInput,
   };
-  // types - object where keys are field names, values are formType
-  // properties
-  var formFor = function (formType, formComponent) {
-    return function (types, names) {
-      names = names || {};
-      // defaults - optional object where keys are field names,
-      // values are undefined OR a default value
+
+
+  /*
+   * Definition: A FieldKind is a string value, specifying one broad
+   * sort of form field used by your application.
+   * 
+   * Examples:
+   * var buttonFieldKind = "button"
+   * var textareaFieldKind = "textarea"
+   * var radiosFieldKind = "radios"
+   * 
+   * 
+   * Definition: A FieldKindObject is an object with one key for
+   * each FieldKind used by FieldTypes in an application.
+   * 
+   * 
+   * Definition: A FieldType is an object with a single required
+   * property, "type" (TODO: rename this field to "kind"), specifying
+   * its FieldKind.  Additionally, a field type may have other
+   * properties giving any additional data required to specify the
+   * form field.
+   * 
+   * Examples:
+   * var buttonFieldType = { type: buttonFieldKind }
+   * var textareaFieldType = { type: textareaFieldKind }
+   * var fooBarRadiosFieldType = {
+   *   type: radiosFieldKind, 
+   *   options: [{
+   *     name: "Foo",
+   *     value: "foo"
+   *   }, {
+   *     name: "Bar",
+   *     value: "bar"
+   *   }]}.
+   * 
+   * 
+   * Definition: A FormComponent is a dependent type, predicated on
+   * FieldKinds.  Generally a FormComponent for a given field kind is
+   * just a Component.  However, sometimes it is more convenient for
+   * it to be an array of Components.
+   */
+
+  // submitButtonFormTypeF - a function returning the FieldType to use
+  // for the submit button
+
+  // formComponent - FieldKindObject of functions taking the field's
+  // name, value stream (initialized with its default value if there
+  // is one), and FieldType, and returns a FormComponent for that
+  // FieldKind.
+  var formFor = function (submitButtonFormTypeF, formComponent) {
+    // fields - Object whose keys become "name" attributes of the form
+    // fields, and whose values are their field types.
+
+    /*
+     * Definition: A FormFieldObject is any object that has the same
+     * keys as "fields", thus providing some additional data for each
+     * field in the form.
+     */
+
+    // titles (optional) - FormFieldObject giving titles for each form
+    // field
+    return function (fields, titles) {
+      titles = titles || {};
+
+      // defaults (optional) - FormFieldObject giving default values
+      // for each field.
       return function (defaults) {
         defaults = defaults || {};
         return function (mkOnSubmit) {
-          // style - function taking a formType and a component,
-          // returns a styled component
+
+          // style - FieldKindObject of functions taking a field's
+          // name, value stream (initialized with its default value if
+          // present), field type, and title if present, and returning
+          // a function which takes its FormComponent and returns a
+          // Component.
           return function (style) {
-            style = style || function (_, c) {
-              return c;
+            style = style || {};
+            var applyStyle = function (kind, c) {
+              return (style[kind] || id)(c);
             };
-            var keys = Object.keys(types);
+            var keys = Object.keys(fields);
             return function (f) {
               var streamsObj = keys.reduce(function (obj, k) {
                 var d = defaults[k];
@@ -4652,13 +4716,13 @@
                 return obj;
               }, {});
               var inputsObj = keys.reduce(function (obj, k) {
-                var type = types[k];
-                obj[k] = type && style(k, streamsObj[k], type, names[k])(formComponent[type.type](k, streamsObj[k], type, names[k]));
+                var type = fields[k];
+                obj[k] = type && applyStyle(k, streamsObj[k], type, titles[k])(formComponent[type.type](k, streamsObj[k], type));
                 return obj;
               }, {});
               var disabledS = stream.once(false);
               var submit = function (name) {
-                return style('', stream.create(), formType.button(), name)(text({
+                return applyStyle('', stream.create(), submitButtonFormTypeF(), name)(text({
                   str: name,
                   el: button,
                   measureWidth: true,
