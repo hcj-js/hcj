@@ -4103,7 +4103,8 @@ var formType = {
   date: {
     type: 'date',
   },
-  // options is array of strings
+  // options is array of strings, or objects with name and value
+  // properties
   dropdown: function (options) {
     return {
       type: 'dropdown',
