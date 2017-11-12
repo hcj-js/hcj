@@ -4706,24 +4706,25 @@
           // Component.
           return function (style) {
             style = style || {};
-            var applyStyle = function (kind, c) {
-              return (style[kind] || id)(c);
-            };
             var names = Object.keys(fields);
             return function (f) {
               var fieldStreams = {};
               var fieldInputs = {};
               names.map(function (name) {
-                var defalutValue = defaults[name];
-                var stream = defaultValue ? stream.once(defaultValue) : stream.create();
+                var defaultValue = defaults[name];
+                var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
                 var title = titles[name];
                 var type = fields[name];
-                fieldStreams[name] = stream;
-                fieldInputs[name] = type && applyStyle(title, name, stream, type)(formComponent[type.type](name, stream, type));
+                var fieldStyle = (type && style[type.type]) || constant(id);
+                fieldStreams[name] = fieldStream;
+                fieldInputs[name] = fieldStyle(title, name, fieldStream, type)(formComponent[type.type](name, fieldStream, type));
               });
               var disabledS = stream.once(false);
               var submit = function (name) {
-                return applyStyle('', stream.create(), submitButtonFieldTypeF(), name)(text({
+                var fieldType = submitButtonFieldTypeF();
+                var fieldStyle = style[fieldType.type] || constant(id);
+                // TODO: use formComponent[fieldType.type] instead of text
+                return fieldStyle('', stream.create(), fieldType, name)(text({
                   str: name,
                   el: button,
                   measureWidth: true,
@@ -4755,7 +4756,7 @@
               return layout('form', function ($el, ctx, c) {
                 setupFormSubmit($el);
                 return c();
-              })(f(fieldStreams, fieldInputs, submit, onSubmit && onSubmit.resultS));
+              })(f(fieldInputs, submit, fieldStreams, onSubmit && onSubmit.resultS));
             };
           };
         };
