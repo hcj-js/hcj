@@ -4744,7 +4744,7 @@
                   onSubmit.onSubmit(ev);
                 });
                 return c();
-              })(f(fieldStreams, fieldInputs, submit, onSubmit.resultS));
+              })(f(fieldInputs, submit, fieldStreams, onSubmit.resultS));
             };
           };
         };
