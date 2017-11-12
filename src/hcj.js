@@ -4089,7 +4089,7 @@
     };
   };
 
-  var formType = {
+  var fieldType = {
     button: function (name, onClick) {
       return {
         type: 'button',
@@ -4671,14 +4671,14 @@
    * it to be an array of Components.
    */
 
-  // submitButtonFormTypeF - a function returning the FieldType to use
+  // submitButtonFieldTypeF - a function returning the FieldType to use
   // for the submit button
 
   // formComponent - FieldKindObject of functions taking the field's
   // name, value stream (initialized with its default value if there
   // is one), and FieldType, and returns a FormComponent for that
   // FieldKind.
-  var formFor = function (submitButtonFormTypeF, formComponent) {
+  var formFor = function (submitButtonFieldTypeF, formComponent) {
     // fields - Object whose keys become "name" attributes of the form
     // fields, and whose values are their field types.
 
@@ -4723,7 +4723,7 @@
               });
               var disabledS = stream.once(false);
               var submit = function (name) {
-                return applyStyle('', stream.create(), submitButtonFormTypeF(), name)(text({
+                return applyStyle('', stream.create(), submitButtonFieldTypeF(), name)(text({
                   str: name,
                   el: button,
                   measureWidth: true,
@@ -5276,7 +5276,7 @@
       formElementBorderWidth: formElementBorderWidth,
       formFor: formFor,
       formStyle: formStyle,
-      formType: formType,
+      fieldType: fieldType,
     },
     funcs: {
       constant: constant,
