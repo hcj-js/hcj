@@ -4729,22 +4729,33 @@
                   measureWidth: true,
                 }), name);
               };
-              var onSubmit = mkOnSubmit(fieldStreams, function () {
-                stream.push(disabledS, true);
-                return function () {
-                  stream.push(disabledS, false);
-                };
-              });
-              return layout('form', function ($el, ctx, c) {
-                $el.on('submit', function (ev) {
-                  if (disabledS.lastValue) {
-                    ev.preventDefault();
-                    return;
-                  }
-                  onSubmit.onSubmit(ev);
+              if (typeof mkOnSubmit === 'function') {
+                var onSubmit = mkOnSubmit(fieldStreams, function () {
+                  stream.push(disabledS, true);
+                  return function () {
+                    stream.push(disabledS, false);
+                  };
                 });
+                var setupFormSubmit = function ($el) {
+                  $el.on('submit', function (ev) {
+                    if (disabledS.lastValue) {
+                      ev.preventDefault();
+                      return;
+                    }
+                    onSubmit.onSubmit(ev);
+                  });
+                };
+              }
+              else {
+                var setupFormSubmit = function ($el) {
+                  $el.prop('method', mkOnSubmit.method)
+                    .prop('action', mkOnSubmit.action);
+                };
+              }
+              return layout('form', function ($el, ctx, c) {
+                setupFormSubmit($el);
                 return c();
-              })(f(fieldInputs, submit, fieldStreams, onSubmit.resultS));
+              })(f(fieldStreams, fieldInputs, submit, onSubmit && onSubmit.resultS));
             };
           };
         };

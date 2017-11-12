@@ -15,3 +15,5 @@
 * Changed `hcj.forms.formFor`'s constructor parameter.  Reordered its
   arguments.  Streams used to be the first parameter; now it is the
   third.
+* Allow forms to be submitted via traditional "method" and "action"
+  attributes, in addition to listening for the onSubmit event.
