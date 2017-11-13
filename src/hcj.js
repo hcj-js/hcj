@@ -433,7 +433,7 @@
   var vw = unit('vw');
 
   var onceZeroS = stream.once(0);
-
+  var onceConstantZeroS = stream.once(constant(0));
 
   var windowWidth = stream.create();
   stream.windowWidth = windowWidth;
@@ -1458,7 +1458,7 @@
       $el.addClass('empty');
       return {
         minWidth: onceZeroS,
-        minHeight: stream.once(constant(0)),
+        minHeight: onceConstantZeroS,
       };
     });
   };
@@ -2141,8 +2141,8 @@
       $el.addClass('sideBySide');
       if (cs.length === 0) {
         return {
-          minWidth: stream.once(0),
-          minHeight: stream.once(constant(0)),
+          minWidth: onceZeroS,
+          minHeight: onceConstantZeroS,
         };
       }
       var contexts = [];
@@ -2336,7 +2336,7 @@
 
       var ctxs = cs.map(function (_, index) {
         return {
-          top: stream.once(0),
+          top: onceZeroS,
           left: stream.map(leftsS, function (lefts) {
             return lefts[index];
           }),
@@ -2467,8 +2467,8 @@
       $el.addClass('stack');
       if (cs.length === 0) {
         return {
-          minWidth: stream.once(0),
-          minHeight: stream.once(constant(0)),
+          minWidth: onceZeroS,
+          minHeight: onceConstantZeroS,
         };
       }
       var contexts = [];
@@ -3212,8 +3212,8 @@
         $el.addClass('modalDialog');
 
         var i = c({
-          top: stream.once(0),
-          left: stream.once(0),
+          top: onceZeroS,
+          left: onceZeroS,
           width: stream.map(windowWidth, function (ww) {
             return document.body.clientWidth;
           }),
@@ -3245,7 +3245,7 @@
 
         return {
           minWidth: onceZeroS,
-          minHeight: stream.once(constant(0)),
+          minHeight: onceConstantZeroS,
         };
       })(c);
     };
