@@ -4112,6 +4112,9 @@
         options: options,
       };
     },
+    hidden: {
+      type: 'hidden',
+    },
     image: {
       type: 'image',
     },
@@ -4392,6 +4395,19 @@
         });
         mw();
         mh();
+      });
+    },
+    hidden: function (k, s) {
+      return input(function ($el) {
+        $el.prop('name', k);
+        $el.prop('type', 'hidden');
+        stream.onValue(s, function (v) {
+          $el.val(v);
+        });
+        return {
+          minWidth: onceZeroS,
+          minHeight: onceConstantZeroS,
+        };
       });
     },
     image: function (k, s) {

@@ -17,3 +17,4 @@
   third.
 * Allow forms to be submitted via traditional "method" and "action"
   attributes, in addition to listening for the onSubmit event.
+* Added "hidden" field type.
