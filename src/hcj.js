@@ -4646,80 +4646,37 @@
     time: textInput,
   };
 
+  // submitButtonFieldTypeF - function returning the field type to use
+  // for the submit button.  Can just be hcj.forms.fieldType.button.
 
-  /*
-   * Definition: A FieldKind is a string value, specifying one broad
-   * sort of form field used by your application.
-   * 
-   * Examples:
-   * var buttonFieldKind = "button"
-   * var textareaFieldKind = "textarea"
-   * var radiosFieldKind = "radios"
-   * 
-   * 
-   * Definition: A FieldKindObject is an object with one key for
-   * each FieldKind used by FieldTypes in an application.
-   * 
-   * 
-   * Definition: A FieldType is an object with a single required
-   * property, "type" (TODO: rename this field to "kind"), specifying
-   * its FieldKind.  Additionally, a field type may have other
-   * properties giving any additional data required to specify the
-   * form field.
-   * 
-   * Examples:
-   * var buttonFieldType = { type: buttonFieldKind }
-   * var textareaFieldType = { type: textareaFieldKind }
-   * var fooBarRadiosFieldType = {
-   *   type: radiosFieldKind, 
-   *   options: [{
-   *     name: "Foo",
-   *     value: "foo"
-   *   }, {
-   *     name: "Bar",
-   *     value: "bar"
-   *   }]}.
-   * 
-   * 
-   * Definition: A FormComponent is a dependent type, predicated on
-   * FieldKinds.  Generally a FormComponent for a given field kind is
-   * just a Component.  However, sometimes it is more convenient for
-   * it to be an array of Components.
-   */
+  // formComponent - object with one key for each kind of field type.
+  // Values are functions that take the field's name, value stream
+  // initialized with its default value if there is one, and field
+  // type, and return (most often) a Component or an array of
+  // Components.
 
-  // submitButtonFieldTypeF - a function returning the FieldType to use
-  // for the submit button
-
-  // formComponent - FieldKindObject of functions taking the field's
-  // name, value stream (initialized with its default value if there
-  // is one), and FieldType, and returns a FormComponent for that
-  // FieldKind.
+  // TODO: Try to combine formComponent and style into one object.
   var formFor = function (submitButtonFieldTypeF, formComponent) {
-    // fields - Object whose keys become "name" attributes of the form
-    // fields, and whose values are their field types.
+    // fields - Object.  Keys become "name" attributes of the form
+    // fields, and values are their field types.
 
-    /*
-     * Definition: A FormFieldObject is any object that has the same
-     * keys as "fields", thus providing some additional data for each
-     * field in the form.
-     */
+    // labels (optional) - Object with same keys as "fields".  Values
+    // are give the label for each form element.
+    return function (fields, labels) {
+      labels = labels || {};
 
-    // titles (optional) - FormFieldObject giving titles for each form
-    // field
-    return function (fields, titles) {
-      titles = titles || {};
-
-      // defaults (optional) - FormFieldObject giving default values
-      // for each field.
+      // defaults (optional) - Same keys as "field".  Gives default
+      // values for each field.
       return function (defaults) {
         defaults = defaults || {};
         return function (mkOnSubmit) {
 
-          // style - FieldKindObject of functions taking a field's
-          // name, value stream (initialized with its default value if
-          // present), field type, and title if present, and returning
-          // a function which takes its FormComponent and returns a
-          // Component.
+          // style - Object with one key for each kind of field type.
+          // Values are functions that take take a field's name, value
+          // stream initialized with its default value if provided,
+          // field type, and label if present, and return a "form
+          // style", which is a function which takes the value
+          // returned by formComponent above and returns a Component.
           return function (style) {
             style = style || {};
             var names = Object.keys(fields);
@@ -4729,11 +4686,11 @@
               names.map(function (name) {
                 var defaultValue = defaults[name];
                 var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
-                var title = titles[name];
+                var label = labels[name];
                 var type = fields[name];
                 var fieldStyle = (type && style[type.type]) || constant(id);
                 fieldStreams[name] = fieldStream;
-                fieldInputs[name] = fieldStyle(title, name, fieldStream, type)(formComponent[type.type](name, fieldStream, type));
+                fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.type](name, fieldStream, type));
               });
               var disabledS = stream.once(false);
               var submit = function (name) {
