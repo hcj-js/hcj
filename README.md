@@ -1,6 +1,6 @@
 # hcj.js #
 
-It Could Be Worse
+It could be worse.
 
 ## Install ##
 
