@@ -1,8 +1,6 @@
 # hcj.js #
 
-Javascript library for web app frontend templating.
-
-Do not use.
+It Could Be Worse
 
 ## Install ##
 
