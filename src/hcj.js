@@ -597,14 +597,14 @@
     };
   };
 
-  var componentFunc = function (name, build, context) {
-    var $el = $(document.createElement(name))
+  var renderComponent = function (tagName, build, context) {
+    var $el = $(document.createElement(tagName))
           .appendTo(context.$el);
 
     var instance = {
       $el: $el,
     };
-    var streams = build($el, context, function (config) {
+    var buildResult = build($el, context, function (config) {
       var w = measureWidth($el, config);
       if (instance.minWidth) {
         stream.push(instance.minWidth, w);
@@ -621,8 +621,8 @@
         instance.initialMinHeight = h;
       }
     }) || {};
-    instance.minWidth = streams.minWidth ? streams.minWidth : stream.create();
-    instance.minHeight = streams.minHeight ? streams.minHeight : stream.create();
+    instance.minWidth = buildResult.minWidth || stream.create();
+    instance.minHeight = buildResult.minHeight || stream.create();
     if (instance.hasOwnProperty('initialMinWidth')) {
       stream.push(instance.minWidth, instance.initialMinWidth);
     }
@@ -631,8 +631,8 @@
     }
 
     instance.remove = function () {
-      if (streams.onRemove) {
-        streams.onRemove();
+      if (buildResult.onRemove) {
+        buildResult.onRemove();
       }
       $el.remove();
     };
@@ -640,21 +640,24 @@
     return instance;
   };
 
-  var component = function (name, build) {
-    if (!build) {
-      build = name;
-      name = 'div';
+  var component = function () {
+    var tagName, build;
+    if (arguments.length > 1) {
+      tagName = arguments[0];
+      build = arguments[1];
     }
-    if ($.isFunction(name)) {
-      debugger;
+    else {
+      tagName = 'div';
+      build = arguments[0];
     }
     return function (context) {
-      return componentFunc(name, build, context);
+      return renderComponent(tagName, build, context);
     };
   };
-  var curryComponent = function (name) {
+
+  var curryComponent = function (tagName) {
     return function (build) {
-      return component(name, build);
+      return component(tagName, build);
     };
   };
 
