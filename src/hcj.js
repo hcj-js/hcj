@@ -176,7 +176,7 @@
       };
     },
     next: streamDeferFunc.next,
-    defer: streamDeferFunc.childContext().defer,
+    defer: streamDeferFunc.defer,
     isStream: function (v) {
       return v &&
         v.hasOwnProperty('listeners') &&
@@ -186,16 +186,14 @@
       return stream.create(v);
     },
     push: function (s, v) {
-      streamDeferFunc.next(function () {
-        if (s.lastValue !== v) {
-          s.lastValue = v;
-          for (var i = 0; i < s.listeners.length; i++) {
-            if (s.listeners[i]) {
-              s.listeners[i](v);
-            }
+      if (s.lastValue !== v) {
+        s.lastValue = v;
+        for (var i = 0; i < s.listeners.length; i++) {
+          if (s.listeners[i]) {
+            s.listeners[i](v);
           }
         }
-      });
+      }
     },
     map: function (s, f) {
       var out = stream.create();
@@ -295,7 +293,7 @@
       var tryRunF = function () {
         if (!running) {
           running = true;
-          streamDeferFunc.defer(function () {
+          streamDeferFunc.next(function () {
             running = false;
             for (var i = 0; i < streams.length; i++) {
               if (arr[i] === undefined) {
@@ -328,7 +326,7 @@
       var tryRunF = function () {
         if (!running) {
           running = true;
-          streamDeferFunc.defer(function () {
+          streamDeferFunc.next(function () {
             running = false;
             for (var i = 0; i < streams.length; i++) {
               if (arr[i] === undefined) {
