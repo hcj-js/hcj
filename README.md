@@ -35,3 +35,7 @@ render each page of the HCJ docs, concatenate the page contents, and
 splice it in to `index.html` for SEO purposes.  This extra build step
 for SEO is always necessary for HCJ applications, as HCJ a pure
 javascript website framework.
+
+### Old Versions ###
+
+v0.2 docs: http://hcj-js.github.io/hcj/docs-0.2/index.html
