@@ -662,6 +662,12 @@
   var button = curryComponent('button');
   var div = curryComponent('div');
   var form = curryComponent('form');
+  var h1 = curryComponent('h1');
+  var h2 = curryComponent('h2');
+  var h3 = curryComponent('h3');
+  var h4 = curryComponent('h4');
+  var h5 = curryComponent('h5');
+  var h6 = curryComponent('h6');
   var iframe = curryComponent('iframe');
   var img = curryComponent('img');
   var input = curryComponent('input');
@@ -5244,6 +5250,12 @@
       button: button,
       div: div,
       form: form,
+      h1: h1,
+      h2: h2,
+      h3: h3,
+      h4: h4,
+      h5: h5,
+      h6: h6,
       iframe: iframe,
       img: img,
       input: input,
