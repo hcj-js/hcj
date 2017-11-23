@@ -4191,7 +4191,7 @@
   };
   var formElementBorderWidth = (function () {
     var $input = $(document.createElement('input'))
-          .appendTo($('body'))
+          .appendTo($('html'))
           .css('position', 'absolute');
     var width = getFormElementBorderWidthH($input);
     $input.remove();
@@ -4199,7 +4199,7 @@
   })();
   var formElementBorderHeight = (function () {
     var $input = $(document.createElement('input'))
-          .appendTo($('body'))
+          .appendTo($('html'))
           .css('position', 'absolute');
     var height = getFormElementBorderWidthV($input);
     $input.remove();
@@ -4207,7 +4207,7 @@
   })();
   var formTextareaBorderWidth = (function () {
     var $input = $(document.createElement('textarea'))
-          .appendTo($('body'))
+          .appendTo($('html'))
           .css('position', 'absolute');
     var width = getFormElementBorderWidthH($input);
     $input.remove();
@@ -4215,7 +4215,7 @@
   })();
   var formTextareaBorderHeight = (function () {
     var $input = $(document.createElement('textarea'))
-          .appendTo($('body'))
+          .appendTo($('html'))
           .css('position', 'absolute');
     var height = getFormElementBorderWidthV($input);
     $input.remove();
@@ -4223,8 +4223,8 @@
   })();
   var formCheckboxMarginH = (function () {
     var $input = $(document.createElement('input'))
+          .appendTo($('html'))
           .prop('type', 'checkbox')
-          .appendTo($('body'))
           .css('position', 'absolute');
     var width = 0;
     width += parseFloat($input.css('margin-left'));
@@ -4234,8 +4234,8 @@
   })();
   var formCheckboxMarginV = (function () {
     var $input = $(document.createElement('input'))
+          .appendTo($('html'))
           .prop('type', 'checkbox')
-          .appendTo($('body'))
           .css('position', 'absolute');
     var width = 0;
     width += parseFloat($input.css('margin-top'));
@@ -4245,8 +4245,8 @@
   })();
   var formRadioMarginH = (function () {
     var $input = $(document.createElement('input'))
+          .appendTo($('html'))
           .prop('type', 'radio')
-          .appendTo($('body'))
           .css('position', 'absolute');
     var width = 0;
     width += parseFloat($input.css('margin-left'));
@@ -4256,8 +4256,8 @@
   })();
   var formRadioMarginV = (function () {
     var $input = $(document.createElement('input'))
+          .appendTo($('html'))
           .prop('type', 'radio')
-          .appendTo($('body'))
           .css('position', 'absolute');
     var width = 0;
     width += parseFloat($input.css('margin-top'));
