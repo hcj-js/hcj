@@ -699,6 +699,11 @@
   var mapPx = function (s) {
     return s && stream.map(s, px);
   };
+  var mapCalc = function (s) {
+    return s && stream.map(s, function (x) {
+      return "calc(" + x + ")";
+    });
+  };
   var layoutAppend = function (childInstances, $el, context, c, ctx, noPositionAbsolute) {
     ctx = ctx || {};
     try {
@@ -718,16 +723,16 @@
       }
       i.$el.css('position', 'absolute');
       if (!noPositionAbsolute) {
-        stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
+        stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
           updateDomFunc(i.$el, 'css', 'width', w);
         });
-        stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
+        stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
           updateDomFunc(i.$el, 'css', 'height', h);
         });
-        stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
+        stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
           updateDomFunc(i.$el, 'css', 'top', t);
         });
-        stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
+        stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
           updateDomFunc(i.$el, 'css', 'left', l);
         });
       }
@@ -814,10 +819,10 @@
   var rootLayout = layout(function ($el, ctx, c) {
     var i = c();
     stream.combine([
-      ctx.widthCss || mapPx(ctx.width),
-      ctx.heightCss || mapPx(ctx.height),
-      ctx.topCss || mapPx(ctx.top),
-      ctx.leftCss || mapPx(ctx.left),
+      ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width),
+      ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height),
+      ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top),
+      ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left),
     ], function (w, h, t, l) {
       stream.push(displayedS, true);
       updateDomFunc($('body'), 'css', 'height', 'auto');
@@ -2475,7 +2480,7 @@
       var contexts = [];
       var is = cs.map(function (c) {
         var context = {
-          widthCss: stream.once('100%'),
+          widthCalc: stream.once('100%'),
           top: stream.create(),
           height: stream.create(),
         };
@@ -2719,8 +2724,8 @@
         height: stream.map(ctx.height, function (h) {
           return h - top - bottom;
         }),
-        widthCss: stream.once('calc(100% - ' + px(left + right) + ')'),
-        heightCss: stream.once('calc(100% - ' + px(top + bottom) + ')'),
+        widthCalc: stream.once('100% - ' + px(left + right)),
+        heightCalc: stream.once('100% - ' + px(top + bottom)),
       });
       return {
         minWidth: stream.map(i.minWidth, function (mw) {
@@ -3054,8 +3059,8 @@
         height: stream.map(ctx.height, function (h) {
           return h - top - bottom;
         }),
-        widthCss: stream.once('calc(100% - ' + px(left + right) + ')'),
-        heightCss: stream.once('calc(100% - ' + px(top + bottom) + ')'),
+        widthCalc: stream.once('100% - ' + px(left + right)),
+        heightCalc: stream.once('100% - ' + px(top + bottom)),
       });
       i.$el.css('overflow', 'hidden');
       i.$el.css('border-radius', px(radius));
@@ -3098,8 +3103,8 @@
           unpushMH();
         }
         i = append(c, {
-          widthCss: stream.once('100%'),
-          heightCss: stream.once('100%'),
+          widthCalc: stream.once('100%'),
+          heightCalc: stream.once('100%'),
         });
         unpushMW = stream.pushAll(i.minWidth, minWidth);
         unpushMH = stream.pushAll(i.minHeight, minHeight);
@@ -3149,8 +3154,8 @@
           })(i);
         }
         ctx = {
-          widthCss: stream.once('100%'),
-          heightCss: stream.once('100%'),
+          widthCalc: stream.once('100%'),
+          heightCalc: stream.once('100%'),
         };
         i = append(c, ctx);
         i.$el.css('transition', 'inherit');
@@ -3428,8 +3433,8 @@
       $el.addClass('makeSticky');
 
       var ctx = {
-        widthCss: stream.once('100%'),
-        heightCss: stream.once('100%'),
+        widthCalc: stream.once('100%'),
+        heightCalc: stream.once('100%'),
       };
       var i = c(ctx);
       stream.combine([
