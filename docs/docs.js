@@ -181,12 +181,6 @@ $(function () {
     p("The build method initializes the component and indicates its minimum dimensions.  It is passed two arguments: `$el`, the created root element of the component (as a jquery object), and `context`, the context as it was passed into the component."),
     p("It returns an object with `minWidth` and `minHeight` properties, and an optional `onRemove` property.  The `minWidth` and `minHeight` properties are streams of numbers, and streams of functions from numbers to numbers, respectively.  Any returned `onRemove` function will be called when the instance's `remove` function is called."),
     p("To measure elements' minimum sizes, HCJ provides `hcj.measure.width` and `hcj.measure.height`.  These functions take JQuery selectors of elements, and return numbers and functions from numbers to numbers, respectively.  They clone the element, attach the clone to a sandbox, set a couple CSS properties, measure it, remove the clone, and return the size."),
-    // p("Here's a picture showing how the `component` function creates a component given a name and a build method:"),
-    // c.all([
-    //   c.alignHLeft,
-    // ])(c.image({
-    //   src: './window.hcj.component.component.png',
-    // })),
     h3("Example:"),
     codeBlock([
       "// component for the imaginary SomeCaptcha",
@@ -1106,18 +1100,6 @@ $(function () {
       "})",
     ]),
     p('Happy Profile Editing'),
-
-
-    // h2("hcj.forms.formFor"),
-    // p("The formFor function is for generating forms.  It is curried, taking several parameters in sequence.  These paramaters are:"),
-    // stack([
-    //   p('The form field types and names'),
-    //   p('Default values for the form fields'),
-    //   p('The on submit function'),
-    //   p('Form style'),
-    //   p('Display callback'),
-    // ]),
-    // p("The field types and names are two parameters"),
   ]);
 
   var standardLibraryColors = docStack([
