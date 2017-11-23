@@ -1067,18 +1067,30 @@
     position = position || {};
     return layout(function ($el, ctx, c) {
       ctx = $.extend({}, ctx, {
-        width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
-        height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
-        widthCalc: ctx.widthCalc && (position.widthCalc ? stream.map(ctx.widthCalc, position.widthCalc) : ctx.widthCalc),
-        heightCalc: ctx.heightCalc && (position.heightCalc ? stream.map(ctx.heightCalc, position.heightCalc) : ctx.heightCalc),
         $el: $el,
         top: onceZeroS,
         left: onceZeroS,
+        width: position.width ? stream.map(ctx.width, function (w) {
+          return position.width(w, $el.children());
+        }) : ctx.width,
+        height: position.height ? stream.map(ctx.height, function (h) {
+          return position.height(h, $el.children());
+        }) : ctx.height,
+        widthCalc: ctx.widthCalc && (position.widthCalc ? stream.map(ctx.widthCalc, function (wc) {
+          return position.widthCalc(wc, $el.children());
+        }) : ctx.widthCalc),
+        heightCalc: ctx.heightCalc && (position.heightCalc ? stream.map(ctx.heightCalc, function (hc) {
+          return position.heightCalc(hc, $el.children());
+        }) : ctx.heightCalc),
       });
       var i = c(ctx);
       return $.extend({}, i, {
-        minWidth: minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth,
-        minHeight: minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight,
+        minWidth: minSize.minWidth ? stream.map(i.minWidth, function (mw) {
+          return minSize.minWidth(mw, $el.children());
+        }) : i.minWidth,
+        minHeight: minSize.minHeight ? stream.map(i.minHeight, function (mh) {
+          return minSize.minHeight(mh, $el.children());
+        }) : i.minHeight,
       });
     });
   };
