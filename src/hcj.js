@@ -1073,9 +1073,10 @@
         height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
       });
       var i = c(ctx);
-      i.minWidth = minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth;
-      i.minHeight = minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight;
-      return i;
+      return $.extend({}, i, {
+        minWidth: minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth,
+        minHeight: minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight,
+      });
     });
   };
 
