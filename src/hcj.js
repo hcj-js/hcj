@@ -1071,6 +1071,9 @@
         height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
         widthCalc: ctx.widthCalc && (position.widthCalc ? stream.map(ctx.widthCalc, position.widthCalc) : ctx.widthCalc),
         heightCalc: ctx.heightCalc && (position.heightCalc ? stream.map(ctx.heightCalc, position.heightCalc) : ctx.heightCalc),
+        $el: $el,
+        top: onceZeroS,
+        left: onceZeroS,
       });
       var i = c(ctx);
       return $.extend({}, i, {
