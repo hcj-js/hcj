@@ -225,10 +225,12 @@
       return stream;
     },
     onValue: function (s, f) {
-      stream.map(s, function (v) {
+      s.listeners.push(function (v) {
         f(v);
-        return true;
       });
+      if (s.lastValue) {
+        f(s.lastValue);
+      }
       var index = s.listeners.length - 1;
       return function () {
         delete s.listeners[index];
@@ -276,7 +278,7 @@
       if (source.lastValue !== undefined) {
         stream.push(target, source.lastValue);
       }
-      return stream.onValue(source, function (v) {
+      stream.onValue(source, function (v) {
         stream.push(target, v);
       });
     },
