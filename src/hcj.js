@@ -812,25 +812,17 @@
   var rootLayout = layout(function ($el, ctx, c) {
     var i = c();
     stream.combine([
-      ctx.width,
-      ctx.height,
-      ctx.top,
-      ctx.left,
-    ], function () {
+      ctx.widthCss || mapPx(ctx.width),
+      ctx.heightCss || mapPx(ctx.height),
+      ctx.topCss || mapPx(ctx.top),
+      ctx.leftCss || mapPx(ctx.left),
+    ], function (w, h, t, l) {
       stream.push(displayedS, true);
       updateDomFunc($('body'), 'css', 'height', 'auto');
-      stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
-        updateDomFunc(i.$el, 'css', 'width', w);
-      });
-      stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
-        updateDomFunc(i.$el, 'css', 'height', h);
-      });
-      stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
-        updateDomFunc(i.$el, 'css', 'top', t);
-      });
-      stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
-        updateDomFunc(i.$el, 'css', 'left', l);
-      });
+      updateDomFunc(i.$el, 'css', 'width', w);
+      updateDomFunc(i.$el, 'css', 'height', h);
+      updateDomFunc(i.$el, 'css', 'top', t);
+      updateDomFunc(i.$el, 'css', 'left', l);
     });
     return i;
   });
