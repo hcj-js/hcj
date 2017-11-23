@@ -2589,6 +2589,7 @@
             stream.push(context.top, position.top);
             stream.push(context.height, position.height);
           });
+          return true;
         };
         stream.onValue(ctx.width, tryPushContexts);
         stream.onValue(ctx.height, tryPushContexts);
@@ -2610,8 +2611,8 @@
           var i = append(c, context);
 
           cs[index] = c;
-          mwDeleteListeners[index] = stream.onValue(i.minWidth, tryPushContexts);
-          mhDeleteListeners[index] = stream.onValue(i.minHeight, tryPushContexts);
+          mwDeleteListeners[index] = stream.map(i.minWidth, tryPushContexts);
+          mhDeleteListeners[index] = stream.map(i.minHeight, tryPushContexts);
           contexts[index] = context;
           is[index] = i;
 
