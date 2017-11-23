@@ -364,7 +364,7 @@
       var tryRunF = function () {
         if (!running) {
           running = true;
-          setTimeout(function () {
+          streamDeferFunc.next(function () {
             running = false;
             for (var i = 0; i < keys.length; i++) {
               var key = keys[i];
