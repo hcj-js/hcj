@@ -819,8 +819,8 @@ $(function () {
   var standardLibraryForms = docStack([
     p("Hcj takes the liberty of providing some reactive form components."),
 
-    h2('formType'),
-    p('The object `window.hcj.forms.formType` is used for specifying form types.  Intuitively, a form type determines both the type that the user inputs, and the form element\'s logical internal type.  An HCJ form component maintains a stream of the latter type, pushing to it and/or updating the user-facing values of the former type(s).'),
+    h2('fieldType'),
+    p('The object `window.hcj.forms.fieldType` is used for specifying form types.  Intuitively, a form type determines both the type that the user inputs, and the form element\'s logical internal type.  An HCJ form component maintains a stream of the latter type, pushing to it and/or updating the user-facing values of the former type(s).'),
     p('Its values are the form type constructors.  These are either literally form types, or functions that take some parameters and return form types.  A form type is a row type, an object with at least a `type` property tagging the form type, and optionally extra properties determined by the tag.'),
     p('Here are the form type constructors, with demos:'),
     c.stream(0, function (s) {
@@ -832,7 +832,7 @@ $(function () {
         stack([
           c.all([
             c.alignHLeft,
-          ])(forms.formComponent.button('button', s, forms.formType.button('Button', function (ev, s, disable) {
+          ])(forms.formComponent.button('button', s, forms.fieldType.button('Button', function (ev, s, disable) {
             var enable = disable();
             stream.push(s, 1 + (s.lastValue || 0));
             setTimeout(function () {
@@ -881,7 +881,7 @@ $(function () {
         stack([
           c.all([
             c.alignHLeft,
-          ])(forms.formComponent.dropdown('dropdown', s, forms.formType.dropdown([{
+          ])(forms.formComponent.dropdown('dropdown', s, forms.fieldType.dropdown([{
             name: 'A',
             value: 'a',
           }, {
@@ -955,7 +955,7 @@ $(function () {
         stack([
           c.all([
             c.alignHLeft,
-          ])(stack(forms.formComponent.radios('radios', s, forms.formType.radios(['first', 'second'])))),
+          ])(stack(forms.formComponent.radios('radios', s, forms.fieldType.radios(['first', 'second'])))),
           c.componentStream(stream.map(s, function (v) {
             return p(v || '');
           })),
@@ -1007,11 +1007,11 @@ $(function () {
 
     h2('formComponent'),
     p('`formStyle.text : (String, Stream, FieldType) -> Component`'),
-    p("The `window.hcj.forms.formComponent` object has exactly the same keys as `window.hcj.forms.formType`.  Its values are functions that take parameters and return form inputs.  These parameters are the name/id of the element, the value stream, and the form type if needed."),
+    p("The `window.hcj.forms.formComponent` object has exactly the same keys as `window.hcj.forms.fieldType`.  Its values are functions that take parameters and return form inputs.  These parameters are the name/id of the element, the value stream, and the form type if needed."),
     p("Note: the `window.hcj.forms.formComponent.radios` function returns not one component but an array of components."),
     p("Example:"),
     codeBlock([
-      "var dropdownFormType = forms.formType.dropdown([{",
+      "var dropdownFormType = forms.fieldType.dropdown([{",
       "  name: 'A',",
       "  value: 'a',",
       "}, {",
@@ -1023,7 +1023,7 @@ $(function () {
 
     h2('formStyle'),
     p('`formStyle.text : (String, String, Stream, FieldType) -> (Component -> Component)`'),
-    p("The `window.hcj.forms.formStyle` object has exactly the same keys as `window.hcj.forms.formType`.  Its values are functions that take four paramaters: a field name, the name/id attribute, a stream, and an optional form type.  They return styles that should be applied to the `formComponent` output values."),
+    p("The `window.hcj.forms.formStyle` object has exactly the same keys as `window.hcj.forms.fieldType`.  Its values are functions that take four paramaters: a field name, the name/id attribute, a stream, and an optional form type.  They return styles that should be applied to the `formComponent` output values."),
     p("Note: the `window.hcj.formStyle.radios` function returns not a style, but a layout taking the entire array of radio buttons."),
     p("Example:"),
     codeBlock([
@@ -1033,7 +1033,7 @@ $(function () {
 
     h2('formFor'),
     p("The `formFor` is a large curried function for generating forms.  It takes multiple parameters, and then returns a component."),
-    p("First, it takes a `formType` argument and a `formComponent` argument.  You can pass in `hcj.forms.formType` and `hcj.forms.formComponent`, or you can add additional properties to those objects corresponding to your form types first."),
+    p("First, it takes a `submitButtonFormTypeF` argument and a `formComponent` argument.  The `submitButtonFormTypeF` argument is a function that, when called, returns a form type to use for the submit button.  You can pass in `hcj.forms.fieldType.button` and `hcj.forms.formComponent`, or you can add additional properties to those objects corresponding to your form types first."),
     p("Second, `types` the data model and optionally `names` the field names.  The first parameter `types` is an object whose values are form types.  The second parameter `names` is an object whose values are strings - except for `radio`, in which case the value must be an object with a String `name` property and an Array(String) `options` property."),
     p("Third, it takes an optional `default` object giving default values.  This object should have the same keys as `types` and `names` - these keys are also used as the name/id of the form inputs."),
     p("Fourth, it takes a `mkOnSubmit` method.  This method sets up the submit behavior of the form.  It is passed two parameters: an object of streams streams, and a `disable` method.  The streams object has the same keys as the `types`, `names`, and `defaults` objects, and its values are the streams of form values.  The `disable` method works like the button disable method, disabling the submit button.  The `mkOnSubmit` method should return an object with two properties: `onSubmit` and optionally `resultS`.  The `onSubmit` property is the onSubmit function of the form.  Typical usage might be to inspect the `lastValue` properties of the streams and then make an ajax request.  The optional `resultS` property is the error state of the form."),
@@ -1042,16 +1042,16 @@ $(function () {
     p("So, after six sets of parentheses, `formFor` returns a component."),
     p('Example: Edit Profile Form'),
     codeBlock([
-      "var formFor = window.hcj.forms.formFor(window.hcj.forms.formType, window.hcj.forms.formComponent);",
+      "var formFor = window.hcj.forms.formFor(window.hcj.forms.fieldType.button, window.hcj.forms.formComponent);",
       "var profileForm = formFor({",
-      "  name: formType.text,",
-      "  imageUrl: formType.image,",
-      "  email: formType.text,",
-      "  description: formType.textarea,",
-      "  phone: formType.text,",
-      "  address_1: formType.text,",
-      "  address_2: formType.text,",
-      "  website: formType.text,",
+      "  name: fieldType.text,",
+      "  imageUrl: fieldType.image,",
+      "  email: fieldType.text,",
+      "  description: fieldType.textarea,",
+      "  phone: fieldType.text,",
+      "  address_1: fieldType.text,",
+      "  address_2: fieldType.text,",
+      "  website: fieldType.text,",
       "}, {",
       "  name: 'Name',",
       "  imageUrl: 'Upload Profile Picture',",
