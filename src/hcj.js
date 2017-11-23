@@ -1067,8 +1067,6 @@
     position = position || {};
     return layout(function ($el, ctx, c) {
       ctx = $.extend({}, ctx, {
-        top: position.top || ctx.top,
-        left: position.left || ctx.left,
         width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
         height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
       });
