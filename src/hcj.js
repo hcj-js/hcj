@@ -4202,136 +4202,61 @@
         - parseFloat($el.css('height')))
       / 2;
   };
-  var formElementBorderWidth = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('html'))
-          .css('position', 'absolute');
-    var width = getFormElementBorderWidthH($input);
-    $input.remove();
-    return width;
-  })();
-  var formElementBorderHeight = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('html'))
-          .css('position', 'absolute');
-    var height = getFormElementBorderWidthV($input);
-    $input.remove();
-    return height;
-  })();
-  var formTextareaBorderWidth = (function () {
-    var $input = $(document.createElement('textarea'))
-          .appendTo($('html'))
-          .css('position', 'absolute');
-    var width = getFormElementBorderWidthH($input);
-    $input.remove();
-    return width;
-  })();
-  var formTextareaBorderHeight = (function () {
-    var $input = $(document.createElement('textarea'))
-          .appendTo($('html'))
-          .css('position', 'absolute');
-    var height = getFormElementBorderWidthV($input);
-    $input.remove();
-    return height;
-  })();
-  var formCheckboxMarginH = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('html'))
-          .prop('type', 'checkbox')
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-left'));
-    width += parseFloat($input.css('margin-right'));
-    $input.remove();
-    return width;
-  })();
-  var formCheckboxMarginV = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('html'))
-          .prop('type', 'checkbox')
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-top'));
-    width += parseFloat($input.css('margin-bottom'));
-    $input.remove();
-    return width;
-  })();
-  var formRadioMarginH = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('html'))
-          .prop('type', 'radio')
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-left'));
-    width += parseFloat($input.css('margin-right'));
-    $input.remove();
-    return width;
-  })();
-  var formRadioMarginV = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('html'))
-          .prop('type', 'radio')
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-top'));
-    width += parseFloat($input.css('margin-bottom'));
-    $input.remove();
-    return width;
-  })();
   var applyFormBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - 2 * formElementBorderWidth;
+    width: function (w, $el) {
+      return w - 2 * getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - 2 * formElementBorderHeight;
+    height: function (h, $el) {
+      return h - 2 * getFormElementBorderWidthV($el);
     },
-    widthCalc: function (calc) {
-      return calc + " - " + 2 * formElementBorderWidth
+    widthCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthH($el);
     },
-    heightCalc: function (calc) {
-      return calc + " - " + 2 * formElementBorderWidth
+    heightCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthV($el);
     },
   });
   var applyTextareaBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - 2 * formTextareaBorderWidth;
+    width: function (w, $el) {
+      return w - 2 * getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - 2 * formTextareaBorderHeight;
+    height: function (h, $el) {
+      console.log('adjust position' + getFormElementBorderWidthV($el));
+      return h - 2 * getFormElementBorderWidthV($el);
     },
-    widthCalc: function (calc) {
-      return calc + " - " + 2 * formTextareaBorderWidth
+    widthCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthH($el);
     },
-    heightCalc: function (calc) {
-      return calc + " - " + 2 * formTextareaBorderWidth
+    heightCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthV($el);
     },
   });
   var applyCheckboxBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - formCheckboxMarginH;
+    width: function (w, $el) {
+      return w - getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - formCheckboxMarginV;
+    height: function (h, $el) {
+      return h - getFormElementBorderWidthV($el);
     },
-    widthCalc: function (calc) {
-      return calc + " - " + formCheckboxMarginH
+    widthCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthH($el);
     },
-    heightCalc: function (calc) {
-      return calc + " - " + formCheckboxMarginV
+    heightCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthV($el);
     },
   });
   var applyRadioBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - formRadioMarginH;
+    width: function (w, $el) {
+      return w - getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - formRadioMarginV;
+    height: function (h, $el) {
+      return h - getFormElementBorderWidthV($el);
     },
-    widthCalc: function (calc) {
-      return calc + " - " + formRadioMarginH
+    widthCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthH($el);
     },
-    heightCalc: function (calc) {
-      return calc + " - " + formRadioMarginV
+    heightCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthV($el);
     },
   });
   var formComponent = {
@@ -5303,7 +5228,6 @@
     },
     forms: {
       formComponent: formComponent,
-      formElementBorderWidth: formElementBorderWidth,
       formFor: formFor,
       formStyle: formStyle,
       fieldType: fieldType,
