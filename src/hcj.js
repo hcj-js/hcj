@@ -1069,6 +1069,8 @@
       ctx = $.extend({}, ctx, {
         width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
         height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
+        widthCalc: ctx.widthCalc && (position.widthCalc ? stream.map(ctx.widthCalc, position.widthCalc) : ctx.widthCalc),
+        heightCalc: ctx.heightCalc && (position.heightCalc ? stream.map(ctx.heightCalc, position.heightCalc) : ctx.heightCalc),
       });
       var i = c(ctx);
       return $.extend({}, i, {
