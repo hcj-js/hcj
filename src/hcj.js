@@ -4177,17 +4177,13 @@
   };
   var getFormElementBorderWidthH = function ($el) {
     return (
-      $el.outerWidth()
-        + parseFloat($el.css('margin-left'))
-        + parseFloat($el.css('margin-right'))
+      $el.outerWidth(true)
         - parseFloat($el.css('width')))
       / 2;
   };
   var getFormElementBorderWidthV = function ($el) {
     return (
-      $el.outerHeight()
-        + parseFloat($el.css('margin-top'))
-        + parseFloat($el.css('margin-bottom'))
+      $el.outerHeight(true)
         - parseFloat($el.css('height')))
       / 2;
   };
@@ -4274,6 +4270,12 @@
     height: function (h) {
       return h - 2 * formElementBorderHeight;
     },
+    widthCalc: function (calc) {
+      return calc + " - " + 2 * formElementBorderWidth
+    },
+    heightCalc: function (calc) {
+      return calc + " - " + 2 * formElementBorderWidth
+    },
   });
   var applyTextareaBorder = adjustPosition({}, {
     width: function (w) {
@@ -4281,6 +4283,12 @@
     },
     height: function (h) {
       return h - 2 * formTextareaBorderHeight;
+    },
+    widthCalc: function (calc) {
+      return calc + " - " + 2 * formTextareaBorderWidth
+    },
+    heightCalc: function (calc) {
+      return calc + " - " + 2 * formTextareaBorderWidth
     },
   });
   var applyCheckboxBorder = adjustPosition({}, {
@@ -4290,6 +4298,12 @@
     height: function (h) {
       return h - formCheckboxMarginV;
     },
+    widthCalc: function (calc) {
+      return calc + " - " + formCheckboxMarginH
+    },
+    heightCalc: function (calc) {
+      return calc + " - " + formCheckboxMarginV
+    },
   });
   var applyRadioBorder = adjustPosition({}, {
     width: function (w) {
@@ -4297,6 +4311,12 @@
     },
     height: function (h) {
       return h - formRadioMarginV;
+    },
+    widthCalc: function (calc) {
+      return calc + " - " + formRadioMarginH
+    },
+    heightCalc: function (calc) {
+      return calc + " - " + formRadioMarginV
     },
   });
   var formComponent = {
@@ -4550,24 +4570,20 @@
         $el.on('keyup', function () {
           stream.push(s, $el.val());
         });
-        var borderWidthH = getFormElementBorderWidthH($el);
-        var borderWidthV = getFormElementBorderWidthV($el);
-        var lastOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-        var lastOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
-        var mw = stream.once(lastOuterWidth + 2 * borderWidthH);
-        var mh = stream.once(constant(lastOuterHeight + 2 * borderWidthV));
+        var lastOuterWidth = $el.outerWidth(true);
+        var lastOuterHeight = $el.outerHeight(true);
+        var mw = stream.once(lastOuterWidth);
+        var mh = stream.once(constant(lastOuterHeight));
         $('body').on('mousemove', function () {
           // this handler is a memory leak, should unbind it on remove
-          var borderWidthH = getFormElementBorderWidthH($el);
-          var borderWidthV = getFormElementBorderWidthV($el);
-          var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-          var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+          var currentOuterWidth = $el.outerWidth(true);
+          var currentOuterHeight = $el.outerHeight(true);
           if (lastOuterWidth !== currentOuterWidth) {
-            stream.push(mw, currentOuterWidth + 2 * borderWidthH);
+            stream.push(mw, currentOuterWidth);
             lastOuterWidth = currentOuterWidth;
           }
           if (lastOuterHeight !== currentOuterHeight) {
-            stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
+            stream.push(mh, constant(currentOuterHeight));
             lastOuterHeight = currentOuterHeight;
           }
         });
