@@ -1,79 +1,79 @@
 function waitForWebfonts(fonts, callback, maxTime) {
   if (fonts.length === 0) {
-	callback();
-	return;
+    callback();
+    return;
   }
   maxTime = maxTime || 10 * 1000;
   var startTime = new Date().getTime();
   var loadedFonts = 0;
   var callbackIsRun = false;
   for(var i = 0, l = fonts.length; i < l; ++i) {
-	(function(font) {
-	  var container = document.createElement('div');
-	  container.style.position = 'absolute';
-	  container.style.width = 0;
-	  document.body.appendChild(container);
-	  var node = document.createElement('span');
-	  var $node = $(node);
-	  // Characters that vary significantly among different fonts
-	  if (font === 'FontAwesome') {
-		node.innerHTML = '<i class="fa-facebook-square"></i>';
-	  }
-	  else {
-		node.innerHTML = " !\"\\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-	  }
-	  // Visible - so we can measure it - but not on the screen
-	  node.style.position      = 'absolute';
-	  node.style.left          = '-10000px';
-	  node.style.top           = '-10000px';
-	  // Large font size makes even subtle changes obvious
-	  node.style.fontSize      = '300px';
-	  // Reset any font properties
-	  node.style.fontVariant   = 'normal';
-	  node.style.fontStyle     = 'normal';
-	  node.style.fontWeight    = 'normal';
-	  node.style.letterSpacing = '0';
-	  container.appendChild(node);
+    (function(font) {
+      var container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.width = 0;
+      document.body.appendChild(container);
+      var node = document.createElement('span');
+      var $node = $(node);
+      // Characters that vary significantly among different fonts
+      if (font === 'FontAwesome') {
+        node.innerHTML = '<i class="fa-facebook-square"></i>';
+      }
+      else {
+        node.innerHTML = " !\"\\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+      }
+      // Visible - so we can measure it - but not on the screen
+      node.style.position      = 'absolute';
+      node.style.left          = '-10000px';
+      node.style.top           = '-10000px';
+      // Large font size makes even subtle changes obvious
+      node.style.fontSize      = '300px';
+      // Reset any font properties
+      node.style.fontVariant   = 'normal';
+      node.style.fontStyle     = 'normal';
+      node.style.fontWeight    = 'normal';
+      node.style.letterSpacing = '0';
+      container.appendChild(node);
 
-	  // Remember width with no applied web font
-	  var width = $node.outerWidth();
-	  if (font === 'FontAwesome') {
-		node.innerHTML = '<i class="fa fa-facebook-square"></i>';
-	  }
-	  else {
-		node.style.fontFamily = font;
-	  }
+      // Remember width with no applied web font
+      var width = $node.outerWidth();
+      if (font === 'FontAwesome') {
+        node.innerHTML = '<i class="fa fa-facebook-square"></i>';
+      }
+      else {
+        node.style.fontFamily = font;
+      }
 
-	  var interval;
-	  function checkFont () {
-		// Compare current width with original width
-		if (node && (new Date().getTime() - startTime > maxTime || $node.outerWidth() != width)) {
-		  ++loadedFonts;
-		  node.parentNode.removeChild(node);
-		  node = null;
-		  if (interval) {
-			clearInterval(interval);
-		  }
-		}
+      var interval;
+      function checkFont () {
+        // Compare current width with original width
+        if (node && (new Date().getTime() - startTime > maxTime || $node.outerWidth() != width)) {
+          ++loadedFonts;
+          node.parentNode.removeChild(node);
+          node = null;
+          if (interval) {
+            clearInterval(interval);
+          }
+        }
 
-		// If all fonts have been loaded
-		if(loadedFonts >= fonts.length) {
-		  if(loadedFonts == fonts.length) {
-			if (!callbackIsRun) {
-			  callback();
-			}
-			callbackIsRun = true;
-			return true;
-		  }
-		}
-	  };
+        // If all fonts have been loaded
+        if(loadedFonts >= fonts.length) {
+          if(loadedFonts == fonts.length) {
+            if (!callbackIsRun) {
+              callback();
+            }
+            callbackIsRun = true;
+            return true;
+          }
+        }
+      };
 
-	  setTimeout(function () {
-		if(!checkFont()) {
-		  interval = setInterval(checkFont, 50);
-		}
-	  });
-	})(fonts[i]);
+      setTimeout(function () {
+        if(!checkFont()) {
+          interval = setInterval(checkFont, 50);
+        }
+      });
+    })(fonts[i]);
   }
 };
 (function () {
@@ -254,7 +254,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       };
     },
     next: streamDeferFunc.next,
-    defer: streamDeferFunc.childContext().defer,
+    defer: streamDeferFunc.defer,
     isStream: function (v) {
       return v &&
         v.hasOwnProperty('listeners') &&
@@ -264,16 +264,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return stream.create(v);
     },
     push: function (s, v) {
-      streamDeferFunc.next(function () {
-        if (s.lastValue !== v) {
-          s.lastValue = v;
-          for (var i = 0; i < s.listeners.length; i++) {
-            if (s.listeners[i]) {
-              s.listeners[i](v);
-            }
+      if (s.lastValue !== v) {
+        s.lastValue = v;
+        for (var i = 0; i < s.listeners.length; i++) {
+          if (s.listeners[i]) {
+            s.listeners[i](v);
           }
         }
-      });
+      }
     },
     map: function (s, f) {
       var out = stream.create();
@@ -305,10 +303,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return stream;
     },
     onValue: function (s, f) {
-      stream.map(s, function (v) {
+      s.listeners.push(function (v) {
         f(v);
-        return true;
       });
+      if (s.lastValue) {
+        f(s.lastValue);
+      }
       var index = s.listeners.length - 1;
       return function () {
         delete s.listeners[index];
@@ -356,7 +356,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       if (source.lastValue !== undefined) {
         stream.push(target, source.lastValue);
       }
-      return stream.onValue(source, function (v) {
+      stream.onValue(source, function (v) {
         stream.push(target, v);
       });
     },
@@ -373,7 +373,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var tryRunF = function () {
         if (!running) {
           running = true;
-          streamDeferFunc.defer(function () {
+          streamDeferFunc.next(function () {
             running = false;
             for (var i = 0; i < streams.length; i++) {
               if (arr[i] === undefined) {
@@ -406,7 +406,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var tryRunF = function () {
         if (!running) {
           running = true;
-          streamDeferFunc.defer(function () {
+          streamDeferFunc.next(function () {
             running = false;
             for (var i = 0; i < streams.length; i++) {
               if (arr[i] === undefined) {
@@ -444,7 +444,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var tryRunF = function () {
         if (!running) {
           running = true;
-          setTimeout(function () {
+          streamDeferFunc.next(function () {
             running = false;
             for (var i = 0; i < keys.length; i++) {
               var key = keys[i];
@@ -511,7 +511,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var vw = unit('vw');
 
   var onceZeroS = stream.once(0);
-
+  var onceConstantZeroS = stream.once(constant(0));
 
   var windowWidth = stream.create();
   stream.windowWidth = windowWidth;
@@ -675,14 +675,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
     };
   };
 
-  var componentFunc = function (name, build, context) {
-    var $el = $(document.createElement(name))
+  var renderComponent = function (tagName, build, context) {
+    var $el = $(document.createElement(tagName))
           .appendTo(context.$el);
 
     var instance = {
       $el: $el,
     };
-    var streams = build($el, context, function (config) {
+    var buildResult = build($el, context, function (config) {
       var w = measureWidth($el, config);
       if (instance.minWidth) {
         stream.push(instance.minWidth, w);
@@ -699,8 +699,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         instance.initialMinHeight = h;
       }
     }) || {};
-    instance.minWidth = streams.minWidth ? streams.minWidth : stream.create();
-    instance.minHeight = streams.minHeight ? streams.minHeight : stream.create();
+    instance.minWidth = buildResult.minWidth || stream.create();
+    instance.minHeight = buildResult.minHeight || stream.create();
     if (instance.hasOwnProperty('initialMinWidth')) {
       stream.push(instance.minWidth, instance.initialMinWidth);
     }
@@ -709,8 +709,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
     }
 
     instance.remove = function () {
-      if (streams.onRemove) {
-        streams.onRemove();
+      if (buildResult.onRemove) {
+        buildResult.onRemove();
       }
       $el.remove();
     };
@@ -718,21 +718,24 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return instance;
   };
 
-  var component = function (name, build) {
-    if (!build) {
-      build = name;
-      name = 'div';
+  var component = function () {
+    var tagName, build;
+    if (arguments.length > 1) {
+      tagName = arguments[0];
+      build = arguments[1];
     }
-    if ($.isFunction(name)) {
-      debugger;
+    else {
+      tagName = 'div';
+      build = arguments[0];
     }
     return function (context) {
-      return componentFunc(name, build, context);
+      return renderComponent(tagName, build, context);
     };
   };
-  var curryComponent = function (name) {
+
+  var curryComponent = function (tagName) {
     return function (build) {
-      return component(name, build);
+      return component(tagName, build);
     };
   };
 
@@ -740,6 +743,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var button = curryComponent('button');
   var div = curryComponent('div');
   var form = curryComponent('form');
+  var h1 = curryComponent('h1');
+  var h2 = curryComponent('h2');
+  var h3 = curryComponent('h3');
+  var h4 = curryComponent('h4');
+  var h5 = curryComponent('h5');
+  var h6 = curryComponent('h6');
   var iframe = curryComponent('iframe');
   var img = curryComponent('img');
   var input = curryComponent('input');
@@ -768,6 +777,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var mapPx = function (s) {
     return s && stream.map(s, px);
   };
+  var mapCalc = function (s) {
+    return s && stream.map(s, function (x) {
+      return "calc(" + x + ")";
+    });
+  };
   var layoutAppend = function (childInstances, $el, context, c, ctx, noPositionAbsolute) {
     ctx = ctx || {};
     try {
@@ -787,16 +801,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }
       i.$el.css('position', 'absolute');
       if (!noPositionAbsolute) {
-        stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
+        stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
           updateDomFunc(i.$el, 'css', 'width', w);
         });
-        stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
+        stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
           updateDomFunc(i.$el, 'css', 'height', h);
         });
-        stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
+        stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
           updateDomFunc(i.$el, 'css', 'top', t);
         });
-        stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
+        stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
           updateDomFunc(i.$el, 'css', 'left', l);
         });
       }
@@ -883,25 +897,17 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var rootLayout = layout(function ($el, ctx, c) {
     var i = c();
     stream.combine([
-      ctx.width,
-      ctx.height,
-      ctx.top,
-      ctx.left,
-    ], function () {
+      ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width),
+      ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height),
+      ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top),
+      ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left),
+    ], function (w, h, t, l) {
       stream.push(displayedS, true);
       updateDomFunc($('body'), 'css', 'height', 'auto');
-      stream.onValue(ctx.widthCss || mapPx(ctx.width), function (w) {
-        updateDomFunc(i.$el, 'css', 'width', w);
-      });
-      stream.onValue(ctx.heightCss || mapPx(ctx.height), function (h) {
-        updateDomFunc(i.$el, 'css', 'height', h);
-      });
-      stream.onValue(ctx.topCss || mapPx(ctx.top), function (t) {
-        updateDomFunc(i.$el, 'css', 'top', t);
-      });
-      stream.onValue(ctx.leftCss || mapPx(ctx.left), function (l) {
-        updateDomFunc(i.$el, 'css', 'left', l);
-      });
+      updateDomFunc(i.$el, 'css', 'width', w);
+      updateDomFunc(i.$el, 'css', 'height', h);
+      updateDomFunc(i.$el, 'css', 'top', t);
+      updateDomFunc(i.$el, 'css', 'left', l);
     });
     return i;
   });
@@ -1139,15 +1145,31 @@ function waitForWebfonts(fonts, callback, maxTime) {
     position = position || {};
     return layout(function ($el, ctx, c) {
       ctx = $.extend({}, ctx, {
-        top: position.top || ctx.top,
-        left: position.left || ctx.left,
-        width: position.width ? stream.map(ctx.width, position.width) : ctx.width,
-        height: position.height ? stream.map(ctx.height, position.height) : ctx.height,
+        $el: $el,
+        top: onceZeroS,
+        left: onceZeroS,
+        width: position.width ? stream.map(ctx.width, function (w) {
+          return position.width(w, $el.children());
+        }) : ctx.width,
+        height: position.height ? stream.map(ctx.height, function (h) {
+          return position.height(h, $el.children());
+        }) : ctx.height,
+        widthCalc: ctx.widthCalc && (position.widthCalc ? stream.map(ctx.widthCalc, function (wc) {
+          return position.widthCalc(wc, $el.children());
+        }) : ctx.widthCalc),
+        heightCalc: ctx.heightCalc && (position.heightCalc ? stream.map(ctx.heightCalc, function (hc) {
+          return position.heightCalc(hc, $el.children());
+        }) : ctx.heightCalc),
       });
       var i = c(ctx);
-      i.minWidth = minSize.minWidth ? stream.map(i.minWidth, minSize.minWidth) : i.minWidth;
-      i.minHeight = minSize.minHeight ? stream.map(i.minHeight, minSize.minHeight) : i.minHeight;
-      return i;
+      return $.extend({}, i, {
+        minWidth: minSize.minWidth ? stream.map(i.minWidth, function (mw) {
+          return minSize.minWidth(mw, $el.children());
+        }) : i.minWidth,
+        minHeight: minSize.minHeight ? stream.map(i.minHeight, function (mh) {
+          return minSize.minHeight(mh, $el.children());
+        }) : i.minHeight,
+      });
     });
   };
 
@@ -1536,7 +1558,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       $el.addClass('empty');
       return {
         minWidth: onceZeroS,
-        minHeight: stream.once(constant(0)),
+        minHeight: onceConstantZeroS,
       };
     });
   };
@@ -1693,8 +1715,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
           //         }, 0)) ||
           //         300;
           var mw = config.minWidth ||
-                  (config.measureWidth && measureWidth($el)) ||
-                  300;
+                (config.measureWidth && measureWidth($el)) ||
+                300;
           var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
             // TODO: loop over spans
             var fontSize = config.size || parseInt($el.css('font-size'));
@@ -1706,13 +1728,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
             stream.defer(function () {
               var mh = (config.minHeight && constant(config.minHeight)) ||
                     measureHeight($el);
-                    // measureTextHeight(strs.map(function (c) {
-                    //   return {
-                    //     words: c.words.slice(0),
-                    //     font: c.font,
-                    //     size: c.size || config.size,
-                    //   };
-                    // }), config.lineHeight);
+              // measureTextHeight(strs.map(function (c) {
+              //   return {
+              //     words: c.words.slice(0),
+              //     font: c.font,
+              //     size: c.size || config.size,
+              //   };
+              // }), config.lineHeight);
               stream.push(mhS, mh);
             });
           }
@@ -2219,8 +2241,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       $el.addClass('sideBySide');
       if (cs.length === 0) {
         return {
-          minWidth: stream.once(0),
-          minHeight: stream.once(constant(0)),
+          minWidth: onceZeroS,
+          minHeight: onceConstantZeroS,
         };
       }
       var contexts = [];
@@ -2414,7 +2436,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
       var ctxs = cs.map(function (_, index) {
         return {
-          top: stream.once(0),
+          top: onceZeroS,
           left: stream.map(leftsS, function (lefts) {
             return lefts[index];
           }),
@@ -2545,14 +2567,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
       $el.addClass('stack');
       if (cs.length === 0) {
         return {
-          minWidth: stream.once(0),
-          minHeight: stream.once(constant(0)),
+          minWidth: onceZeroS,
+          minHeight: onceConstantZeroS,
         };
       }
       var contexts = [];
       var is = cs.map(function (c) {
         var context = {
-          widthCss: stream.once('100%'),
+          widthCalc: stream.once('100%'),
           top: stream.create(),
           height: stream.create(),
         };
@@ -2668,6 +2690,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
             stream.push(context.top, position.top);
             stream.push(context.height, position.height);
           });
+          return true;
         };
         stream.onValue(ctx.width, tryPushContexts);
         stream.onValue(ctx.height, tryPushContexts);
@@ -2689,8 +2712,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var i = append(c, context);
 
           cs[index] = c;
-          mwDeleteListeners[index] = stream.onValue(i.minWidth, tryPushContexts);
-          mhDeleteListeners[index] = stream.onValue(i.minHeight, tryPushContexts);
+          mwDeleteListeners[index] = stream.map(i.minWidth, tryPushContexts);
+          mhDeleteListeners[index] = stream.map(i.minHeight, tryPushContexts);
           contexts[index] = context;
           is[index] = i;
 
@@ -2795,8 +2818,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         height: stream.map(ctx.height, function (h) {
           return h - top - bottom;
         }),
-        widthCss: stream.once('calc(100% - ' + px(left + right) + ')'),
-        heightCss: stream.once('calc(100% - ' + px(top + bottom) + ')'),
+        widthCalc: stream.once('100% - ' + px(left + right)),
+        heightCalc: stream.once('100% - ' + px(top + bottom)),
       });
       return {
         minWidth: stream.map(i.minWidth, function (mw) {
@@ -3130,8 +3153,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         height: stream.map(ctx.height, function (h) {
           return h - top - bottom;
         }),
-        widthCss: stream.once('calc(100% - ' + px(left + right) + ')'),
-        heightCss: stream.once('calc(100% - ' + px(top + bottom) + ')'),
+        widthCalc: stream.once('100% - ' + px(left + right)),
+        heightCalc: stream.once('100% - ' + px(top + bottom)),
       });
       i.$el.css('overflow', 'hidden');
       i.$el.css('border-radius', px(radius));
@@ -3174,8 +3197,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
           unpushMH();
         }
         i = append(c, {
-          widthCss: stream.once('100%'),
-          heightCss: stream.once('100%'),
+          widthCalc: stream.once('100%'),
+          heightCalc: stream.once('100%'),
         });
         unpushMW = stream.pushAll(i.minWidth, minWidth);
         unpushMH = stream.pushAll(i.minHeight, minHeight);
@@ -3225,8 +3248,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
           })(i);
         }
         ctx = {
-          widthCss: stream.once('100%'),
-          heightCss: stream.once('100%'),
+          widthCalc: stream.once('100%'),
+          heightCalc: stream.once('100%'),
         };
         i = append(c, ctx);
         i.$el.css('transition', 'inherit');
@@ -3290,8 +3313,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         $el.addClass('modalDialog');
 
         var i = c({
-          top: stream.once(0),
-          left: stream.once(0),
+          top: onceZeroS,
+          left: onceZeroS,
           width: stream.map(windowWidth, function (ww) {
             return document.body.clientWidth;
           }),
@@ -3304,7 +3327,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         $el.css('position', 'fixed');
         $el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
         $el.css('display', 'none');
-        $el.css('pointer-events', 'initial');
+        $el.css('pointer-events', 'initial'); // TODO: is this necessary?
 
         stream.onValue(open, function (on) {
           if (on) {
@@ -3323,7 +3346,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
         return {
           minWidth: onceZeroS,
-          minHeight: stream.once(constant(0)),
+          minHeight: onceConstantZeroS,
         };
       })(c);
     };
@@ -3504,8 +3527,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       $el.addClass('makeSticky');
 
       var ctx = {
-        widthCss: stream.once('100%'),
-        heightCss: stream.once('100%'),
+        widthCalc: stream.once('100%'),
+        heightCalc: stream.once('100%'),
       };
       var i = c(ctx);
       stream.combine([
@@ -3752,13 +3775,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var top = 0;
           rows.map(function (row) {
             row.height = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
-            row.top = top;
             index += row.cells.length;
-            top += row.height + config.padding;
           });
           if (config.bottomToTop) {
             rows = rows.slice(0).reverse();
           }
+          rows.map(function (row) {
+            row.top = top;
+            top += row.height + config.padding;
+          });
           rows = config.surplusHeightFunc(gridHeight, rows, config);
           rows.map(function (row, i) {
             var positions = row.cells.map(function (cell) {
@@ -4165,12 +4190,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     };
   };
 
-  var formType = {
+  var fieldType = {
     button: function (name, onClick) {
       return {
         type: 'button',
         enabledS: stream.once(true),
-        name: name,
+        name: name || '',
         onClick: onClick,
       };
     },
@@ -4180,12 +4205,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
     date: {
       type: 'date',
     },
-    // options is array of strings
+    // options is array of strings, or objects with name and value
+    // properties
     dropdown: function (options) {
       return {
         type: 'dropdown',
         options: options,
       };
+    },
+    hidden: {
+      type: 'hidden',
     },
     image: {
       type: 'image',
@@ -4240,129 +4269,76 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return year + '-' + month + '-' + day;
   };
   var getFormElementBorderWidthH = function ($el) {
-    return ($el.outerWidth() - parseFloat($el.css('width'))) / 2;
-    var width = 0;
-    width += parseFloat($el.css('padding-left'));
-    width += parseFloat($el.css('border-left-width'));
-    return width;
+    return (
+      $el.outerWidth(true)
+        - parseFloat($el.css('width')))
+      / 2;
   };
   var getFormElementBorderWidthV = function ($el) {
-    return ($el.outerHeight() - parseFloat($el.css('height'))) / 2;
-    var width = 0;
-    width += parseFloat($el.css('padding-top'));
-    width += parseFloat($el.css('border-top-width'));
-    return width;
+    return (
+      $el.outerHeight(true)
+        - parseFloat($el.css('height')))
+      / 2;
   };
-  var formElementBorderWidth = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var width = getFormElementBorderWidthH($input);
-    $input.remove();
-    return width;
-  })();
-  var formElementBorderHeight = (function () {
-    var $input = $(document.createElement('input'))
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var height = getFormElementBorderWidthV($input);
-    $input.remove();
-    return height;
-  })();
-  var formTextareaBorderWidth = (function () {
-    var $input = $(document.createElement('textarea'))
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var width = getFormElementBorderWidthH($input);
-    $input.remove();
-    return width;
-  })();
-  var formTextareaBorderHeight = (function () {
-    var $input = $(document.createElement('textarea'))
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var height = getFormElementBorderWidthV($input);
-    $input.remove();
-    return height;
-  })();
-  var formCheckboxMarginH = (function () {
-    var $input = $(document.createElement('input'))
-          .prop('type', 'checkbox')
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-left'));
-    width += parseFloat($input.css('margin-right'));
-    $input.remove();
-    return width;
-  })();
-  var formCheckboxMarginV = (function () {
-    var $input = $(document.createElement('input'))
-          .prop('type', 'checkbox')
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-top'));
-    width += parseFloat($input.css('margin-bottom'));
-    $input.remove();
-    return width;
-  })();
-  var formRadioMarginH = (function () {
-    var $input = $(document.createElement('input'))
-          .prop('type', 'radio')
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-left'));
-    width += parseFloat($input.css('margin-right'));
-    $input.remove();
-    return width;
-  })();
-  var formRadioMarginV = (function () {
-    var $input = $(document.createElement('input'))
-          .prop('type', 'radio')
-          .appendTo($('body'))
-          .css('position', 'absolute');
-    var width = 0;
-    width += parseFloat($input.css('margin-top'));
-    width += parseFloat($input.css('margin-bottom'));
-    $input.remove();
-    return width;
-  })();
   var applyFormBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - 2 * formElementBorderWidth;
+    width: function (w, $el) {
+      return w - 2 * getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - 2 * formElementBorderHeight;
+    height: function (h, $el) {
+      return h - 2 * getFormElementBorderWidthV($el);
+    },
+    widthCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthH($el);
+    },
+    heightCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthV($el);
     },
   });
   var applyTextareaBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - 2 * formTextareaBorderWidth;
+    width: function (w, $el) {
+      return w - 2 * getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - 2 * formTextareaBorderHeight;
+    height: function (h, $el) {
+      console.log('adjust position' + getFormElementBorderWidthV($el));
+      return h - 2 * getFormElementBorderWidthV($el);
+    },
+    widthCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthH($el);
+    },
+    heightCalc: function (calc, $el) {
+      return calc + " - " + 2 * getFormElementBorderWidthV($el);
     },
   });
   var applyCheckboxBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - formCheckboxMarginH;
+    width: function (w, $el) {
+      return w - getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - formCheckboxMarginV;
+    height: function (h, $el) {
+      return h - getFormElementBorderWidthV($el);
+    },
+    widthCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthH($el);
+    },
+    heightCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthV($el);
     },
   });
   var applyRadioBorder = adjustPosition({}, {
-    width: function (w) {
-      return w - formRadioMarginH;
+    width: function (w, $el) {
+      return w - getFormElementBorderWidthH($el);
     },
-    height: function (h) {
-      return h - formRadioMarginV;
+    height: function (h, $el) {
+      return h - getFormElementBorderWidthV($el);
+    },
+    widthCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthH($el);
+    },
+    heightCalc: function (calc, $el) {
+      return calc + " - " + getFormElementBorderWidthV($el);
     },
   });
   var formComponent = {
-    button: function (k, s, t) {
+    button: function (_, s, t) {
       s = s || stream.create();
       return all([
         and(function (i) {
@@ -4465,6 +4441,19 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
         mw();
         mh();
+      });
+    },
+    hidden: function (k, s) {
+      return input(function ($el) {
+        $el.prop('name', k);
+        $el.prop('type', 'hidden');
+        stream.onValue(s, function (v) {
+          $el.val(v);
+        });
+        return {
+          minWidth: onceZeroS,
+          minHeight: onceConstantZeroS,
+        };
       });
     },
     image: function (k, s) {
@@ -4599,24 +4588,20 @@ function waitForWebfonts(fonts, callback, maxTime) {
         $el.on('keyup', function () {
           stream.push(s, $el.val());
         });
-        var borderWidthH = getFormElementBorderWidthH($el);
-        var borderWidthV = getFormElementBorderWidthV($el);
-        var lastOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-        var lastOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
-        var mw = stream.once(lastOuterWidth + 2 * borderWidthH);
-        var mh = stream.once(constant(lastOuterHeight + 2 * borderWidthV));
+        var lastOuterWidth = $el.outerWidth(true);
+        var lastOuterHeight = $el.outerHeight(true);
+        var mw = stream.once(lastOuterWidth);
+        var mh = stream.once(constant(lastOuterHeight));
         $('body').on('mousemove', function () {
           // this handler is a memory leak, should unbind it on remove
-          var borderWidthH = getFormElementBorderWidthH($el);
-          var borderWidthV = getFormElementBorderWidthV($el);
-          var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-          var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+          var currentOuterWidth = $el.outerWidth(true);
+          var currentOuterHeight = $el.outerHeight(true);
           if (lastOuterWidth !== currentOuterWidth) {
-            stream.push(mw, currentOuterWidth + 2 * borderWidthH);
+            stream.push(mw, currentOuterWidth);
             lastOuterWidth = currentOuterWidth;
           }
           if (lastOuterHeight !== currentOuterHeight) {
-            stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
+            stream.push(mh, constant(currentOuterHeight));
             lastOuterHeight = currentOuterHeight;
           }
         });
@@ -4702,58 +4687,91 @@ function waitForWebfonts(fonts, callback, maxTime) {
     textarea: textInput,
     time: textInput,
   };
-  // types - object where keys are field names, values are formType
-  // properties
-  var formFor = function (formType, formComponent) {
-    return function (types, names) {
-      names = names || {};
-      // defaults - optional object where keys are field names,
-      // values are undefined OR a default value
+
+  // submitButtonFieldTypeF - function returning the field type to use
+  // for the submit button.  Can just be hcj.forms.fieldType.button.
+
+  // formComponent - object with one key for each kind of field type.
+  // Values are functions that take the field's name, value stream
+  // initialized with its default value if there is one, and field
+  // type, and return (most often) a Component or an array of
+  // Components.
+
+  // TODO: Try to combine formComponent and style into one object.
+  var formFor = function (submitButtonFieldTypeF, formComponent) {
+    // fields - Object.  Keys become "name" attributes of the form
+    // fields, and values are their field types.
+
+    // labels (optional) - Object with same keys as "fields".  Values
+    // are give the label for each form element.
+    return function (fields, labels) {
+      labels = labels || {};
+
+      // defaults (optional) - Same keys as "field".  Gives default
+      // values for each field.
       return function (defaults) {
         defaults = defaults || {};
         return function (mkOnSubmit) {
-          // style - function taking a formType and a component,
-          // returns a styled component
+
+          // style - Object with one key for each kind of field type.
+          // Values are functions that take take a field's name, value
+          // stream initialized with its default value if provided,
+          // field type, and label if present, and return a "form
+          // style", which is a function which takes the value
+          // returned by formComponent above and returns a Component.
           return function (style) {
-            style = style || function (_, c) {
-              return c;
-            };
-            var keys = Object.keys(types);
+            style = style || {};
+            var names = Object.keys(fields);
             return function (f) {
-              var streamsObj = keys.reduce(function (obj, k) {
-                var d = defaults[k];
-                obj[k] = d ? stream.once(d) : stream.create();
-                return obj;
-              }, {});
-              var inputsObj = keys.reduce(function (obj, k) {
-                var type = types[k];
-                obj[k] = type && style(k, streamsObj[k], type, names[k])(formComponent[type.type](k, streamsObj[k], type, names[k]));
-                return obj;
-              }, {});
+              var fieldStreams = {};
+              var fieldInputs = {};
+              names.map(function (name) {
+                var defaultValue = defaults[name];
+                var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
+                var label = labels[name];
+                var type = fields[name];
+                var fieldStyle = (type && style[type.type]) || constant(id);
+                fieldStreams[name] = fieldStream;
+                fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.type](name, fieldStream, type));
+              });
               var disabledS = stream.once(false);
               var submit = function (name) {
-                return style('', stream.create(), formType.button(), name)(text({
+                var fieldType = submitButtonFieldTypeF();
+                var fieldStyle = style[fieldType.type] || constant(id);
+                // TODO: use formComponent[fieldType.type] instead of text
+                return fieldStyle('', stream.create(), fieldType, name)(text({
                   str: name,
                   el: button,
                   measureWidth: true,
                 }), name);
               };
-              var onSubmit = mkOnSubmit(streamsObj, function () {
-                stream.push(disabledS, true);
-                return function () {
-                  stream.push(disabledS, false);
-                };
-              });
-              return layout('form', function ($el, ctx, c) {
-                $el.on('submit', function (ev) {
-                  if (disabledS.lastValue) {
-                    ev.preventDefault();
-                    return;
-                  }
-                  onSubmit.onSubmit(ev);
+              if (typeof mkOnSubmit === 'function') {
+                var onSubmit = mkOnSubmit(fieldStreams, function () {
+                  stream.push(disabledS, true);
+                  return function () {
+                    stream.push(disabledS, false);
+                  };
                 });
+                var setupFormSubmit = function ($el) {
+                  $el.on('submit', function (ev) {
+                    if (disabledS.lastValue) {
+                      ev.preventDefault();
+                      return;
+                    }
+                    onSubmit.onSubmit(ev);
+                  });
+                };
+              }
+              else {
+                var setupFormSubmit = function ($el) {
+                  $el.prop('method', mkOnSubmit.method)
+                    .prop('action', mkOnSubmit.action);
+                };
+              }
+              return layout('form', function ($el, ctx, c) {
+                setupFormSubmit($el);
                 return c();
-              })(f(streamsObj, inputsObj, submit, onSubmit.resultS));
+              })(f(fieldInputs, submit, fieldStreams, onSubmit && onSubmit.resultS));
             };
           };
         };
@@ -5268,6 +5286,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
       button: button,
       div: div,
       form: form,
+      h1: h1,
+      h2: h2,
+      h3: h3,
+      h4: h4,
+      h5: h5,
+      h6: h6,
       iframe: iframe,
       img: img,
       input: input,
@@ -5282,10 +5306,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     forms: {
       formComponent: formComponent,
-      formElementBorderWidth: formElementBorderWidth,
       formFor: formFor,
       formStyle: formStyle,
-      formType: formType,
+      fieldType: fieldType,
     },
     funcs: {
       constant: constant,
