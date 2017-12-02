@@ -1457,6 +1457,7 @@
   };
   var nothing = empty("div");
 
+  var once300S = stream.once(300);
   var text = function (strs, config) {
     strs = strs || '';
     if (!$.isArray(strs)) {
@@ -1471,7 +1472,10 @@
 
     return (config.el || div)(function ($el, ctx) {
       var didMH = false;
-      var mwS = stream.create();
+      var mwS = (config.minWidth ||
+                 (config.measureWidth))
+            ? stream.create()
+            : once300S;
       var mhS = stream.create();
       var spanStreams = [];
       $el.addClass('text');
@@ -1609,7 +1613,7 @@
           //         300;
           var mw = config.minWidth ||
                 (config.measureWidth && measureWidth($el)) ||
-                300;
+                null;
           var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
             // TODO: loop over spans
             var fontSize = config.size || parseInt($el.css('font-size'));
@@ -1631,7 +1635,9 @@
               stream.push(mhS, mh);
             });
           }
-          stream.push(mwS, mw);
+          if (mw !== null) {
+            stream.push(mwS, mw);
+          }
           if (config.oneLine || config.approximateHeight) {
             stream.push(mhS, mh);
           }
