@@ -59,9 +59,6 @@
       return b;
     };
   };
-  var curry = function (arr) {
-    throw('the venerable curry, we shall define at a later date');
-  };
   var uncurry = function (f, n) {
     n = n || 1;
     return function () {
@@ -87,31 +84,6 @@
   };
   var mathMin = function (a, b) {
     return Math.min(a, b);
-  };
-
-  var pushStreams = [];
-  var pushValues = [];
-  var pushing = false;
-  var pushFlush = function () {
-    var ps = pushStreams;
-    var pv = pushValues;
-    pushStreams = [];
-    pushValues = [];
-    pushing = false;
-    for (var j = 0; j < ps.length; j++) {
-      var s = ps[j];
-      var v = pv[j];
-    }
-  };
-  var pushNow = function (s, v) {
-    pushStreams.push(s);
-    pushValues.push(v);
-    if (pushing === false) {
-      pushing = true;
-      setTimeout(function () {
-        setTimeout(pushFlush);
-      });
-    }
   };
 
   var createDeferFuncContext = function (runASAP) {
