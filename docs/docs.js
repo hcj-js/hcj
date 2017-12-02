@@ -1670,8 +1670,8 @@ $(function () {
       }),
     ])(docStack([
       h1('hcj.js'),
-      p('v0.2'),
-      p('Do not use.'),
+      p('v0.2.1 alpha'),
+      p('It could be worse.'),
       c.componentStream(stream.map(currentPageS, function (index) {
         var p = pages[index];
         return c.all([
