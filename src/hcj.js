@@ -88,7 +88,6 @@
 
   var createDeferFuncContext = function (runASAP) {
     /*
-     WARNING:
 
      This is a hacky implementation of something that already exists.
      Do not use this little function.  When I find out what it is that
