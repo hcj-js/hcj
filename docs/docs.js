@@ -115,13 +115,8 @@ $(function () {
   ]);
 
   var introduction = docStack([
-    stack([
-      p("1. Define Components"),
-      p("2. Define More Components"),
-      p("3. Profit"),
-    ]),
-    p("HCJ.JS's main purpose is element positioning.  Many website frameworks allow you to elegantly control <i>what</i> is displayed, but they do not let you specify <i>how</i> it is displayed."),
-    p("A pure Javascript framework, HCJ does not require you to write any CSS or more than 15 lines of HTML.  HCJ websites are fast, easy to compose, mobile-responsive, and do the \"right thing\" for absolutely free."),
+    p("HCJ.JS's purpose is element positioning.  Many website frameworks control <i>what</i> is displayed, but they do not let you specify <i>how</i> it is displayed."),
+    p("A pure Javascript framework, HCJ does not require you to write any CSS or more than 15 lines of HTML.  HCJ websites are fast, easy to compose, mobile-responsive, and do the 'right thing' for absolutely free."),
     p("Components, HCJ's building block, are extraordinarily composable.  Any component at any level can be rendered as a web page, making debugging very simple.  They respond to the size and shape of the page region they are rendered into, so rearranging your page is as easy as copy and paste."),
   ]);
 
