@@ -1624,7 +1624,7 @@ $(function () {
     c.backgroundColor({
       background: color.lightGray,
     }),
-  ])(stack([
+  ])(docStack([
     c.image({
       src: './demo.png',
       minWidth: 0,
