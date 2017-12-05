@@ -1482,6 +1482,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       if (srcStream.lastValue) {
         $el.prop('src', srcStream.lastValue);
       }
+      $el.prop('alt', config.alt);
       stream.map(srcStream, function (src) {
         updateDomFunc($el, 'prop', 'src', src);
       });

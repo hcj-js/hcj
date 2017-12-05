@@ -148,6 +148,7 @@ $(function () {
       c.alignHLeft,
     ])(c.image({
       src: './context.png',
+      alt: 'Graphic depicting HCJ context attributes',
     })),
   ]);
 
@@ -411,6 +412,7 @@ $(function () {
     p("An `ImageConfig` may have the following properties, all optional except `src` which is required.  By default, an image's min width is set to its natural width, and its min height is set to maintain aspect ratio."),
     stack([
       p("&#8226; `src`: image source"),
+      p("&#8226; `alt`: alt text"),
       p("&#8226; `minWidth`: if present, min width is set to this number instead of the image's natural width"),
       p("&#8226; `minHeight`: if present, min width of image is set to the quotient of this number and the image's aspect ratio"),
     ]),
@@ -1611,6 +1613,7 @@ $(function () {
     c.image({
       src: './demo.png',
       minWidth: 0,
+      alt: 'HCJ Logo',
     }),
     c.bar.h(20),
     stack(pages.map(function (p, i) {
