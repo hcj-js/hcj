@@ -1578,18 +1578,6 @@ $(function () {
     title: 'Introduction',
     component: aLittleVocab,
   }, {
-    title: 'Examples',
-    component: testPage,
-  }, {
-    title: 'Streams',
-    component: standardLibraryStreams,
-  }, {
-    title: 'Defining Components',
-    component: definingComponents,
-  }, {
-    title: 'Defining Layouts',
-    component: definingLayouts,
-  }, {
     title: 'API - Components',
     component: standardLibraryComponents,
   }, {
@@ -1604,6 +1592,18 @@ $(function () {
   }, {
     title: 'API - Colors',
     component: standardLibraryColors,
+  }, {
+    title: 'Examples',
+    component: testPage,
+  }, {
+    title: 'Streams',
+    component: standardLibraryStreams,
+  }, {
+    title: 'Defining Components',
+    component: definingComponents,
+  }, {
+    title: 'Defining Layouts',
+    component: definingLayouts,
   }, {
     title: 'Possible Future Development',
     component: version2,
