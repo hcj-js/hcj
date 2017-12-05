@@ -656,7 +656,7 @@ $(function () {
       p("&#8226; target: link target"),
     ]),
 
-    h2('margin'),
+    h2('margin, padding'),
     p('`margin :: MarginConfig -> Component -> Component`'),
     p('Adds some space around a component.'),
     stack([
