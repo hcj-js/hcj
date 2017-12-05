@@ -5153,6 +5153,7 @@
       nothing: nothing,
       onThis: onThis,
       overlays: overlays,
+      padding: margin,
       passthrough: passthrough,
       promiseComponent: promiseComponent,
       scope: scope,

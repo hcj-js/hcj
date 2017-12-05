@@ -137,9 +137,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return b;
     };
   };
-  var curry = function (arr) {
-    throw('the venerable curry, we shall define at a later date');
-  };
   var uncurry = function (f, n) {
     n = n || 1;
     return function () {
@@ -167,34 +164,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return Math.min(a, b);
   };
 
-  var pushStreams = [];
-  var pushValues = [];
-  var pushing = false;
-  var pushFlush = function () {
-    var ps = pushStreams;
-    var pv = pushValues;
-    pushStreams = [];
-    pushValues = [];
-    pushing = false;
-    for (var j = 0; j < ps.length; j++) {
-      var s = ps[j];
-      var v = pv[j];
-    }
-  };
-  var pushNow = function (s, v) {
-    pushStreams.push(s);
-    pushValues.push(v);
-    if (pushing === false) {
-      pushing = true;
-      setTimeout(function () {
-        setTimeout(pushFlush);
-      });
-    }
-  };
-
   var createDeferFuncContext = function (runASAP) {
     /*
-     WARNING:
 
      This is a hacky implementation of something that already exists.
      Do not use this little function.  When I find out what it is that
@@ -1564,6 +1535,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
   var nothing = empty("div");
 
+  var once300S = stream.once(300);
   var text = function (strs, config) {
     strs = strs || '';
     if (!$.isArray(strs)) {
@@ -1578,7 +1550,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
     return (config.el || div)(function ($el, ctx) {
       var didMH = false;
-      var mwS = stream.create();
+      var mwS = (config.minWidth ||
+                 (config.measureWidth))
+            ? stream.create()
+            : once300S;
       var mhS = stream.create();
       var spanStreams = [];
       $el.addClass('text');
@@ -1716,7 +1691,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           //         300;
           var mw = config.minWidth ||
                 (config.measureWidth && measureWidth($el)) ||
-                300;
+                null;
           var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
             // TODO: loop over spans
             var fontSize = config.size || parseInt($el.css('font-size'));
@@ -1738,7 +1713,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
               stream.push(mhS, mh);
             });
           }
-          stream.push(mwS, mw);
+          if (mw !== null) {
+            stream.push(mwS, mw);
+          }
           if (config.oneLine || config.approximateHeight) {
             stream.push(mhS, mh);
           }
@@ -2916,65 +2893,62 @@ function waitForWebfonts(fonts, callback, maxTime) {
     });
   };
 
-  var alignLRM = uncurryConfig(function (config) {
-    config = config || {};
-    config.transition = (config.transition || 0) + 's';
-    return function (lrm) {
-      return layout(function ($el, ctx, l, r, m) {
-        $el.addClass('alignLRM');
-        var lCtx = {
-          width: stream.create(),
-        };
-        var rCtx = {
-          width: stream.create(),
-          left: stream.create(),
-        };
-        var mCtx = {
-          width: stream.create(),
-          left: stream.create(),
-        };
-        var lI = l(lCtx);
-        var rI = r(rCtx);
-        var mI = m(mCtx);
-        stream.combine([
+  var alignLRM = function (lrm) {
+    lrm = lrm || {};
+    return layout(function ($el, ctx, l, r, m) {
+      $el.addClass('alignLRM');
+      var lCtx = {
+        width: stream.create(),
+      };
+      var rCtx = {
+        width: stream.create(),
+        left: stream.create(),
+      };
+      var mCtx = {
+        width: stream.create(),
+        left: stream.create(),
+      };
+      var lI = l(lCtx);
+      var rI = r(rCtx);
+      var mI = m(mCtx);
+      stream.combine([
+        lI.minWidth,
+        rI.minWidth,
+        mI.minWidth,
+        ctx.width,
+      ], function (lmw, rmw, mmw, w) {
+        stream.push(lCtx.width, Math.min(w, lmw));
+        stream.push(rCtx.width, Math.min(w, rmw));
+        stream.push(mCtx.width, Math.min(w, mmw));
+        stream.push(lCtx.left, 0);
+        stream.push(rCtx.left, w - Math.min(w, rmw));
+        stream.push(mCtx.left, (w - Math.min(w, mmw)) / 2);
+      });
+      return {
+        minWidth: stream.combine([
           lI.minWidth,
           rI.minWidth,
           mI.minWidth,
-          ctx.width,
-        ], function (lmw, rmw, mmw, w) {
-          stream.push(lCtx.width, Math.min(w, lmw));
-          stream.push(rCtx.width, Math.min(w, rmw));
-          stream.push(mCtx.width, Math.min(w, mmw));
-          stream.push(lCtx.left, 0);
-          stream.push(rCtx.left, w - Math.min(w, rmw));
-          stream.push(mCtx.left, (w - Math.min(w, mmw)) / 2);
-        });
-        return {
-          minWidth: stream.combine([
-            lI.minWidth,
-            rI.minWidth,
-            mI.minWidth,
-          ], function (l, r, m) {
-            return (m > 0) ?
-              Math.max(m + 2 * l, m + 2 * r) :
-              l + r;
-          }),
-          minHeight: stream.combine([
-            lI.minWidth,
-            rI.minWidth,
-            mI.minWidth,
-            lI.minHeight,
-            rI.minHeight,
-            mI.minHeight,
-          ], function (lw, rw, mw, lh, rh, mh) {
-            return function (w) {
-              return [lh(Math.min(w, lw)), rh(Math.min(w, rw)), mh(Math.min(w, mw))].reduce(mathMax);
-            };
-          }),
-        };
-      })(lrm.l || nothing, lrm.r || nothing, lrm.m || lrm.c || nothing);
-    };
-  }, lrmIsNotConfig);
+        ], function (l, r, m) {
+          return (m > 0) ?
+            Math.max(m + 2 * l, m + 2 * r) :
+            l + r;
+        }),
+        minHeight: stream.combine([
+          lI.minWidth,
+          rI.minWidth,
+          mI.minWidth,
+          lI.minHeight,
+          rI.minHeight,
+          mI.minHeight,
+        ], function (lw, rw, mw, lh, rh, mh) {
+          return function (w) {
+            return [lh(Math.min(w, lw)), rh(Math.min(w, rw)), mh(Math.min(w, mw))].reduce(mathMax);
+          };
+        }),
+      };
+    })(lrm.l || nothing, lrm.r || nothing, lrm.m || lrm.c || nothing);
+  };
   var alignLeft = function (c) {
     return alignLRM({
       l: c,
@@ -2993,69 +2967,66 @@ function waitForWebfonts(fonts, callback, maxTime) {
     };
   });
 
-  var alignTBM = uncurryConfig(function (config) {
-    config = config || {};
-    config.transition = (config.transition || 0) + 's';
-    return function (tbm) {
-      return layout(function ($el, ctx, t, b, m) {
-        $el.addClass('alignTBM');
-        var tCtx = {
-          height: stream.create(),
-        };
-        var bCtx = {
-          height: stream.create(),
-          top: stream.create(),
-        };
-        var mCtx = {
-          height: stream.create(),
-          top: stream.create(),
-        };
-        var tI = t(tCtx);
-        var bI = b(bCtx);
-        var mI = m(mCtx);
-        stream.combine([
+  var alignTBM = function (tbm) {
+    tbm = tbm || {};
+    return layout(function ($el, ctx, t, b, m) {
+      $el.addClass('alignTBM');
+      var tCtx = {
+        height: stream.create(),
+      };
+      var bCtx = {
+        height: stream.create(),
+        top: stream.create(),
+      };
+      var mCtx = {
+        height: stream.create(),
+        top: stream.create(),
+      };
+      var tI = t(tCtx);
+      var bI = b(bCtx);
+      var mI = m(mCtx);
+      stream.combine([
+        tI.minHeight,
+        bI.minHeight,
+        mI.minHeight,
+        ctx.width,
+        ctx.height,
+      ], function (lmh, rmh, mmh, w, h) {
+        stream.push(tCtx.height, Math.min(h, lmh(w)));
+        stream.push(bCtx.height, Math.min(h, rmh(w)));
+        stream.push(mCtx.height, Math.min(h, mmh(w)));
+        stream.push(tCtx.top, 0);
+        stream.push(bCtx.top, Math.max(0, h - Math.min(h, rmh(w))));
+        stream.push(mCtx.top, Math.max(0, (h - Math.min(h, mmh(w))) / 2));
+      });
+      tI.$el.css('transition', 'top ' + config.transition);
+      bI.$el.css('transition', 'top ' + config.transition);
+      mI.$el.css('transition', 'top ' + config.transition);
+      return {
+        minWidth: stream.combine([
+          tI.minWidth,
+          bI.minWidth,
+          mI.minWidth,
+        ], function (t, b, m) {
+          return [t, b, m].reduce(mathMax);
+        }),
+        minHeight: stream.combine([
           tI.minHeight,
           bI.minHeight,
           mI.minHeight,
-          ctx.width,
-          ctx.height,
-        ], function (lmh, rmh, mmh, w, h) {
-          stream.push(tCtx.height, Math.min(h, lmh(w)));
-          stream.push(bCtx.height, Math.min(h, rmh(w)));
-          stream.push(mCtx.height, Math.min(h, mmh(w)));
-          stream.push(tCtx.top, 0);
-          stream.push(bCtx.top, Math.max(0, h - Math.min(h, rmh(w))));
-          stream.push(mCtx.top, Math.max(0, (h - Math.min(h, mmh(w))) / 2));
-        });
-        tI.$el.css('transition', 'top ' + config.transition);
-        bI.$el.css('transition', 'top ' + config.transition);
-        mI.$el.css('transition', 'top ' + config.transition);
-        return {
-          minWidth: stream.combine([
-            tI.minWidth,
-            bI.minWidth,
-            mI.minWidth,
-          ], function (t, b, m) {
-            return [t, b, m].reduce(mathMax);
-          }),
-          minHeight: stream.combine([
-            tI.minHeight,
-            bI.minHeight,
-            mI.minHeight,
-          ], function (tH, bH, mH) {
-            return function (w) {
-              var t = tH(w);
-              var b = bH(w);
-              var m = mH(w);
-              return (m > 0) ?
-                Math.max(m + 2 * t, m + 2 * b) :
-                t + b;
-            };
-          }),
-        };
-      })(tbm.t || nothing, tbm.b || nothing, tbm.m || tbm.c || nothing);
-    };
-  }, tbmIsNotConfig);
+        ], function (tH, bH, mH) {
+          return function (w) {
+            var t = tH(w);
+            var b = bH(w);
+            var m = mH(w);
+            return (m > 0) ?
+              Math.max(m + 2 * t, m + 2 * b) :
+              t + b;
+          };
+        }),
+      };
+    })(tbm.t || nothing, tbm.b || nothing, tbm.m || tbm.c || nothing);
+  };
   var alignVTop = function (c) {
     return alignTBM({
       t: c,
