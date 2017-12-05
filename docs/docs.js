@@ -245,12 +245,6 @@ $(function () {
       p("&#8226; `leftCss`: Stream of string values to use to the 'left' property.  Needed for CSS transitions to work correctly.  Defaults to mapping (+ 'px') over the viewport's `left`, or '0px'."),
     ]),
     p("If the `noPositionChildren` flag is not undefined, then the child component's `top`, `width`, `left`, and `height` properties will not be set to the CSS values described above.  Indeed, you can write an HCJ container that positions elements using flexbox, as long as it correctly indicates their contexts given its context, as well as its minimum dimensions given theirs."),
-    // p("Here is a picture roughly showing what goes on in the `container` method:"),
-    // c.all([
-    //   c.alignHLeft,
-    // ])(c.image({
-    //   src: './window.hcj.component.container.png',
-    // })),
 
     h2('Example - Top Margin'),
     p('`someLayout :: Component -> Component`'),
@@ -1665,23 +1659,6 @@ $(function () {
           h1(p.title),
           p.component,
         ]));
-      // }), function (i, ctx) {
-      //    var deferred = $.Deferred();
-      //    stream.defer(function () {
-      //      i.$el.css('left', -ctx.width.lastValue + 'px');
-      //      setTimeout(function () {
-      //        deferred.resolve();
-      //      }, 1000);
-      //    });
-      //    return deferred.promise();
-      // }, function (i, ctx) {
-      //    stream.defer(function () {
-      //      i.$el.css('left', ctx.width.lastValue / 2 + 'px');
-      //      setTimeout(function () {
-      //        i.$el.css('transition', 'left 1s');
-      //        // i.$el.css('left', '0px');
-      //      });
-      //    });
       })),
     ])),
   ]));
