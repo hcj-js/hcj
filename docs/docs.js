@@ -122,18 +122,18 @@ $(function () {
 
   var aLittleVocab = docStack([
     p("The `component` is the building block of the HCJ framework.  Components can be composed to create new components, or rendered as web pages."),
-    p("Technically, a component is a function taking a `context` and returning an `instance`.  The `context` and the `instance` indicate the page area that a component is rendered into and the minimum dimensions of the component, respectively."),
-    p("Specifically, a `context` is an object that has all of the following properties.  The $el property is a JQuery object, and the rest are HCJ streams:"),
+    p("A component technically is a function taking a `context` and returning an `instance`.  The `context` and the `instance` give the page area that a component is rendered into, and the minimum dimensions of the component, respectively."),
+    p("The `context` is an object that has all of the following properties.  $el is a JQuery object, and the rest are HCJ streams:"),
     stack([
       p("&#8226; `$el`: Parent element of the instance."),
       p('&#8226; `width`: Width available to the instance.'),
       p('&#8226; `height`: Height available to the instance.'),
       p('&#8226; `left`: Left position of the instance.'),
       p('&#8226; `top`: Top position of the instance.'),
-      p('&#8226; `leftOffset`: Gives the left position of \"$el\" relative to the page.'),
-      p('&#8226; `topOffset`: Gives the top position of \"$el\" relative to the page.'),
+      p('&#8226; `leftOffset`: Left position of \"$el\" relative to the page.'),
+      p('&#8226; `topOffset`: Top position of \"$el\" relative to the page.'),
     ]),
-    p('When a component is passed a context, it must create an element and append it to $el, but it does not need to size and position itself.  That is done by its parent layout.  The properties `width`, `height` and so on are provided so that it can size and position its children, if any.'),
+    p('When a component is passed a context, it must create an element and append it to $el, but it does not need to size and position itself.  That is done by its parent layout.  The properties `width`, `height` and so on are provided so that it can size and position its children.'),
     p('The `instance` is an object with the following properties:'),
     stack([
       p('&#8226; `$el`: Root element of the instance.'),
