@@ -2921,9 +2921,6 @@
         stream.push(bCtx.top, Math.max(0, h - Math.min(h, rmh(w))));
         stream.push(mCtx.top, Math.max(0, (h - Math.min(h, mmh(w))) / 2));
       });
-      tI.$el.css('transition', 'top ' + config.transition);
-      bI.$el.css('transition', 'top ' + config.transition);
-      mI.$el.css('transition', 'top ' + config.transition);
       return {
         minWidth: stream.combine([
           tI.minWidth,
