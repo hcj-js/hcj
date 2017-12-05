@@ -120,41 +120,35 @@ $(function () {
       p("2. Define More Components"),
       p("3. Profit"),
     ]),
-    p("The browser is a common cross-platform code target.  It can make web requests, receive input through form elements, play sounds, render content with opengl, and much more.  These features are all available through DOM apis.  DOM code is written in HTML, CSS, and/or Javascript, and can run on any platform that implements the browser."),
-    p("Conveniently, the DOM's apis for element positioning are total.  This means it is impossible to write a page that sends your browser's renderer into an infinite loop; furthermore it's easy to live-edit pages in your browser's element inspector.  However, as total languages are not turing complete, and as any web developer will tell you, it gets tedious to write HTML and CSS by hand."),
-    p("Therefore, many applications use Javascript frameworks like Ember, Backbone, Knockout, and others to display views based on application state and handle user input.  HCJ is such a javascript framework.  The reason it's called hcj.js is that it is intend as a pure javascript framework, calling DOM apis to automate the creation of HTML nodes and application of CSS styles.  The HCJ framework enables easy assembly of complex websites using pure Javascript, or alternately even pure JSON."),
-    p("HCJ's main purpose is element positioning.  Using a small subset of CSS styles, it enables you to build websites composably, arranging elements however you want within the space available.  The core algorithm is simple: first minimum dimensions are sent from child to parent, second actual dimensions are sent from parent to child.  There is an assortment of components that enable simple reactive programming and responsive design, and you can easily write your own components and layouts."),
-    p("Not all of the display methods available in CSS are implemented by hcj.js.  Layouts that would correspond to float left and float right are not currently written.  Because HCJ is a javascript framework, page load times become noticable.  For SEO, we support rendering using PhantomJS; this can be done either server-side or as part of your build process."),
-    p("These docs themselves are written using hcj.js, of course.  The source is located at https://hcj-js.github.io/hcj/docs.js"),
-    p("The main reason you should not use HCJ is that it might not work.  Working is relative to your abilitity to get things done.  If you do not know the internal codebase, then you cannot fix bugs and add features.  HCJ was pretty easy to write, you should just go write your own."),
-  ]);
-
-  var whyNotHCJ = docStack([
+    p("HCJ.JS's main purpose is element positioning.  Many website frameworks allow you to elegantly control <i>what</i> is displayed, but they do not let you specify <i>how</i> it is displayed."),
+    p("A pure Javascript framework, HCJ does not require you to write any CSS or more than 15 lines of HTML.  HCJ websites are fast, easy to compose, mobile-responsive, and do the \"right thing\" for absolutely free."),
+    p("Components, HCJ's building block, are extraordinarily composable.  Any component at any level can be rendered as a web page, making debugging very simple.  They respond to the size and shape of the page region they are rendered into, so rearranging your page is as easy as copy and paste."),
   ]);
 
   var aLittleVocab = docStack([
-    p("A `component` is a rectangular reusable item that can be rendered into a web page.  Components are building blocks of this framework.  Technically a component is any function that takes a `context` and returns an `instance`."),
-    p("Furthermore, a `container` is any component that happens to contain other components.  A `layout` is any function that takes one or more components and returns a component.  A `style` is any function that takes exactly one component and returns a component."),
-    p("When rendering a component, the `context` and the `instance` indicate constraints and dimensions.  A container must use DOM styles to position its child components respecting their minimum dimensions, pass them contexts that correctly indicate their actual dimensions, and give them DOM styles to prevent overflow if that is desired."),
+    p("The `component` is the building block of the HCJ framework.  Components can be composed to create new components, or rendered as web pages."),
+    p("Technically, a component is a function taking a `context` and returning an `instance`.  The `context` and the `instance` indicate the page area that a component is rendered into and the minimum dimensions of the component, respectively."),
+    p("Specifically, a `context` is an object that has all of the following properties.  The $el property is a JQuery object, and the rest are HCJ streams:"),
     stack([
-      p("The `context` indicates the screen area that an instance has available to it, and also provides the DOM node to render it into.  It has the following properties:"),
-      p("&#8226; `$el`: Element to append instance to (as a jquery object)."),
-      p('&#8226; `width`: Stream giving the available width.'),
-      p('&#8226; `height`: Stream giving the available height.'),
-      p('&#8226; `left`: Stream giving the left position relative to $el.'),
-      p('&#8226; `top`: Stream giving the top position relative to $el.'),
-      p('&#8226; `leftOffset`: Stream giving the left position of $el relative to the page.'),
-      p('&#8226; `topOffset`: Stream giving the top position of $el relative to the page.'),
+      p("&#8226; `$el`: Parent element of the instance."),
+      p('&#8226; `width`: Width available to the instance.'),
+      p('&#8226; `height`: Height available to the instance.'),
+      p('&#8226; `left`: Left position of the instance.'),
+      p('&#8226; `top`: Top position of the instance.'),
+      p('&#8226; `leftOffset`: Gives the left position of \"$el\" relative to the page.'),
+      p('&#8226; `topOffset`: Gives the top position of \"$el\" relative to the page.'),
     ]),
+    p('When a component is passed a context, it must create an element and append it to $el, but it does not need to size and position itself.  That is done by its parent layout.  The properties `width`, `height` and so on are provided so that it can size and position its children, if any.'),
+    p('The `instance` is an object with the following properties:'),
     stack([
-      p('The `instance` is returned by a component when it is passed a context.  It indicates the minimum dimensions of the content, provides access to its root element for positioning, and also provides a function to fully remove the instance from the DOM.  It has the following properties:'),
-      p('&#8226; `$el`: The root element of the instance (as a jquery object).'),
-      p('&#8226; `minWidth`: Stream giving the instance\'s minimum width.'),
-      p('&#8226; `minHeight`: Stream of functions that, given a width, return the instance\'s minimum height at that width.'),
-      p("&#8226; `remove()`: Removes the instance from the DOM."),
+      p('&#8226; `$el`: Root element of the instance.'),
+      p('&#8226; `minWidth`: Gives the instance\'s minimum width.'),
+      p('&#8226; `minHeight`: Gives the instance\'s minimum height.'),
+      p("&#8226; `remove()`: Removes the instance."),
     ]),
-    p("Streams here are defined as HCJ streams, which are described in the \"Streams\" section."),
-    p("Here is a diagram showing the context that was passed into a component returning the blue instance:"),
+    p('The instances\'s `minWidth` and `minHeight` are both streams: minWidth a stream of numbers specifying the minimum width required by the instance to display in a sane way, and minHeight a stream of functions that, given a hypothetical width, specify the height required by the instance at that width.'),
+    p("In HCJ terminology, a `layout` is a function that takes one or more components and returns a component.  A `style` is a function that takes exactly one component and returns a component.  Therefore, all styles are layouts."),
+    p("Here is a drawing with a component shown in blue and its context shown in red:"),
     c.all([
       c.alignHLeft,
     ])(c.image({
@@ -1565,10 +1559,10 @@ $(function () {
   ]);
 
   var pages = [{
-    title: "Introduction",
+    title: "Home",
     component: introduction,
   }, {
-    title: 'Basic Concepts',
+    title: 'Introduction',
     component: aLittleVocab,
   }, {
     title: 'Hello World',
