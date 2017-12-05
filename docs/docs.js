@@ -195,7 +195,7 @@ $(function () {
   ]);
 
   var renderingComponents = docStack([
-    p('To use HCJ, pass a component to the `rootComponent` function.  The following renders a simple page:'),
+    p('Here is a minimal HCJ page:'),
     codeBlock([
       "&lt;!DOCTYPE HTML&gt;",
       "&lt;html&gt;",
@@ -214,9 +214,9 @@ $(function () {
       "    &lt;/body&gt;",
       "&lt;/html&gt;",
     ]),
-    p("This page includes three files: `hcj.css`, `jquery.js`, and `hcj.js`, along with your user script.  The hcj.css file contains a CSS reset, along with some other settings needed by the HCJ framework.  JQuery is a dependency of HCJ.  (See <a href=\"https://github.com/hcj-js/hcj/issues/1\">this issue</a>).  The hcj.js file, of course, contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it depends on the body element being present for some internal initialization."),
-    p("Components can only be rendered using `hcj.rootComponent`.  Rendering components inside any smaller region of the page is not currently supported.  Multiple root components may be used if you wish, to display some modal dialogs."),
-    p("Font loading is a particular issue for HCJ websites.  Because fonts can change the size requirements of blocks of text, text-based components must update their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded."),
+    p("This page includes three files: `hcj.css`, `jquery.js`, and `hcj.js`, along with your user script.  The hcj.css file contains a CSS reset, along with some other settings needed by the HCJ framework.  JQuery is a dependency of HCJ.  (See <a href=\"https://github.com/hcj-js/hcj/issues/1\">this issue</a>).  And the hcj.js file, of course, contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it needs the body element to be present for some internal initialization."),
+    p("To render a component, pass it to the `hcj.rootComponent` function.  Rendering components inside any smaller region of the page is not currently supported.  Multiple root components may be used if you wish, to display some modal dialogs."),
+    p("Font loading is a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must update their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded."),
     p("This `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
   ]);
 
@@ -1551,11 +1551,11 @@ $(function () {
     title: "Home",
     component: introduction,
   }, {
-    title: 'Introduction',
-    component: aLittleVocab,
-  }, {
     title: 'Hello World',
     component: renderingComponents,
+  }, {
+    title: 'Introduction',
+    component: aLittleVocab,
   }, {
     title: 'Examples',
     component: testPage,
