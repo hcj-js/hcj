@@ -217,27 +217,18 @@ $(function () {
       "    &lt;body&gt;",
       "        &lt;script src=\"https://code.jquery.com/jquery-3.1.0.js\"&gt;&lt;/script&gt;",
       "        &lt;script src=\"hcj.min.js\"&gt;&lt;/script&gt;",
+      "&nbsp;",
       "        &lt;script&gt;",
-      "         var c = hcj.component;",
-      "         var color = hcj.color;",
-      "&nbsp;",
-      "         var page = c.all([",
-      "             c.margin(10),",
-      "             c.backgroundColor(color.create({",
-      "                 r: 200,",
-      "                 g: 253,",
-      "                 b: 53,",
-      "             })),",
-      "         ])(c.text('Hello World'));",
-      "&nbsp;",
+      "         var page = hcj.component.text('Hello World');",
       "         var rootInstance = hcj.rootComponent(page);",
       "        &lt;/script&gt;",
       "    &lt;/body&gt;",
       "&lt;/html&gt;",
     ]),
-    p("Currently, it's only possible to render a component by making it a root component of the page.  Multiple root components may be used to display some modal dialogs."),
-    p("Fonts must be loaded before the page is rendered, or text elements will be measured with default fonts.  There is no DOM api for font loading, so the general approach is to create an element with some text, measure its width, apply the font family, wait for its width to change, and then run your code."),
-    p("HCJ includes a font loader `window.hcj.waitForWebfonts`.  The `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds.  `waitForWebfonts` is known not to work for some browser / font combinations, it's terrible."),
+    p("This page includes three files: `hcj.css`, `jquery.js`, and `hcj.js`, along with your user script.  The hcj.css file contains a CSS reset, along with some other settings needed by the HCJ framework.  JQuery is a dependency of HCJ.  (See <a href=\"https://github.com/hcj-js/hcj/issues/1\">this issue</a>).  The hcj.js file, of course, contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it depends on the body element being present for some internal initialization."),
+    p("Components can only be rendered using `hcj.rootComponent`.  Rendering components inside any smaller region of the page is not currently supported.  Multiple root components may be used if you wish, to display some modal dialogs."),
+    p("Font loading is a particular issue for HCJ websites.  Because fonts can change the size requirements of blocks of text, text-based components must update their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded."),
+    p("This `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
   ]);
 
   var definingLayouts = docStack([
@@ -1580,11 +1571,11 @@ $(function () {
     title: 'Basic Concepts',
     component: aLittleVocab,
   }, {
+    title: 'Hello World',
+    component: renderingComponents,
+  }, {
     title: 'Examples',
     component: testPage,
-  }, {
-    title: 'Using HCJ',
-    component: renderingComponents,
   }, {
     title: 'Streams',
     component: standardLibraryStreams,
