@@ -1211,11 +1211,6 @@
       });
     });
   };
-  var withFontColor = function (fc) {
-    return passthrough(function ($el) {
-      $el.css('color', colorString(fc));
-    });
-  };
   var hoverColor = uncurryConfig(function (config) {
     var backgroundColor = colorString(config.backgroundColor || transparent);
     var hoverBackgroundColor = colorString(config.hoverBackgroundColor || backgroundColor);
