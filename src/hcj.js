@@ -1448,7 +1448,7 @@
     if (!$.isArray(strs)) {
       strs = [strs];
     }
-    config = config || strs[0];
+    config = config || {};
     if ($.isArray(config)) {
       config = config.reduce($.extend, {});
     }
