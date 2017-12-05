@@ -1211,17 +1211,6 @@
       });
     });
   };
-  var hoverColor = uncurryConfig(function (config) {
-    var backgroundColor = colorString(config.backgroundColor || transparent);
-    var hoverBackgroundColor = colorString(config.hoverBackgroundColor || backgroundColor);
-    var fontColor = colorString(config.fontColor || black);
-    var hoverFontColor = colorString(config.hoverFontColor || fontColor);
-    return hoverThis(function (h, $el) {
-      $el.css('transition', 'background-color ease ' + config.transition + 's' + ', color ease ' + config.transition + 's');
-      $el.css('background-color', h ? hoverBackgroundColor : backgroundColor);
-      $el.css('color', h ? hoverFontColor : fontColor);
-    });
-  });
 
   var crop = function (amount) {
     var top = amount.all || 0,
@@ -5120,7 +5109,6 @@
       empty: empty,
       fadeIn: fadeIn,
       grid: grid,
-      hoverColor: hoverColor,
       hoverThis: hoverThis,
       keepAspectRatio: keepAspectRatio,
       keydownThis: keydownThis,
