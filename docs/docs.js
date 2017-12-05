@@ -364,8 +364,7 @@ $(function () {
 
   var standardLibraryComponents = docStack([
     p('Here are the basic components that ship with hcj.js.'),
-    p('These are all properties of the `window.hcj.component` object.'),
-    p('Below each component there is an informal, Haskell-esque "type signature" in order to depict the parameters that each function can take.'),
+    p('These are all properties of the `window.hcj.component` object.  Below each, there is an informal, Haskell-esque "type signature" showing the parameters that each function can take.'),
 
     h2('text'),
     p('`text :: (SpanConfig | [SpanConfig], Maybe TextConfig) -> Component`'),
@@ -428,6 +427,7 @@ $(function () {
 
     h2('image'),
     p('`image :: ImageConfig -> Component`'),
+    p('Creates an image component.  By default, an image\'s min width is its native width, and its min height function multiplies by its aspect ratio.'),
     p("An `ImageConfig` may have the following properties, all optional except `src` which is required.  By default, an image's min width is set to its natural width, and its min height is set to maintain aspect ratio."),
     stack([
       p("&#8226; `src`: image source"),
@@ -435,7 +435,7 @@ $(function () {
       p("&#8226; `minWidth`: if present, min width is set to this number instead of the image's natural width"),
       p("&#8226; `minHeight`: if present, min width of image is set to the quotient of this number and the image's aspect ratio"),
     ]),
-    p('Note: Images will almost always stretch.  To solve this, wrap them in the `keepAspectRatio` layout.'),
+    p('Note: When an image is placed into a context whose proportions are not the image\'s aspect ratio, it will stretch.  The most common solution is to wrap images in the `keepAspectRatio` layout.'),
 
     h2('bar.h, bar.v, and rectangle'),
     stack([
