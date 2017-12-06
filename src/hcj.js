@@ -3028,8 +3028,8 @@
         height: stream.map(ctx.height, function (h) {
           return h - top - bottom;
         }),
-        widthCalc: stream.once('100% - ' + px(left + right)),
-        heightCalc: stream.once('100% - ' + px(top + bottom)),
+        widthCalc: stream.once('100% - ' + px(2 * (left + right))),
+        heightCalc: stream.once('100% - ' + px(2 * (top + bottom))),
       });
       i.$el.css('overflow', 'hidden');
       i.$el.css('border-radius', px(radius));

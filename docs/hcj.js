@@ -619,7 +619,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       .css('display', 'inline-block')
       .appendTo($sandbox);
 
-    var width = Math.max($clone.outerWidth(true), $clone[0].scrollWidth);
+    var width = $clone.outerWidth(true);
     $clone.remove();
 
     return width;
@@ -637,7 +637,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         .css('height', '')
         .appendTo($sandbox);
 
-      var height = Math.max($clone.outerHeight(true), $clone[0].scrollHeight);
+      var height = $clone.outerHeight(true);
       ws[w] = height;
 
       $clone.remove();
@@ -1289,22 +1289,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       });
     });
   };
-  var withFontColor = function (fc) {
-    return passthrough(function ($el) {
-      $el.css('color', colorString(fc));
-    });
-  };
-  var hoverColor = uncurryConfig(function (config) {
-    var backgroundColor = colorString(config.backgroundColor || transparent);
-    var hoverBackgroundColor = colorString(config.hoverBackgroundColor || backgroundColor);
-    var fontColor = colorString(config.fontColor || black);
-    var hoverFontColor = colorString(config.hoverFontColor || fontColor);
-    return hoverThis(function (h, $el) {
-      $el.css('transition', 'background-color ease ' + config.transition + 's' + ', color ease ' + config.transition + 's');
-      $el.css('background-color', h ? hoverBackgroundColor : backgroundColor);
-      $el.css('color', h ? hoverFontColor : fontColor);
-    });
-  });
 
   var crop = function (amount) {
     var top = amount.all || 0,
@@ -1542,7 +1526,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     if (!$.isArray(strs)) {
       strs = [strs];
     }
-    config = config || strs[0];
+    config = config || {};
     if ($.isArray(config)) {
       config = config.reduce($.extend, {});
     }
@@ -3122,8 +3106,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         height: stream.map(ctx.height, function (h) {
           return h - top - bottom;
         }),
-        widthCalc: stream.once('100% - ' + px(left + right)),
-        heightCalc: stream.once('100% - ' + px(top + bottom)),
+        widthCalc: stream.once('100% - ' + px(2 * (left + right))),
+        heightCalc: stream.once('100% - ' + px(2 * (top + bottom))),
       });
       i.$el.css('overflow', 'hidden');
       i.$el.css('border-radius', px(radius));
@@ -5203,7 +5187,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       empty: empty,
       fadeIn: fadeIn,
       grid: grid,
-      hoverColor: hoverColor,
       hoverThis: hoverThis,
       keepAspectRatio: keepAspectRatio,
       keydownThis: keydownThis,
