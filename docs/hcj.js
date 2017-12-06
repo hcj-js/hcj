@@ -4230,73 +4230,80 @@ function waitForWebfonts(fonts, callback, maxTime) {
     }
     return year + '-' + month + '-' + day;
   };
-  var getFormElementBorderWidthH = function ($el) {
-    return (
-      $el.outerWidth(true)
-        - parseFloat($el.css('width')))
-      / 2;
+  var getFormElementMarginTop = function ($el) {
+    return parseFloat($el.css('margin-top')) +
+      parseFloat($el.css('padding-top')) +
+      parseFloat($el.css('border-top'));
   };
-  var getFormElementBorderWidthV = function ($el) {
-    return (
-      $el.outerHeight(true)
-        - parseFloat($el.css('height')))
-      / 2;
+  var getFormElementMarginBottom = function ($el) {
+    return parseFloat($el.css('margin-bottom')) +
+      parseFloat($el.css('padding-bottom')) +
+      parseFloat($el.css('border-bottom'));
+  };
+  var getFormElementMarginLeft = function ($el) {
+    return parseFloat($el.css('margin-left')) +
+      parseFloat($el.css('padding-left')) +
+      parseFloat($el.css('border-left'));
+  };
+  var getFormElementMarginRight = function ($el) {
+    return parseFloat($el.css('margin-right')) +
+      parseFloat($el.css('padding-right')) +
+      parseFloat($el.css('border-right'));
   };
   var applyFormBorder = adjustPosition({}, {
     width: function (w, $el) {
-      return w - 2 * getFormElementBorderWidthH($el);
+      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
     },
     height: function (h, $el) {
-      return h - 2 * getFormElementBorderWidthV($el);
+      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
     },
     widthCalc: function (calc, $el) {
-      return calc + " - " + 2 * getFormElementBorderWidthH($el);
+      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
     },
     heightCalc: function (calc, $el) {
-      return calc + " - " + 2 * getFormElementBorderWidthV($el);
+      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
     },
   });
   var applyTextareaBorder = adjustPosition({}, {
     width: function (w, $el) {
-      return w - 2 * getFormElementBorderWidthH($el);
+      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
     },
     height: function (h, $el) {
-      console.log('adjust position' + getFormElementBorderWidthV($el));
-      return h - 2 * getFormElementBorderWidthV($el);
+      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
     },
     widthCalc: function (calc, $el) {
-      return calc + " - " + 2 * getFormElementBorderWidthH($el);
+      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
     },
     heightCalc: function (calc, $el) {
-      return calc + " - " + 2 * getFormElementBorderWidthV($el);
+      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
     },
   });
   var applyCheckboxBorder = adjustPosition({}, {
     width: function (w, $el) {
-      return w - getFormElementBorderWidthH($el);
+      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
     },
     height: function (h, $el) {
-      return h - getFormElementBorderWidthV($el);
+      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
     },
     widthCalc: function (calc, $el) {
-      return calc + " - " + getFormElementBorderWidthH($el);
+      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
     },
     heightCalc: function (calc, $el) {
-      return calc + " - " + getFormElementBorderWidthV($el);
+      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
     },
   });
   var applyRadioBorder = adjustPosition({}, {
     width: function (w, $el) {
-      return w - getFormElementBorderWidthH($el);
+      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
     },
     height: function (h, $el) {
-      return h - getFormElementBorderWidthV($el);
+      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
     },
     widthCalc: function (calc, $el) {
-      return calc + " - " + getFormElementBorderWidthH($el);
+      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
     },
     heightCalc: function (calc, $el) {
-      return calc + " - " + getFormElementBorderWidthV($el);
+      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
     },
   });
   var formComponent = {
@@ -4570,14 +4577,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
         $el.on('click', function () {
           var borderWidthH = getFormElementBorderWidthH($el);
           var borderWidthV = getFormElementBorderWidthV($el);
-          var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-          var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+          var currentOuterWidth = $el.outerWidth(true);
+          var currentOuterHeight = $el.outerHeight(true);
           if (lastOuterWidth !== currentOuterWidth) {
-            stream.push(mw, currentOuterWidth + 2 * borderWidthH);
+            stream.push(mw, currentOuterWidth);
             lastOuterWidth = currentOuterWidth;
           }
           if (lastOuterHeight !== currentOuterHeight) {
-            stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
+            stream.push(mh, constant(currentOuterHeight));
             lastOuterHeight = currentOuterHeight;
           }
         });
