@@ -4491,14 +4491,14 @@
         $el.on('click', function () {
           var borderWidthH = getFormElementBorderWidthH($el);
           var borderWidthV = getFormElementBorderWidthV($el);
-          var currentOuterWidth = $el.outerWidth() - 2 * borderWidthH;
-          var currentOuterHeight = $el.outerHeight(true) - 2 * borderWidthV;
+          var currentOuterWidth = $el.outerWidth(true);
+          var currentOuterHeight = $el.outerHeight(true);
           if (lastOuterWidth !== currentOuterWidth) {
-            stream.push(mw, currentOuterWidth + 2 * borderWidthH);
+            stream.push(mw, currentOuterWidth);
             lastOuterWidth = currentOuterWidth;
           }
           if (lastOuterHeight !== currentOuterHeight) {
-            stream.push(mh, constant(currentOuterHeight + 2 * borderWidthV));
+            stream.push(mh, constant(currentOuterHeight));
             lastOuterHeight = currentOuterHeight;
           }
         });
