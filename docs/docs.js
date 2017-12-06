@@ -68,6 +68,10 @@ $(function () {
   // takes a string with backticks
   // outputs a text config
   var processBackticks = function (str) {
+    if (!str.split) {
+      // TODO: process backticks when str is a stream
+      return str;
+    }
     var state = false;
     return str.split('`').map(function (s) {
       state = !state;
@@ -107,6 +111,26 @@ $(function () {
     return c.wrap('pre')(stack(strs.map(function (str) {
       return c.text(str, font.code);
     })));
+  };
+  var showCodeBlock = function (strs) {
+    var shownS = stream.once(false);
+    return c.all([
+      c.margin({
+        left: 20,
+      }),
+    ])(c.stack([
+      c.all([
+        c.link,
+        c.clickThis(function () {
+          stream.push(shownS, !shownS.lastValue);
+        }),
+      ])(p({
+        str: stream.map(shownS, function (shown) {
+          return shown ? '[hide code]' : '[show code]';
+        }),
+      })),
+      c.toggleHeight(shownS)(codeBlock(strs)),
+    ]));
   };
 
   var install = docStack([
