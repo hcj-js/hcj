@@ -479,7 +479,7 @@ $(function () {
     p('Here are the hcj.js layouts.  Some take optional configuration objects.  These can be called either curried or not, i.e. you can pass in only the config object and receive a function from components to components.'),
     p('These are found in the `window.hcj.component` object.'),
 
-    h2('alignHorizontal (alignH, alignLRM)'),
+    h2('alignHorizontal, alignH, alignLRM'),
     stack([
       p('`alignHorizontal :: {l: Component, r: Component, m: Component} -> Component`'),
       p('`alignHLeft :: Component -> Component`'),
@@ -491,7 +491,7 @@ $(function () {
     codeBlock([
       "var c = window.hcj.component;",
       "&nbsp;",
-      "var logo = c.text('logo');",
+      "var logo = c.image({src: 'logo.png'});",
       "var menu = c.text('menu');",
       "&nbsp;",
       "var header = c.alignH({",
@@ -500,7 +500,7 @@ $(function () {
       "});",
     ]),
 
-    h2('alignVertical (alignV, alignTBM)'),
+    h2('alignVertical, alignV, alignTBM'),
     stack([
       p('`alignVertical :: {t: Component, b: Component, m: Component} -> Component`'),
       p('`alignVTop :: Component -> Component`'),
