@@ -1192,22 +1192,48 @@ $(function () {
 
   var testPage = docStack([
     p("Demo of some of the components that come with hcj."),
+    p("Conventions used in these examples:"),
+    codeBlock([
+      'var c = window.hcj.component;',
+      'var p = c.text;',
+      'var pm = c.text({measureWidth: true});',
+      'var h1 = c.text({size: 40});',
+      'var h1m = c.text({size: 40, measureWidth: true});',
+    ]),
 
-    h2("text"),
-    p("Display all kinds of text."),
-    c.text("big text", {
+    h2("Display all kinds of text"),
+    c.text({
       size: 50,
-    }),
-    c.text("little text", {
+    }, "big text"),
+    showCodeBlock([
+      'c.text({',
+      '  size: 50,',
+      '}, "big text");',
+    ]),
+    c.text({
       size: 10,
-    }),
-    c.text("colored text", {
+    }, "little text"),
+    showCodeBlock([
+      'c.text({',
+      '  size: 10,',
+      '}, "little text");',
+    ]),
+    c.text({
       color: hcj.color.create({
         r: 200,
         g: 0,
         b: 200,
       }),
-    }),
+    }, "colored text"),
+    showCodeBlock([
+      'c.text({',
+      '  color: hcj.color.create({',
+      '    r: 200,',
+      '    g: 0,',
+      '    b: 200,',
+      '  }),',
+      '}, "colored text");',
+    ]),
     c.text([{
       str: 'f',
       size: 25,
@@ -1248,18 +1274,67 @@ $(function () {
     }, {
       str: 't',
     }]),
-    c.text("secret text", {
+    showCodeBlock([
+      'c.text([{',
+      '  str: \'f\',',
+      '  size: 25,',
+      '}, {',
+      '  str: \'u\',',
+      '  size: 20,',
+      '  align: \'top\',',
+      '}, {',
+      '  str: \'n\',',
+      '  size: 25,',
+      '}, {',
+      '  str: \'k\',',
+      '  align: \'sub\',',
+      '}, {',
+      '  str: \'y\',',
+      '}, {',
+      '  str: \' \',',
+      '}, {',
+      '  str: \'t\',',
+      '  spanCSS: [{',
+      '    name: \'display\',',
+      '    value: \'inline-block\',',
+      '  }, {',
+      '    name: \'transform\',',
+      '    value: \'scaleX(-1)\',',
+      '  }],',
+      '}, {',
+      '  str: \'e\',',
+      '  spanCSS: [{',
+      '    name: \'display\',',
+      '    value: \'inline-block\',',
+      '  }, {',
+      '    name: \'transform\',',
+      '    value: \'scaleY(-1)\',',
+      '  }],',
+      '}, {',
+      '  str: \'x\',',
+      '}, {',
+      '  str: \'t\',',
+      '}]);',
+    ]),
+    c.text({
       color: hcj.color.create({
         r: 0,
         g: 0,
         b: 0,
         a: 0,
       }),
-    }),
-
-    c.nothing,
-    h2("image"),
-    p('Display an image'),
+    }, "secret text"),
+    showCodeBlock([
+      'c.text({',
+      '  color: hcj.color.create({',
+      '    r: 0,',
+      '    g: 0,',
+      '    b: 0,',
+      '    a: 0,',
+      '  }),',
+      '}, "secret text");',
+    ]),
+    h2("Display images"),
     c.all([
       c.keepAspectRatio,
       c.alignHLeft,
@@ -1267,39 +1342,57 @@ $(function () {
       src: './demo.png',
       minWidth: 300,
     })),
-
-    c.nothing,
-    h2("bar.h, bar.v"),
-    p('Make a 20px horizontal separator'),
-    c.sideBySide([
-      pm('TEXT'),
-      c.bar.h(20),
-      pm('TEXT'),
+    showCodeBlock([
+      'c.all([',
+      '  c.keepAspectRatio,',
+      '  c.alignHLeft,',
+      '])(c.image({',
+      '  src: \'./demo.png\',',
+      '  minWidth: 300,',
+      '}));',
     ]),
-    p('Make a 20px vertical separator'),
+    h2("Separate items horizontally and vertically"),
     c.stack([
-      pm('TEXT'),
+      c.sideBySide([
+        pm('TEXT'),
+        c.bar.h(20),
+        pm('TEXT'),
+      ]),
       c.bar.v(20),
-      pm('TEXT'),
+      c.sideBySide([
+        pm('TEXT'),
+        c.bar.h(20),
+        pm('TEXT'),
+      ]),
     ]),
-
-    c.nothing,
-    h2("empty"),
-    p('Make an empty div.'),
-    c.nothing,
-
-    c.nothing,
-    h2("alignHorizontal"),
-    p('Align three items left, right, and middle'),
+    showCodeBlock([
+      'c.stack([',
+      '  c.sideBySide([',
+      '    pm(\'TEXT\'),',
+      '    c.bar.h(20),',
+      '    pm(\'TEXT\'),',
+      '  ]),',
+      '  c.bar.v(20),',
+      '  c.sideBySide([',
+      '    pm(\'TEXT\'),',
+      '    c.bar.h(20),',
+      '    pm(\'TEXT\'),',
+      '  ]),',
+      ']);',
+    ]),
+    h2("Align items horizontally and vertically"),
     c.alignH({
       l: pm('LEFT'),
       r: pm('RIGHT'),
       m: pm('MIDDLE'),
     }),
-
-    c.nothing,
-    h2("alignVertical"),
-    p('Align three items top, bottom, and middle'),
+    showCodeBlock([
+      'c.alignH({',
+      '  l: pm(\'LEFT\'),',
+      '  r: pm(\'RIGHT\'),',
+      '  m: pm(\'MIDDLE\'),',
+      '});',
+    ]),
     c.sideBySide([
       c.alignV({
         t: pm('TOP'),
@@ -1316,17 +1409,39 @@ $(function () {
         b: h1m('LARGER BOTTOM'),
         m: h1m('LARGER MIDDLE'),
       }),
+      c.all([
+        c.backgroundColor(hcj.color.create()),
+      ])(c.bar.v(200)),
     ]),
-
-    c.nothing,
-    h2('componentStream'),
-    p('Show a stream of components.  Component receives new text each time you press the button'),
+    showCodeBlock([
+      'c.sideBySide([',
+      '  c.alignV({',
+      '    t: pm(\'TOP\'),',
+      '    b: pm(\'BOTTOM\'),',
+      '    m: pm(\'MIDDLE\'),',
+      '  }),',
+      '  c.alignV({',
+      '    t: h3m(\'LARGE TOP\'),',
+      '    b: h3m(\'LARGE BOTTOM\'),',
+      '    m: h3m(\'LARGE MIDDLE\'),',
+      '  }),',
+      '  c.alignV({',
+      '    t: h1m(\'LARGER TOP\'),',
+      '    b: h1m(\'LARGER BOTTOM\'),',
+      '    m: h1m(\'LARGER MIDDLE\'),',
+      '  }),',
+      '  c.all([',
+      '    c.backgroundColor(hcj.color.create()),',
+      '  ])(c.bar.v(200)),',
+      ']);',
+    ]),
+    h2('Show a stream of components.  Text is changed each time you press the button'),
     c.scope(function () {
       var generateRandomLetters = function (count) {
         var result = '';
-        for (var i = 0; i < count; i++) {
+        // for (var i = 0; i < count; i++) {
           result += String.fromCharCode(Math.floor(Math.random() * 26) + 65);
-        }
+        // }
         return result;
       };
       var countLetters = 10;
@@ -1341,16 +1456,33 @@ $(function () {
           }),
           c.alignHLeft,
         ])(c.text({
-          str: 'new string',
           el: el.button,
           measureWidth: true,
+        }, {
+          str: 'new string',
         })),
       ]);
     }),
-
-    c.nothing,
-    h2('grid'),
-    p('Show a grid of components'),
+    showCodeBlock([
+      'var lettersS = stream.once(generateRandomLetters(countLetters));',
+      'return c.stack([',
+      '  c.componentStream(stream.map(lettersS, function (letters) {',
+      '    return p(letters);',
+      '  })),',
+      '  c.all([',
+      '    c.clickThis(function () {',
+      '      stream.push(lettersS, generateRandomLetters());',
+      '    }),',
+      '    c.alignHLeft,',
+      '  ])(c.text({',
+      '    el: el.button,',
+      '    measureWidth: true,',
+      '  }, {',
+      '    str: \'new string\',',
+      '  })),',
+      ']);',
+    ]),
+    h2('Show a grid of components'),
     c.grid({
       padding: 20,
       surplusWidthFunc: hcj.funcs.surplusWidth.evenlySplitCenter,
@@ -1386,10 +1518,44 @@ $(function () {
       pm('GRID TEXT'),
       pm('GRID TEXT'),
     ]),
-
-    c.nothing,
-    h2('keepAspectRatio'),
-    p('Maintain aspect ratio even in adverse conditions, both by covering and by containing'),
+    showCodeBlock([
+      'c.grid({',
+      '  padding: 20,',
+      '  surplusWidthFunc: hcj.funcs.surplusWidth.evenlySplitCenter,',
+      '})([',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      '  pm(\'GRID TEXT\'),',
+      ']);',
+    ]),
+    h2('Maintain aspect ratio even in adverse conditions, both by "covering" and by "containing"'),
     c.sideBySide([
       c.all([
         c.keepAspectRatio(),
@@ -1412,10 +1578,31 @@ $(function () {
         minWidth: 300,
       })),
     ]),
-
-    c.nothing,
-    h2('largestWidthThatFits'),
-    p('Choose the largest width that fits'),
+    showCodeBlock([
+      'c.sideBySide([',
+      '  c.all([',
+      '    c.keepAspectRatio(),',
+      '    c.minWidth(20),',
+      '    c.minHeight(200),',
+      '    c.alignHLeft,',
+      '  ])(c.image({',
+      '    src: \'./demo.png\',',
+      '    minWidth: 300,',
+      '  })),',
+      '  c.all([',
+      '    c.keepAspectRatio({',
+      '      fill: true,',
+      '    }),',
+      '    c.minWidth(20),',
+      '    c.minHeight(200),',
+      '    c.alignHLeft,',
+      '  ])(c.image({',
+      '    src: \'./demo.png\',',
+      '    minWidth: 300,',
+      '  })),',
+      ']);',
+    ]),
+    h2('Choose the largest component that fits in the display area'),
     c.all([
       c.minWidth(0),
     ])(c.largestWidthThatFits([
@@ -1429,10 +1616,22 @@ $(function () {
       pm('hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh'),
       pm('iiiiiiiiiiiii'),
     ])),
-
-    c.nothing,
-    h2('overlays'),
-    p('Display lots of things on top of each other'),
+    showCodeBlock([
+      'c.all([',
+      '  c.minWidth(0),',
+      '])(c.largestWidthThatFits([',
+      '  pm(\'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\'),',
+      '  pm(\'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\'),',
+      '  pm(\'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\'),',
+      '  pm(\'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\'),',
+      '  pm(\'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\'),',
+      '  pm(\'fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\'),',
+      '  pm(\'ggggggggggggggggggggggggggggggggggggggggggggggggggggggg\'),',
+      '  pm(\'hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh\'),',
+      '  pm(\'iiiiiiiiiiiii\'),',
+      ']));',
+    ]),
+    h2('Display things on top of each other'),
     c.overlays([
       h1('Some text'),
       h1('Hello'),
@@ -1448,60 +1647,108 @@ $(function () {
         }]),
       ]),
     ]),
-
-    c.nothing,
-    h2('promiseComponent'),
-    p('Wait until content comes in'),
+    showCodeBlock([
+      'c.overlays([',
+      '  h1(\'Some text\'),',
+      '  h1(\'Hello\'),',
+      '  c.stack([',
+      '    c.text(\'hi\', [font.p, {',
+      '      color: color.red,',
+      '    }]),',
+      '    c.text(\'hi\', [font.p, {',
+      '      color: color.red,',
+      '    }]),',
+      '    c.text(\'hi\', [font.p, {',
+      '      color: color.red,',
+      '    }]),',
+      '  ]),',
+      ']);',
+    ]),
+    h2('Load content asynchoronusly'),
     c.scope(function () {
-      var cS = stream.once(c.nothing);
-      var strS = stream.once('load stuff');
+      var stuffS = stream.once(c.nothing);
+      var buttonTextS = stream.once('load stuff');
       var go = function (secondsLeft) {
         if (secondsLeft === 0) {
-          stream.push(cS, p('stuff!'));
-          stream.push(strS, 'load stuff');
+          stream.push(stuffS, p('stuff!'));
+          stream.push(buttonTextS, 'load stuff');
           return;
         }
-        stream.push(strS, secondsLeft + '');
+        stream.push(buttonTextS, secondsLeft + '');
         setTimeout(function () {
           go(secondsLeft - 1);
         }, 1000);
       };
       return stack([
         c.all([
+          c.link,
           c.clickThis(function () {
             go(5);
           }),
           c.alignHLeft,
         ])(c.text({
-          str: strS,
+          str: buttonTextS,
           el: el.button,
           measureWidth: true,
         })),
-        c.componentStream(cS),
+        c.componentStream(stuffS),
       ]);
     }),
-
-    c.nothing,
-    h2('sideBySide'),
-    p('Display components side by side'),
+    showCodeBlock([
+      'var stuffS = stream.once(c.nothing);',
+      'var buttonTextS = stream.once(\'load stuff\');',
+      'var go = function (secondsLeft) {',
+      '  if (secondsLeft === 0) {',
+      '    stream.push(stuffS, p(\'stuff!\'));',
+      '    stream.push(buttonTextS, \'load stuff\');',
+      '    return;',
+      '  }',
+      '  stream.push(buttonTextS, secondsLeft + \'\');',
+      '  setTimeout(function () {',
+      '    go(secondsLeft - 1);',
+      '  }, 1000);',
+      '};',
+      'return stack([',
+      '  c.all([',
+      '    c.link,',
+      '    c.clickThis(function () {',
+      '      go(5);',
+      '    }),',
+      '    c.alignHLeft,',
+      '  ])(c.text({',
+      '    str: buttonTextS,',
+      '    el: el.button,',
+      '    measureWidth: true,',
+      '  })),',
+      '  c.componentStream(stuffS),',
+      ']);',
+    ]),
+    h2('Display components side by side and in a stack'),
     c.sideBySide([
       h1m('A'),
       h1m('B'),
       h1m('C'),
     ]),
-
-    c.nothing,
-    h2('stack'),
-    p('Display components in a stack'),
+    showCodeBlock([
+      'c.sideBySide([',
+      '  h1m(\'A\'),',
+      '  h1m(\'B\'),',
+      '  h1m(\'C\'),',
+      ']);',
+    ]),
     c.stack([
       h1('A'),
       h1('B'),
       h1('C'),
     ]),
-
-    c.nothing,
-    h2('backgroundColor'),
-    p('Apply background and font colors'),
+    showCodeBlock([
+      'c.stack([',
+      '  h1(\'A\'),',
+      '  h1(\'B\'),',
+      '  h1(\'C\'),',
+      ']);',
+    ]),
+    h2('Apply font and background colors'),
     c.all([
       c.backgroundColor({
         background: color.lightGray,
@@ -1509,18 +1756,35 @@ $(function () {
         font: color.red,
       }),
     ])(h1('MERRY CHRISTMAS')),
-
-    c.nothing,
-    h2('border'),
-    p('Add a border around an alement'),
+    showCodeBlock([
+      'c.all([',
+      '  c.backgroundColor({',
+      '    background: color.lightGray,',
+      '    backgroundHover: color.notBlack,',
+      '    font: color.red,',
+      '  }),',
+      '])(h1(\'MERRY CHRISTMAS\'));',
+    ]),
+    h2('Add margins and borders'),
+    c.all([
+      c.margin(20),
+    ])(h1m('HCJ')),
+    showCodeBlock([
+      'c.all([',
+      '  c.margin(20),',
+      '])(h1m(\'HCJ\'));',
+    ]),
     c.all([
       c.border(color.notBlack, 1),
       c.alignHLeft,
     ])(h1m('HCJ')),
-
-    c.nothing,
-    h2('crop'),
-    p('Crop from the top, bottom, left, and/or right'),
+    showCodeBlock([
+      'c.all([',
+      '  c.border(color.notBlack, 1),',
+      '  c.alignHLeft,',
+      '])(h1m(\'HCJ\'));',
+    ]),
+    h2('Crop components'),
     c.all([
       c.crop({
         top: 0.4,
@@ -1530,27 +1794,33 @@ $(function () {
       }),
       c.alignHLeft,
     ])(h1m('HALP')),
-
-    c.nothing,
-    h2('linkTo'),
-    p('Link to google'),
+    showCodeBlock([
+      'c.all([',
+      '  c.crop({',
+      '    top: 0.4,',
+      '    right: 0.1,',
+      '    left: 0.2,',
+      '    bottom: 0.2,',
+      '  }),',
+      '  c.alignHLeft,',
+      '])(h1m(\'HALP\'));',
+    ]),
+    h2('Link to google'),
     c.all([
       c.linkTo({
         href: 'https://google.com/',
         defaultStyle: true,
       }),
     ])(p('knowledge awaits')),
-
-    c.nothing,
-    h2('margin'),
-    p('Put a margin around a component'),
-    c.all([
-      c.margin(20),
-    ])(h1m('HCJ')),
-
-    c.nothing,
-    h2('minWidth and minHeight'),
-    p('Arbitrarily specify the min width and min height of a component'),
+    showCodeBlock([
+      'c.all([',
+      '  c.linkTo({',
+      '    href: \'https://google.com/\',',
+      '    defaultStyle: true,',
+      '  }),',
+      '])(p(\'knowledge awaits\'));',
+    ]),
+    h2('Arbitrarily position components and specify their widths and heights'),
     c.sideBySide([
       c.all([
         c.minWidth(20),
@@ -1567,10 +1837,25 @@ $(function () {
         ])(h1('HCJ')),
       ]),
     ]),
-
-    c.nothing,
-    h2('clickThis'),
-    p('prompt the user'),
+    showCodeBlock([
+      'c.sideBySide([',
+      '  c.all([',
+      '    c.minWidth(20),',
+      '  ])(h1(\'HCJ\')),',
+      '  c.stack([',
+      '    c.all([',
+      '      c.minHeight(11),',
+      '    ])(h1(\'HCJ\')),',
+      '    c.all([',
+      '      c.minHeight(11),',
+      '    ])(h1(\'HCJ\')),',
+      '    c.all([',
+      '      c.minHeight(11),',
+      '    ])(h1(\'HCJ\')),',
+      '  ]),',
+      ']);',
+    ]),
+    h2('Handle events'),
     c.all([
       c.clickThis(function () {
         var name = prompt("What's your name?");
@@ -1582,6 +1867,19 @@ $(function () {
       el: el.button,
       measureWidth: true,
     })),
+    showCodeBlock([
+      'c.all([',
+      '  c.clickThis(function () {',
+      '    var name = prompt("What\'s your name?");',
+      '    alert("Hello " + name + "!");',
+      '  }),',
+      '  c.alignHLeft,',
+      '])(c.text({',
+      '  str: \'push me\',',
+      '  el: el.button,',
+      '  measureWidth: true,',
+      '}));',
+    ]),
   ]);
 
   var pages = [{
