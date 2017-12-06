@@ -4183,7 +4183,6 @@
       return w - 2 * getFormElementBorderWidthH($el);
     },
     height: function (h, $el) {
-      console.log('adjust position' + getFormElementBorderWidthV($el));
       return h - 2 * getFormElementBorderWidthV($el);
     },
     widthCalc: function (calc, $el) {
