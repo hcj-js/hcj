@@ -391,8 +391,8 @@ $(function () {
     p('These are all properties of the `window.hcj.component` object.  Below each, there is an informal, Haskell-esque "type signature" showing the parameters that each function can take.'),
 
     h2('text'),
-    p('`text :: (SpanConfig | [SpanConfig], Maybe TextConfig) -> Component`'),
-    p('The `text` function takes two arguments.  The first is either a single `SpanConfig` or an array of `SpanConfigs`.  The second argument is an optional `TextConfig`.'),
+    p('`text :: (Maybe TextConfig; SpanConfig | [SpanConfig]) -> Component`'),
+    p('The `text` function takes two arguments.  The first is an optional `TextConfig`.  The second is either a single `SpanConfig` or an array of `SpanConfigs`.'),
     p('By default, a text component is given a minimum width of 300px, and its minimum height function measures the height of the element.  These can be changed using the `TextConfig` object.'),
     p('A `SpanConfig` may be either a string, or an object with the following properties (all optional except `str` which is required):'),
     stack([
@@ -413,33 +413,20 @@ $(function () {
       p("&#8226; `minHeight`: Specifies the min height of the text component as a constant number, overriding `measureHeight` default."),
       p("&#8226; `oneLine`: Declares that the text component is always one line tall.  Its min height is calculated from its font size and line height, overriding `measureHeight` default."),
     ]),
+    p('The `text` function can optionally be curried.  That is, if you pass it ONLY a `TextConfig`, it returns a function accepting a single `SpanConfig` or an array of `SpanConfigs`.'),
     h3('Examples:'),
-    codeBlock([
-      "var c = window.hcj.component;",
-      "&nbsp;",
-      "var hello = c.text('Hello');",
-    ]),
     c.text('Hello'),
-    codeBlock([
+    showCodeBlock([
       "var c = window.hcj.component;",
-      "&nbsp;",
-      "var smallText = c.text('Small Text', {",
-      "  size: '10px',",
-      "});",
+      "return c.text('Hello');",
     ]),
-    c.text('Small Text', {
+    c.text({
       size: '10px',
-    }),
-    codeBlock([
+    })('hello'),
+    showCodeBlock([
       "var c = window.hcj.component;",
-      "&nbsp;",
-      "var spans = c.text([{",
-      "  str: 'BOLD',",
-      "  weight: 'bold',",
-      "}, {",
-      "  str: '_MONO',",
-      "  family: 'Monospace',",
-      "}]);",
+      "var smallText = c.text({size: '10px'});",
+      "return smallText('hello');",
     ]),
     c.text([{
       str: 'BOLD',
@@ -448,18 +435,28 @@ $(function () {
       str: '_MONO',
       family: 'Monospace',
     }]),
+    showCodeBlock([
+      "var c = window.hcj.component;",
+      "return c.text([{",
+      "  str: 'BOLD',",
+      "  weight: 'bold',",
+      "}, {",
+      "  str: '_MONO',",
+      "  family: 'Monospace',",
+      "}]);",
+    ]),
 
     h2('image'),
     p('`image :: ImageConfig -> Component`'),
-    p('Creates an image component.  By default, an image\'s min width is its native width, and its min height function multiplies by its aspect ratio.'),
-    p("An `ImageConfig` may have the following properties, all optional except `src` which is required.  By default, an image's min width is set to its natural width, and its min height is set to maintain aspect ratio."),
+    p('Creates an image component.  By default, an image\'s minimum width is its native width, and its minimum height function attempts to maintain its aspect ratio.'),
+    p("An `ImageConfig` may have the following properties, all optional except `src` which is required."),
     stack([
       p("&#8226; `src`: image source"),
       p("&#8226; `alt`: alt text"),
       p("&#8226; `minWidth`: if present, min width is set to this number instead of the image's natural width"),
       p("&#8226; `minHeight`: if present, min width of image is set to the quotient of this number and the image's aspect ratio"),
     ]),
-    p('Note: When an image is placed into a context whose proportions are not the image\'s aspect ratio, it will stretch.  The most common solution is to wrap images in the `keepAspectRatio` layout.'),
+    p('Note: When an image is placed into a context whose proportions are not the image\'s aspect ratio, it will stretch.  The most common solution is to wrap images with the `hcj.component.keepAspectRatio` layout.'),
 
     h2('bar.h, bar.v, and rectangle'),
     stack([
