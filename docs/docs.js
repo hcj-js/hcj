@@ -39,28 +39,23 @@ $(function () {
     h1: {
       family: 'sans-serif',
       size: 40,
-      lineHeight: 1.2,
       weight: 'bold',
     },
     h2: {
       family: 'sans-serif',
-      lineHeight: 1.2,
       size: 30,
     },
     h3: {
       family: 'sans-serif',
-      lineHeight: 1.2,
       size: 20,
     },
     p: {
       approximateHeight: true,
       family: 'sans-serif',
-      lineHeight: 1.2,
       size: 15,
     },
     code: {
       family: 'monospace',
-      lineHeight: 1.2,
       size: 15,
     },
   };
