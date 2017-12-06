@@ -541,7 +541,7 @@
       .css('display', 'inline-block')
       .appendTo($sandbox);
 
-    var width = Math.max($clone.outerWidth(true), $clone[0].scrollWidth);
+    var width = $clone.outerWidth(true);
     $clone.remove();
 
     return width;
@@ -559,7 +559,7 @@
         .css('height', '')
         .appendTo($sandbox);
 
-      var height = Math.max($clone.outerHeight(true), $clone[0].scrollHeight);
+      var height = $clone.outerHeight(true);
       ws[w] = height;
 
       $clone.remove();
