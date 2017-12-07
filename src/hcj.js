@@ -812,6 +812,7 @@
     $(document.createElement('div'))
       .addClass('sandbox')
       .css('z-index', -1)
+      .css('visibility', 'hidden')
       .appendTo($('body'));
   };
   var countComponentsRendered = 0;
