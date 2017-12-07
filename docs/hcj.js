@@ -4346,7 +4346,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
         $el.on('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, $el.prop('checked'));
         });
         $el.on('change', function () {
           stream.push(s, $el.prop('checked'));
@@ -4645,7 +4645,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   ]));
   var formStyle = {
     button: buttonInput,
-    checkbox: id,
+    checkbox: constant(id),
     date: textInput,
     dropdown: buttonInput,
     image: textInput,
@@ -4709,9 +4709,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
                 var fieldStyle = style[fieldType.type] || constant(id);
                 // TODO: use formComponent[fieldType.type] instead of text
                 return fieldStyle('', stream.create(), fieldType, name)(text({
-                  str: name,
                   el: button,
                   measureWidth: true,
+                }, {
+                  str: name,
                 }), name);
               };
               if (typeof mkOnSubmit === 'function') {
