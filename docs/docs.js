@@ -151,13 +151,13 @@ $(function () {
     p("Use the files in the dist folder."),
   ]);
 
-  var introduction = docStack([
+  var introduction = [
     p("HCJ.JS's purpose is element positioning.  Many website frameworks control <i>what</i> is displayed, but they do not let you specify <i>how</i> it is displayed."),
     p("A pure Javascript framework, HCJ does not require you to write any CSS or more than 15 lines of HTML.  HCJ websites are fast, easy to compose, mobile-responsive, and do the 'right thing' for absolutely free."),
     p("Components, HCJ's building block, are extraordinarily composable.  Any component at any level can be rendered as a web page, making debugging very simple.  They respond to the size and shape of the page region they are rendered into, so rearranging your page is as easy as copy and paste."),
-  ]);
+  ];
 
-  var aLittleVocab = docStack([
+  var aLittleVocab = [
     p("The `component` is the building block of the HCJ framework.  Components can be composed to create new components, or rendered as web pages."),
     p("A component technically is a function taking a `context` and returning an `instance`.  The `context` specifies the page area that a component is rendered into, and the `instance` the minimum dimensions of the component."),
     p("Specifically, a `context` is an object that has all of the following properties.  Here, `$el` is a JQuery object, and the rest are HCJ streams:"),
@@ -332,9 +332,9 @@ $(function () {
     })),
     p("Figure 1: Red arrows depict the context belonging to the blue component inside the green layout."),
     p("In most cases, the `width` and `height` context streams are the only ones that are used."),
-  ]);
+  ];
 
-  var libraryModules = docStack([
+  var libraryModules = [
     p('The HCJ library pollutes the global window object with the `hcj` object.  Each module is a property of this object.  HCJ modules include:'),
     stack([
       p('&#8226; component: Functions that return components.'),
@@ -342,9 +342,9 @@ $(function () {
       p('&#8226; rootComponent: The function that bootstraps a component onto a page.'),
       p('&#8226; stream: The hcj stream library.'),
     ]),
-  ]);
+  ];
 
-  var definingComponents = docStack([
+  var definingComponents = [
     p("We provide a handy `hcj.component.component` function for defining components.  It takes two arguments, an optional tag name (which defaults to 'div') and a `build` method, and returns a component."),
     p("`component : (Maybe String, BuildComponent) -> Component`"),
     stack([
@@ -375,9 +375,9 @@ $(function () {
       "  };",
       "});",
     ]),
-  ]);
+  ];
 
-  var renderingComponents = docStack([
+  var renderingComponents = [
     p('Here is a minimal HCJ page:'),
     codeBlock([
       "&lt;!DOCTYPE HTML&gt;",
@@ -401,9 +401,9 @@ $(function () {
     p("To render a component, pass it to the `hcj.rootComponent` function.  Rendering components inside any smaller region of the page is not currently supported.  Multiple root components may be used if you wish, to display some modal dialogs."),
     p("Font loading is a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must update their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded."),
     p("This `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
-  ]);
+  ];
 
-  var definingLayouts = docStack([
+  var definingLayouts = [
     p("The `hcj.component.container` method is for defining layouts and other containers.  It takes an optional string argument giving its tag name, followed by a build method."),
     p("`container : (Maybe String, BuildContainer) -> Component`"),
     p("`type BuildContainer = (JQuery, Context, Append) -> {minWidth, minHeight, onRemove}`"),
@@ -539,14 +539,14 @@ $(function () {
       "  });",
       "};",
     ]),
-  ]);
+  ];
 
-  var standardLibraryElements = docStack([
-  ]);
+  var standardLibraryElements = [
+  ];
 
-  var standardLibraryComponents = docStack([
+  var standardLibraryComponents = [
     p('Here are the basic components that ship with hcj.js.'),
-    p('These are all properties of the `window.hcj.component` object.  Below each, there is an informal, Haskell-esque "type signature" showing the parameters that each function can take.'),
+    p('These are all properties of the `window.hcj.component` object.  Below each, there is a Haskell-esque "type signature" showing the parameters that each function can take.'),
 
     h2('text'),
     p('`text :: (Maybe TextConfig; SpanConfig | [SpanConfig]) -> Component`'),
@@ -631,9 +631,9 @@ $(function () {
     ]),
     p('The `empty` function takes a tag name and returns a component with zero width and zero height using that tag name.'),
     p('The `nothing` component is defined as `empty("div")`.'),
-  ]);
+  ];
 
-  var standardLibraryLayouts = docStack([
+  var standardLibraryLayouts = [
     p('Here are the hcj.js layouts.  Some take optional configuration objects.  These can be called either curried or not, i.e. you can pass in only the config object and receive a function from components to components.'),
     p('These are found in the `window.hcj.component` object.'),
 
@@ -728,9 +728,9 @@ $(function () {
       p("&#8226; `padding`: Padding amount between components."),
       p("&#8226; `surplusHeightFunc`: There can be surplus height, i.e. the actual height of the stack can be greater than the minimim heights of all of the children.  A `surplusHeightFunc` function takes two arguments.  The first argument is the actual height of the stack (in pixels).  The second argument is an array of objects with `top` and `height` properties, giving the computed top coordinate and min height of each child within the stack (in pixels).  It returns a new array of objects with `top` and `height` properties."),
     ]),
-  ]);
+  ];
 
-  var standardLibraryComponentModifiers = docStack([
+  var standardLibraryComponentModifiers = [
     p('While the layouts in the previous section take multiple components and return a component, layouts that take exactly one component and return a component, sometimes called `styles`, can add much customization and functionality.'),
     p('These styles are all properties of the `window.hcj.component` object.'),
 
@@ -880,9 +880,9 @@ $(function () {
       p('`mouseupThis :: (Event -> IO ()) -> Component -> Component`'),
     ]),
     p('`onThis` is a curried form of the `$on` function.  Additional functions are also provided where it is called with its first argument.'),
-  ]);
+  ];
 
-  var standardLibraryStreams = docStack([
+  var standardLibraryStreams = [
     p("In order for nested elements to communicate dimensions with each other, a common stream interface is needed.  There is no native Javascript stream implementation, and for this kind of application certain performance characteristics are preferred, so HCJ specifies a stream interface to use, and also provides a grimy little implementation of it."),
     p("An hcj stream is an object with two properties:"),
     stack([
@@ -989,9 +989,9 @@ $(function () {
     h2('splitObject'),
     p('`splitObject : {x: a, y: b, ...} -> {x: Stream a, y: Stream a, ...}`'),
     p('Takes an object, returns an object where each property is a stream initialized with the value from the input object.'),
-  ]);
+  ];
 
-  var standardLibraryForms = docStack([
+  var standardLibraryForms = [
     p("Hcj takes the liberty of providing some reactive form components."),
 
     h2('fieldType'),
@@ -1275,9 +1275,9 @@ $(function () {
       "})",
     ]),
     p('Happy Profile Editing'),
-  ]);
+  ];
 
-  var standardLibraryColors = docStack([
+  var standardLibraryColors = [
     p('HCJ has a standard notation for colors.  A `Color` is an object with all of the following properties:'),
     p('These functions are found in `window.hcj.color'),
     stack([
@@ -1302,9 +1302,9 @@ $(function () {
 
     h2('colorString'),
     p('`Color` destructor.  Takes a color, returns string using rgba format.'),
-  ]);
+  ];
 
-  var standardLibraryJso = docStack([
+  var standardLibraryJso = [
     p("Jso"),
     p("Jso is a functional programming language for expressing websites."),
     p("Why a programming language?  Because currently multiple languages and programming styles are required to build websites.  While ReactJS can be rendered both client side and server side in some advanced ways, most javascript frameworks must be combined with server side templates.  Additionally, CSS must usually be written."),
@@ -1335,26 +1335,26 @@ $(function () {
     p("A jso term can be a `literal`, a `function application`, or an `identifier`."),
     p("A literal is an instance of a type written out by hand.  Usually, literal atomic types are corresponding values from the native language."),
     p("Evaluation is simple.  Literals evaluate to themselves."),
-  ]);
+  ];
 
-  var csIsNotAFunction = docStack([
+  var csIsNotAFunction = [
     p("Might be the most common error message you're going to get using this library.  Very uninformative, sorry."),
-  ]);
+  ];
 
-  var version2 = docStack([
+  var version2 = [
     p('Improve text measurement by using the canvas measureText method instead of the current strategy of appending the text to an invisible dom element.  Use this to implement a float left/right layout.'),
     p('Figure out how to integrate CSS transitions properly.'),
     p('Remove JQuery dependency, making hcj smaller and more agnostic.'),
     p('Add more comments.'),
     p('Turing-complete JSON subset that can be evaluated server-side to HTML/CSS and client-side to an HCJ component.'),
-  ]);
+  ];
 
-  var support = docStack([
+  var support = [
     p("Join #hcj on Freenode, or leave a message on the Github repository.  We can't promise that HCJ is the best implementation of what we're going for, nor that we will be the best maintainers of it, but if you should submit an issue or make a pull request we will make some kind of effort to address it properly."),
     p('<iframe src="https://kiwiirc.com/client/irc.freenode.net/?&theme=basic#hcj" style="border:0; width:100%; height:450px;"></iframe>'),
-  ]);
+  ];
 
-  var testPage = docStack([
+  var testPage = [
     p("Demo of some of the components that come with hcj."),
     p("Conventions used in these examples:"),
     codeBlock([
@@ -2058,50 +2058,50 @@ $(function () {
       '  measureWidth: true,',
       '}));',
     ]),
-  ]);
+  ];
 
   var pages = [{
     title: "Home",
-    component: introduction,
+    components: introduction,
   }, {
     title: 'Hello World',
-    component: renderingComponents,
+    components: renderingComponents,
   }, {
     title: 'Introduction',
-    component: aLittleVocab,
+    components: aLittleVocab,
   }, {
     title: 'API - Components',
-    component: standardLibraryComponents,
+    components: standardLibraryComponents,
   }, {
     title: 'API - Layouts',
-    component: standardLibraryLayouts,
+    components: standardLibraryLayouts,
   }, {
     title: 'API - Styles',
-    component: standardLibraryComponentModifiers,
+    components: standardLibraryComponentModifiers,
   }, {
     title: 'API - Forms',
-    component: standardLibraryForms,
+    components: standardLibraryForms,
   }, {
     title: 'API - Colors',
-    component: standardLibraryColors,
+    components: standardLibraryColors,
   }, {
     title: 'Examples',
-    component: testPage,
+    components: testPage,
   }, {
     title: 'Streams',
-    component: standardLibraryStreams,
+    components: standardLibraryStreams,
   }, {
-    title: 'Defining Components',
-    component: definingComponents,
+    title: 'Defining Componentss',
+    components: definingComponents,
   }, {
     title: 'Defining Layouts',
-    component: definingLayouts,
+    components: definingLayouts,
   }, {
     title: 'Possible Future Development',
-    component: version2,
+    components: version2,
   }, {
     title: 'Community',
-    component: support,
+    components: support,
   }];
 
   var initialIndex = window.location.hash && parseInt(window.location.hash.substring(1));
@@ -2116,7 +2116,7 @@ $(function () {
   });
 
   var sidebar = c.all([
-    c.margin(20),
+    c.margin(10),
     c.backgroundColor({
       background: color.lightGray,
     }),
@@ -2139,40 +2139,28 @@ $(function () {
           }),
           backgroundHover: color.lighterGray,
         }),
-      ])(c.text(p.title, font.p));
+      ])(c.text(p.title, font.p0));
     })),
   ]));
 
   var docs = c.all([
     c.minHeightAtLeast(stream.windowHeight),
     c.backgroundColor({
+      background: color.lighterGray,
       font: color.notBlack,
     }),
-  ])(c.grid({
-    surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
-    surplusHeightFunc: hcj.funcs.surplusHeight.giveToNth(0),
-  })([
-    sidebar,
-    c.all([
-      c.margin(20),
-      c.backgroundColor({
-        background: color.lighterGray,
-      }),
-    ])(docStack([
-      h1('hcj.js'),
-      p('v0.2.1 alpha'),
-      p('It could be worse.'),
-      c.componentStream(stream.map(currentPageS, function (index) {
-        var p = pages[index];
-        return c.all([
-          c.$css('transition', 'left 1s'),
-        ])(docStack([
-          h1(p.title),
-          p.component,
-        ]));
-      })),
-    ])),
-  ]));
+  ])(c.componentStream(stream.map(currentPageS, function (index) {
+    var page = pages[index];
+    return c.basicFloat({
+      padding: 10,
+      clearHanging: true,
+    }, sidebar, [
+      h1m('hcj.js'),
+      pm('v0.2.1 alpha'),
+      pm('It could be worse.'),
+      h1m(page.title),
+    ].concat(page.components));
+  })));
 
   window.hcj.rootComponent(docs);
 });
