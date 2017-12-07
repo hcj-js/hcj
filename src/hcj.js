@@ -4624,9 +4624,10 @@
                 var fieldStyle = style[fieldType.type] || constant(id);
                 // TODO: use formComponent[fieldType.type] instead of text
                 return fieldStyle('', stream.create(), fieldType, name)(text({
-                  str: name,
                   el: button,
                   measureWidth: true,
+                }, {
+                  str: name,
                 }), name);
               };
               if (typeof mkOnSubmit === 'function') {
