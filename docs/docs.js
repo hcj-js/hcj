@@ -23,6 +23,11 @@ $(function () {
       g: 240,
       b: 250,
     }),
+    gray: hcj.color.create({
+      r: 100,
+      g: 95,
+      b: 100,
+    }),
     notBlack: hcj.color.create({
       r: 10,
       g: 0,
@@ -51,6 +56,11 @@ $(function () {
     },
     p: {
       approximateHeight: true,
+      family: 'sans-serif',
+      size: 15,
+    },
+    p0: {
+      minWidth: 100,
       family: 'sans-serif',
       size: 15,
     },
@@ -99,6 +109,7 @@ $(function () {
     measureWidth: true,
   }]);
   var p = text(font.p);
+  var p0 = text(font.p0);
   var pm = text([font.p, {
     measureWidth: true,
   }]);
@@ -143,34 +154,179 @@ $(function () {
 
   var aLittleVocab = docStack([
     p("The `component` is the building block of the HCJ framework.  Components can be composed to create new components, or rendered as web pages."),
-    p("A component technically is a function taking a `context` and returning an `instance`.  The `context` and the `instance` give the page area that a component is rendered into, and the minimum dimensions of the component, respectively."),
-    p("The `context` is an object that has all of the following properties.  $el is a JQuery object, and the rest are HCJ streams:"),
+    p("A component technically is a function taking a `context` and returning an `instance`.  The `context` specifies the page area that a component is rendered into, and the `instance` the minimum dimensions of the component."),
+    p("Specifically, a `context` is an object that has all of the following properties.  Here, `$el` is a JQuery object, and the rest are HCJ streams:"),
     stack([
-      p("&#8226; `$el`: Parent element of the instance."),
-      p('&#8226; `width`: Width available to the instance.'),
-      p('&#8226; `height`: Height available to the instance.'),
-      p('&#8226; `left`: Left position of the instance.'),
-      p('&#8226; `top`: Top position of the instance.'),
-      p('&#8226; `leftOffset`: Left position of \"$el\" relative to the page.'),
-      p('&#8226; `topOffset`: Top position of \"$el\" relative to the page.'),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226;&nbsp;`$el &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:: JQuery &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Parent element of the instance.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226;&nbsp;`width &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:: Stream Number`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Width available to the instance.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226;&nbsp;`height &nbsp;&nbsp;&nbsp;&nbsp;:: Stream Number`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Height available to the instance.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226;&nbsp;`left &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:: Stream Number`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Left position of the instance.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226;&nbsp;`top &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:: Stream Number`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Top position of the instance.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226;&nbsp;`leftOffset :: Stream Number`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Left position of \"$el\" relative to the page.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226;&nbsp;`topOffset &nbsp;:: Stream Number`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Top position of \"$el\" relative to the page.'),
+        ])),
+      ]),
     ]),
-    p('When a component is passed a context, it must create an element and append it to $el, but it does not need to size and position itself.  That is done by its parent layout.  The properties `width`, `height` and so on are provided so that it can size and position its children.'),
-    p('The `instance` is an object with the following properties:'),
+    p('When a component is passed a context, it must create an element and append it to `$el`.  The component does not need to size and position itself within its parent; that is done by its parent layout.  The reason it is passed a `context` with `width` and `height` properties and so on is so that it can size and position its children.'),
+    p('An `instance` is an object with all of the following properties:'),
     stack([
-      p('&#8226; `$el`: Root element of the instance.'),
-      p('&#8226; `minWidth`: Gives the instance\'s minimum width.'),
-      p('&#8226; `minHeight`: Gives the instance\'s minimum height.'),
-      p("&#8226; `remove()`: Removes the instance."),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226; `$el &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:: JQuery &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Root element of the instance.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226; `minWidth &nbsp;:: Stream Number &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Gives the instance\'s minimum width.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm('&#8226; `minHeight :: Stream (Number -> Number)`'),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Gives the instance\'s minimum height.'),
+        ])),
+      ]),
+      c.grid({
+        bottomToTop: true,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm("&#8226; `remove &nbsp;&nbsp;&nbsp;:: Function &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`"),
+        c.all([
+          c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
+          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        }, [
+          pm('`&nbsp;--&nbsp;`'),
+          p0('Removes the instance.'),
+        ])),
+      ]),
     ]),
-    p('The instances\'s `minWidth` and `minHeight` are both streams: minWidth a stream of numbers specifying the minimum width required by the instance to display sanely, and because the height of a component may depend on the width it is given, minHeight a stream of functions that, given a hypothetical width, specify the height required by the instance at that width.'),
+    p('The instances\'s `minWidth` and `minHeight` are both streams.  `minWidth` is a stream of numbers specifying the minimum width required by the instance to display sanely.  Because the height required by a component can depend on the width it is given, `minHeight` a stream of functions that, given a hypothetical width, specify the height required by the instance at that width.'),
     p("In HCJ terminology, a `layout` is a function that takes one or more components and returns a component.  A `style` is a function that takes exactly one component and returns a component.  Therefore, all styles are layouts."),
-    p("Here is a drawing with a component shown in blue and its context shown in red:"),
     c.all([
       c.alignHLeft,
+      c.minWidth(300),
     ])(c.image({
       src: './context.png',
       alt: 'Graphic depicting HCJ context attributes',
     })),
+    p("Figure 1: Red arrows depict the context belonging to the blue component inside the green layout."),
+    p("In most cases, only the `width` and `height` context streams are used."),
   ]);
 
   var libraryModules = docStack([
