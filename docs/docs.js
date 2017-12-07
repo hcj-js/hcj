@@ -2117,8 +2117,9 @@ $(function () {
 
   var sidebar = c.all([
     c.margin(10),
-    c.backgroundColor({
-      background: color.lightGray,
+    c.border(color.lightGray, {
+      right: 1,
+      bottom: 1,
     }),
   ])(docStack([
     c.all([
@@ -2135,9 +2136,9 @@ $(function () {
         c.linkTo(window.location.origin + window.location.pathname + '#' + i),
         c.backgroundColor({
           background: stream.map(currentPageS, function (index) {
-            return index === i ? color.lighterGray : color.lightGray;
+            return index === i ? color.lightGray : color.lighterGray;
           }),
-          backgroundHover: color.lighterGray,
+          backgroundHover: color.lightGray,
         }),
       ])(c.text(p.title, font.p0));
     })),
