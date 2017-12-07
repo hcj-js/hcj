@@ -277,7 +277,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       s.listeners.push(function (v) {
         f(v);
       });
-      if (s.lastValue) {
+      if (s.lastValue !== undefined) {
         f(s.lastValue);
       }
       var index = s.listeners.length - 1;
@@ -648,7 +648,50 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
   var renderComponent = function (tagName, build, context) {
     var $el = $(document.createElement(tagName))
-          .appendTo(context.$el);
+          .appendTo(context.$el)
+          .css('visibility', 'hidden');
+
+    var contextComplete = 0;
+    stream.onValue(context.width, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 1;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
+    stream.onValue(context.height, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 2;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
+    stream.onValue(context.top, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 4;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
+    stream.onValue(context.left, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 8;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
 
     var instance = {
       $el: $el,
@@ -3911,6 +3954,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         allMinWidths,
         allMinHeights,
       ], function (w, mws, mhs) {
+        console.log(w);
         positionItems(w, mws, mhs).dims.map(function (dim, i) {
           var context = contexts[i];
           stream.push(context.width, dim.width);

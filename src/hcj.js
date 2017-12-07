@@ -570,7 +570,50 @@
 
   var renderComponent = function (tagName, build, context) {
     var $el = $(document.createElement(tagName))
-          .appendTo(context.$el);
+          .appendTo(context.$el)
+          .css('visibility', 'hidden');
+
+    var contextComplete = 0;
+    stream.onValue(context.width, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 1;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
+    stream.onValue(context.height, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 2;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
+    stream.onValue(context.top, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 4;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
+    stream.onValue(context.left, function (x) {
+      if (contextComplete === -1) {
+        return;
+      }
+      contextComplete = contextComplete | 8;
+      if (contextComplete === 15) {
+        updateDomFunc($el, 'css', 'visibility', '');
+        contextComplete = -1;
+      }
+    });
 
     var instance = {
       $el: $el,
