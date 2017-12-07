@@ -331,7 +331,7 @@ $(function () {
       alt: 'Graphic depicting HCJ context attributes',
     })),
     p("Figure 1: Red arrows depict the context belonging to the blue component inside the green layout."),
-    p("In most cases, only the `width` and `height` context streams are used."),
+    p("In most cases, the `width` and `height` context streams are the only ones that are used."),
   ]);
 
   var libraryModules = docStack([
