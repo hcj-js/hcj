@@ -199,7 +199,7 @@
       s.listeners.push(function (v) {
         f(v);
       });
-      if (s.lastValue) {
+      if (s.lastValue !== undefined) {
         f(s.lastValue);
       }
       var index = s.listeners.length - 1;
