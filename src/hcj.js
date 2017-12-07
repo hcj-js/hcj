@@ -3747,6 +3747,108 @@
     };
   });
 
+  var basicFloat = uncurryConfig(function (config) {
+    return layout(function ($el, ctx, c, cs) {
+      // first context belongs to floating element c, rest to cs
+      var contexts = [{
+        width: stream.create(),
+        height: stream.create(),
+      }];
+      cs.map(function () {
+        contexts.push({
+          top: stream.create(),
+          left: stream.create(),
+          width: stream.create(),
+          height: stream.create(),
+        });
+      });
+      var ccs = [c].concat(cs);
+      var iis = ccs.map(function (c, index) {
+        return c(contexts[index]);
+      });
+      var allMinWidths = mapMinWidths(iis);
+      var allMinHeights = mapMinHeights(iis);
+      var positionItems = function (w, mws, mhs) {
+        mws = mws.slice(0);
+        mhs = mhs.slice(0);
+        // shift off min-dimensions of floating element
+        var mw = mws.shift();
+        var mh = mhs.shift();
+        // size of floating element
+        var floatWidth = mw;
+        var floatHeight = mh(floatWidth);
+        var dims = [{
+          width: floatWidth,
+          height: floatHeight,
+        }];
+        // smallest top-value that clears the floating item
+        var topBelowFloat = floatHeight + config.padding;
+        // compute dimensions of the rest of the items
+        var top = 0;
+        for (var i = 0; i < mws.length; i++) {
+          var mwi = mws[i];
+          var mhi = mhs[i];
+          // clear the float if there is not enough width available
+          if (top < topBelowFloat && mwi > w - (floatWidth + 2 * config.padding)) {
+            top = topBelowFloat;
+          }
+          var dimLeft = top < topBelowFloat ? floatWidth + config.padding : config.padding;
+          var dimTop = top;
+          var dimWidth = top < topBelowFloat ? w - (floatWidth + 2 * config.padding) : w - 2 * config.padding;
+          var dimHeight = mhi(dimWidth);
+          if (config.clearHanging && top < topBelowFloat && top + dimHeight > topBelowFloat) {
+            top = topBelowFloat;
+            dimLeft = config.padding;
+            dimTop = top;
+            dimWidth = w - 2 * config.padding;
+            dimHeight = mhi(dimWidth);
+          }
+          dims.push({
+            left: dimLeft,
+            top: dimTop,
+            width: dimWidth,
+            height: dimHeight,
+          });
+          top += dimHeight + config.padding;
+        }
+        return {
+          dims: dims,
+          totalHeight: Math.max(floatHeight, top),
+        };
+      };
+      var minWidth = stream.map(allMinWidths, function (mws) {
+        return mws.reduce(mathMax, 0);
+      }, minWidth);
+      var minHeight = stream.combine([
+        allMinWidths,
+        allMinHeights,
+      ], function (mws, mhs) {
+        return function (w) {
+          return positionItems(w, mws, mhs).totalHeight;
+        };
+      });
+      stream.combine([
+        ctx.width,
+        allMinWidths,
+        allMinHeights,
+      ], function (w, mws, mhs) {
+        positionItems(w, mws, mhs).dims.map(function (dim, i) {
+          var context = contexts[i];
+          stream.push(context.width, dim.width);
+          stream.push(context.height, dim.height);
+          if (i > 0) {
+            stream.push(context.left, dim.left);
+            stream.push(context.top, dim.top);
+          }
+        });
+      });
+      return {
+        minWidth: minWidth,
+        minHeight: minHeight,
+      };
+    });
+  });
+
   var withMinWidthStream = function (getMinWidthStream) {
     if ($.type(getMinWidthStream) === 'number') {
       return minWidth(getMinWidthStream);
@@ -5161,6 +5263,7 @@
       and: and,
       backgroundColor: backgroundColor,
       bar: bar,
+      basicFloat: basicFloat,
       border: border,
       box: rectangle,
       changeThis: changeThis,
