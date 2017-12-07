@@ -796,7 +796,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return "calc(" + x + ")";
     });
   };
-  var layoutAppend = function (childInstances, $el, context, c, ctx) {
+  var layoutAppend = function (childInstances, $el, context, c, ctx, noRemove) {
     ctx = ctx || {};
     try {
       ctx.$el = ctx.$el || $el;
@@ -807,7 +807,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
       ctx.topOffset = stream.combine([context.topOffset, context.top], add);
       ctx.leftOffset = stream.combine([context.leftOffset, context.left], add);
       var i = c(ctx);
-      childInstances.push(i);
+      if (noRemove !== true) {
+        childInstances.push(i);
+      }
       // todo: replace with some isInstance function
       if (!i || !i.minWidth || !i.minHeight) {
         console.log('not a component');
@@ -842,8 +844,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       console.log('cs is not a function');
       debugger;
     }
-    return function (ctx) {
-      return layoutAppend(childInstances, $el, context, cs, ctx);
+    return function (ctx, noRemove) {
+      return layoutAppend(childInstances, $el, context, cs, ctx, noRemove);
     };
   };
 
@@ -881,8 +883,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       $el.css('position', 'absolute')
         .css('pointer-events', 'none')
         .css('overflow', 'hidden');
-      var i = buildContainer($el, context, function (c, ctx) {
-        return layoutAppend(childInstances, $el, context, c, ctx);
+      var i = buildContainer($el, context, function (c, ctx, noRemove) {
+        return layoutAppend(childInstances, $el, context, c, ctx, noRemove);
       });
       return {
         $el: i.$el,
@@ -3258,7 +3260,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         i = append(c, {
           widthCalc: stream.once('100%'),
           heightCalc: stream.once('100%'),
-        });
+        }, true);
         unpushMW = stream.pushAll(i.minWidth, minWidth);
         unpushMH = stream.pushAll(i.minHeight, minHeight);
         return i;
@@ -3310,7 +3312,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           widthCalc: stream.once('100%'),
           heightCalc: stream.once('100%'),
         };
-        i = append(c, ctx);
+        i = append(c, ctx, true);
         i.$el.css('transition', 'inherit');
         i.$el.css('display', 'none');
         i.$el.prependTo($el);
