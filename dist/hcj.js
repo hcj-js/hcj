@@ -3901,7 +3901,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         var mw = mws.shift();
         var mh = mhs.shift();
         // size of floating element
-        var floatWidth = mw;
+        var floatWidth = (!mws[0] || mws[0] > w - mw - 2 * config.padding) ? w : mw;
         var floatHeight = mh(floatWidth);
         var dims = [{
           width: floatWidth,
