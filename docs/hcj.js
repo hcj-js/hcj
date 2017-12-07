@@ -3198,24 +3198,17 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
     var colorStringS = stream.map(colorS, colorString);
 
-    return layout(function ($el, ctx, c) {
+    var borderLayout = layout(function ($el, ctx, c) {
       $el.addClass('border');
       // overflow hidden is necessary to prevent cutting off corners
       // of border if there is a border radius
       var i = c({
-        width: stream.map(ctx.width, function (w) {
-          return w - left - right;
-        }),
-        height: stream.map(ctx.height, function (h) {
-          return h - top - bottom;
-        }),
-        widthCalc: stream.once('100% - ' + px(2 * (left + right))),
-        heightCalc: stream.once('100% - ' + px(2 * (top + bottom))),
+        widthCalc: stream.once('100%'),
+        heightCalc: stream.once('100%'),
       });
-      i.$el.css('overflow', 'hidden');
-      i.$el.css('border-radius', px(radius));
+      $el.css('border-radius', px(radius));
       stream.map(colorStringS, function (colorstring) {
-        i.$el.css('border-left', px(left) + ' ' + style + ' ' + colorstring)
+        $el.css('border-left', px(left) + ' ' + style + ' ' + colorstring)
           .css('border-right', px(right) + ' ' + style + ' ' + colorstring)
           .css('border-top', px(top) + ' ' + style + ' ' + colorstring)
           .css('border-bottom', px(bottom) + ' ' + style + ' ' + colorstring);
@@ -3226,11 +3219,29 @@ function waitForWebfonts(fonts, callback, maxTime) {
         }),
         minHeight: stream.map(i.minHeight, function (mh) {
           return function (w) {
-            return mh(w) + top + bottom;
+            return mh(w - left - right) + top + bottom;
           };
         }),
       };
     });
+    return function (c) {
+      return all([
+        adjustPosition({}, {
+          width: function (w, $el) {
+            return w - left - right;
+          },
+          height: function (h, $el) {
+            return h - top - bottom;
+          },
+          widthCalc: function (calc, $el) {
+            return calc + " - " + (left + right);
+          },
+          heightCalc: function (calc, $el) {
+            return calc + " - " + (top + bottom);
+          },
+        }),
+      ])(borderLayout(c));
+    };
   };
 
   var componentStream = function (cStream) {
@@ -3954,7 +3965,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         allMinWidths,
         allMinHeights,
       ], function (w, mws, mhs) {
-        console.log(w);
         positionItems(w, mws, mhs).dims.map(function (dim, i) {
           var context = contexts[i];
           stream.push(context.width, dim.width);
