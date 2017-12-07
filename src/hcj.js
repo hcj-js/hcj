@@ -4261,7 +4261,7 @@
         });
         $el.on('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, $el.prop('checked'));
         });
         $el.on('change', function () {
           stream.push(s, $el.prop('checked'));
