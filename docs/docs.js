@@ -2101,11 +2101,13 @@ $(function () {
       background: color.lightGray,
     }),
   ])(docStack([
-    c.image({
+    c.all([
+      c.alignHLeft,
+    ])(c.image({
       src: './demo.png',
-      minWidth: 0,
+      minWidth: 240,
       alt: 'HCJ Logo',
-    }),
+    })),
     c.bar.h(20),
     stack(pages.map(function (p, i) {
       return c.all([
