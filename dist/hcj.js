@@ -796,7 +796,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return "calc(" + x + ")";
     });
   };
-  var layoutAppend = function (childInstances, $el, context, c, ctx, noPositionAbsolute) {
+  var layoutAppend = function (childInstances, $el, context, c, ctx) {
     ctx = ctx || {};
     try {
       ctx.$el = ctx.$el || $el;
@@ -814,20 +814,18 @@ function waitForWebfonts(fonts, callback, maxTime) {
         debugger;
       }
       i.$el.css('position', 'absolute');
-      if (!noPositionAbsolute) {
-        stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
-          updateDomFunc(i.$el, 'css', 'width', w);
-        });
-        stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
-          updateDomFunc(i.$el, 'css', 'height', h);
-        });
-        stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
-          updateDomFunc(i.$el, 'css', 'top', t);
-        });
-        stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
-          updateDomFunc(i.$el, 'css', 'left', l);
-        });
-      }
+      stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
+        updateDomFunc(i.$el, 'css', 'width', w);
+      });
+      stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
+        updateDomFunc(i.$el, 'css', 'height', h);
+      });
+      stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
+        updateDomFunc(i.$el, 'css', 'top', t);
+      });
+      stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
+        updateDomFunc(i.$el, 'css', 'left', l);
+      });
       return i;
     }
     catch (e) {
@@ -844,8 +842,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       console.log('cs is not a function');
       debugger;
     }
-    return function (ctx, noPositionAbsolute) {
-      return layoutAppend(childInstances, $el, context, cs, ctx, noPositionAbsolute);
+    return function (ctx) {
+      return layoutAppend(childInstances, $el, context, cs, ctx);
     };
   };
 
@@ -883,8 +881,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       $el.css('position', 'absolute')
         .css('pointer-events', 'none')
         .css('overflow', 'hidden');
-      var i = buildContainer($el, context, function (c, ctx, noPositionAbsolute) {
-        return layoutAppend(childInstances, $el, context, c, ctx, noPositionAbsolute);
+      var i = buildContainer($el, context, function (c, ctx) {
+        return layoutAppend(childInstances, $el, context, c, ctx);
       });
       return {
         $el: i.$el,
