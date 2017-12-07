@@ -4560,7 +4560,7 @@
   ]));
   var formStyle = {
     button: buttonInput,
-    checkbox: id,
+    checkbox: constant(id),
     date: textInput,
     dropdown: buttonInput,
     image: textInput,
