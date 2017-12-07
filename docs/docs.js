@@ -114,8 +114,13 @@ $(function () {
     measureWidth: true,
   }]);
   var codeBlock = function (strs) {
-    return c.wrap('pre')(stack(strs.map(function (str) {
-      return c.text(str, [font.code, {
+    return c.all([
+      c.overflowHorizontal({
+        minWidth: 300,
+      }),
+    ])(stack(strs.map(function (str) {
+      return c.text(str.split(' ').join('&nbsp;'), [font.code, {
+        measureWidth: true,
         oneLine: true,
       }]);
     })));
