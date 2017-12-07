@@ -2669,6 +2669,56 @@
     return result;
   };
 
+  var overflowHorizontal = uncurryConfig(function (config) {
+    config = config || {};
+    return layout(function ($el, ctx, c) {
+      $el.css('overflow-x', 'auto')
+        .css('pointer-events', 'initial');
+      var widthS = stream.create();
+      var heightS = stream.create();
+      var i = c({
+        width: widthS,
+        height: heightS,
+      });
+      var minWidth;
+      if (config.minWidth) {
+        if ($.type(config.minWidth) === 'number') {
+          minWidth = stream.once(config.minWidth);
+        }
+        if ($.type(config.minWidth) === 'function') {
+          minWidth = stream.map(i.minWidth, config.minWidth);
+        }
+      }
+      else {
+        minWidth = i.minWidth;
+      }
+      stream.combine([
+        i.minWidth,
+        ctx.width,
+        ctx.height,
+      ], function (mw, ctxW, ctxH) {
+        stream.push(widthS, Math.max(mw, ctxW));
+        stream.push(heightS, ctxH - (mw > ctxW ? _scrollbarWidth() : 0));
+      });
+      var minHeight = stream.combine([
+        i.minHeight,
+        i.minWidth,
+      ], function (mh, mw) {
+        return function (w) {
+          if (mw > w) {
+            return mh(w) + _scrollbarWidth();
+          }
+          else {
+            return mh(w);
+          }
+        };
+      });
+      return {
+        minWidth: minWidth,
+        minHeight: minHeight,
+      };
+    });
+  });
 
   var margin = function (amount) {
     var top = amount.all || 0,
