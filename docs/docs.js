@@ -1557,7 +1557,9 @@ $(function () {
       '  m: pm(\'MIDDLE\'),',
       '});',
     ]),
-    c.sideBySide([
+    c.sideBySide({
+      padding: 10,
+    }, [
       c.alignV({
         t: pm('TOP'),
         b: pm('BOTTOM'),
@@ -1574,11 +1576,18 @@ $(function () {
         m: h1m('LARGER MIDDLE'),
       }),
       c.all([
-        c.backgroundColor(hcj.color.create()),
+        c.backgroundColor(hcj.color.create({
+          r: 10,
+          g: 0,
+          b: 10,
+        })),
+        c.minWidth(20),
       ])(c.bar.v(200)),
     ]),
     showCodeBlock([
-      'c.sideBySide([',
+      'c.sideBySide({',
+      '  padding: 10,',
+      '}, [',
       '  c.alignV({',
       '    t: pm(\'TOP\'),',
       '    b: pm(\'BOTTOM\'),',
@@ -1595,7 +1604,12 @@ $(function () {
       '    m: h1m(\'LARGER MIDDLE\'),',
       '  }),',
       '  c.all([',
-      '    c.backgroundColor(hcj.color.create()),',
+      '    c.backgroundColor(hcj.color.create({',
+      '      r: 10,',
+      '      g: 0,',
+      '      b: 10,',
+      '    })),',
+      '    c.minWidth(20),',
       '  ])(c.bar.v(200)),',
       ']);',
     ]),
@@ -1603,9 +1617,9 @@ $(function () {
     c.scope(function () {
       var generateRandomLetters = function (count) {
         var result = '';
-        // for (var i = 0; i < count; i++) {
+        for (var i = 0; i < count; i++) {
           result += String.fromCharCode(Math.floor(Math.random() * 26) + 65);
-        // }
+        }
         return result;
       };
       var countLetters = 10;
