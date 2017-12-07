@@ -678,6 +678,7 @@ $(function () {
       p("&#8226; `surplusWidthFunc`: splits surplus width among components in each row; see `sideBySide`"),
       p("&#8226; `surplusHeightFunc`: splits surplus hegiht among grid rows; see `stack`"),
       p("&#8226; `useFullWidth`: if set, the grid's min width is computued as the sum of the min widths of the child components, rather than as the largest of the min widths of the child components"),
+      p("&#8226; `bottomToTop`: if set, grid rows are arranged in reverse order: they stack upward instead of downward"),
     ]),
 
     h2('keepAspectRatio'),
