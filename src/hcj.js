@@ -5200,6 +5200,7 @@
       mouseupThis: mouseupThis,
       nothing: nothing,
       onThis: onThis,
+      overflowHorizontal: overflowHorizontal,
       overlays: overlays,
       padding: margin,
       passthrough: passthrough,
