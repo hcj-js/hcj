@@ -329,6 +329,7 @@ $(function () {
     ])(c.image({
       src: './context.png',
       alt: 'Graphic depicting HCJ context attributes',
+      minWidth: 600,
     })),
     p("Figure 1: Red arrows depict the context belonging to the blue component inside the green layout."),
     p("In most cases, the `width` and `height` context streams are the only ones that are used."),
