@@ -104,7 +104,9 @@ $(function () {
   }]);
   var codeBlock = function (strs) {
     return c.wrap('pre')(stack(strs.map(function (str) {
-      return c.text(str, font.code);
+      return c.text(str, [font.code, {
+        oneLine: true,
+      }]);
     })));
   };
   var showCodeBlock = function (strs) {
