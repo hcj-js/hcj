@@ -1288,7 +1288,6 @@
     }
     return layout(function ($el, ctx, c) {
       $el.addClass('crop');
-      $el.css('overflow', 'hidden');
       var props = stream.create();
       var i = c({
         top: stream.prop(props, 'top'),
@@ -1335,7 +1334,6 @@
     config = config || {};
     return layout(function ($el, ctx, c) {
       $el.addClass('keepAspectRatio');
-      $el.css('overflow', 'hidden');
       var props = stream.create();
       var i = c({
         top: stream.prop(props, 'top'),
@@ -1994,7 +1992,6 @@
     config.padding = config.padding || 0;
     config.transitionTime = config.transitionTime || 0;
     return layout(function ($el, ctx, cs) {
-      $el.css('overflow', 'hidden');
       $el.addClass('slideshow');
 
       var contexts = cs.concat(cs).concat(cs).map(function () {
@@ -3340,8 +3337,7 @@
 
   var toggleHeight = function (open) {
     return layout(function ($el, ctx, c) {
-      $el.css('overflow', 'hidden')
-        .addClass('toggle-height');
+      $el.addClass('toggle-height');
       var i = c();
       return {
         minWidth: i.minWidth,

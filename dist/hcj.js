@@ -1366,7 +1366,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     }
     return layout(function ($el, ctx, c) {
       $el.addClass('crop');
-      $el.css('overflow', 'hidden');
       var props = stream.create();
       var i = c({
         top: stream.prop(props, 'top'),
@@ -1413,7 +1412,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     config = config || {};
     return layout(function ($el, ctx, c) {
       $el.addClass('keepAspectRatio');
-      $el.css('overflow', 'hidden');
       var props = stream.create();
       var i = c({
         top: stream.prop(props, 'top'),
@@ -2072,7 +2070,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     config.padding = config.padding || 0;
     config.transitionTime = config.transitionTime || 0;
     return layout(function ($el, ctx, cs) {
-      $el.css('overflow', 'hidden');
       $el.addClass('slideshow');
 
       var contexts = cs.concat(cs).concat(cs).map(function () {
@@ -3202,10 +3199,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       $el.addClass('border');
       // overflow hidden is necessary to prevent cutting off corners
       // of border if there is a border radius
-      var i = c({
-        widthCalc: stream.once('100%'),
-        heightCalc: stream.once('100%'),
-      });
+      var i = c();
       $el.css('border-radius', px(radius));
       stream.map(colorStringS, function (colorstring) {
         $el.css('border-left', px(left) + ' ' + style + ' ' + colorstring)
@@ -3421,8 +3415,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
   var toggleHeight = function (open) {
     return layout(function ($el, ctx, c) {
-      $el.css('overflow', 'hidden')
-        .addClass('toggle-height');
+      $el.addClass('toggle-height');
       var i = c();
       return {
         minWidth: i.minWidth,
