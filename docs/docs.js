@@ -2098,9 +2098,6 @@ $(function () {
     title: 'Defining Layouts',
     components: definingLayouts,
   }, {
-    title: 'Possible Future Development',
-    components: version2,
-  }, {
     title: 'Community',
     components: support,
   }];
