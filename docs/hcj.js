@@ -5497,6 +5497,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         centerFirstRowThenAlignLeft: centerFirstRowThenAlignLeftSurplusWidth,
         evenlySplit: evenlySplitSurplusWidth,
         evenlySplitCenter: evenlySplitCenterSurplusWidth,
+        evenSplit: evenlySplitSurplusWidth,
+        evenSplitCenter: evenlySplitCenterSurplusWidth,
         justify: justifySurplusWidth,
         justifyAndCenter: justifyAndCenterSurplusWidth,
         giveToNth: giveToNth,
@@ -5504,6 +5506,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       surplusHeight: {
         ignore: ignoreSurplusHeight,
         center: centerSurplusHeight,
+        evenSplit: evenlySplitSurplusHeight,
         giveToNth: giveHeightToNth,
       },
     },

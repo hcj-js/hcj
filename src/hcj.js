@@ -5419,6 +5419,8 @@
         centerFirstRowThenAlignLeft: centerFirstRowThenAlignLeftSurplusWidth,
         evenlySplit: evenlySplitSurplusWidth,
         evenlySplitCenter: evenlySplitCenterSurplusWidth,
+        evenSplit: evenlySplitSurplusWidth,
+        evenSplitCenter: evenlySplitCenterSurplusWidth,
         justify: justifySurplusWidth,
         justifyAndCenter: justifyAndCenterSurplusWidth,
         giveToNth: giveToNth,
@@ -5426,6 +5428,7 @@
       surplusHeight: {
         ignore: ignoreSurplusHeight,
         center: centerSurplusHeight,
+        evenSplit: evenlySplitSurplusHeight,
         giveToNth: giveHeightToNth,
       },
     },
