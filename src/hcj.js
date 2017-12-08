@@ -1781,13 +1781,20 @@
     return $.type(obj) === 'string' || (obj && obj.hasOwnProperty('str'));
   });
 
-  var ignoreSurplusWidth = function (_, cols) {
-    return cols;
+  var mapSurplusWidthFunc = function (f) {
+    return function (width, rows) {
+      return rows.map(function (cols, i) {
+        return f(width, cols, i);
+      });
+    };
   };
+  var ignoreSurplusWidth = mapSurplusWidthFunc(function (_, cols) {
+    return cols;
+  });
   var ignoreSurplusHeight = function (_, rows) {
     return rows;
   };
-  var centerSurplusWidth = function (gridWidth, positions) {
+  var centerSurplusWidth = mapSurplusWidthFunc(function (gridWidth, positions) {
     var lastPosition = positions[positions.length - 1];
     var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
     var widthPerCol = surplusWidth / positions.length;
@@ -1795,8 +1802,8 @@
       position.left += surplusWidth / 2;
     });
     return positions;
-  };
-  var evenlySplitSurplusWidth = function (gridWidth, positions) {
+  });
+  var evenlySplitSurplusWidth = mapSurplusWidthFunc(function (gridWidth, positions) {
     var lastPosition = positions[positions.length - 1];
     var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
     var widthPerCol = surplusWidth / positions.length;
@@ -1805,8 +1812,8 @@
       position.left += i * widthPerCol;
     });
     return positions;
-  };
-  var evenlySplitCenterSurplusWidth = function (gridWidth, positions) {
+  });
+  var evenlySplitCenterSurplusWidth = mapSurplusWidthFunc(function (gridWidth, positions) {
     var lastPosition = positions[positions.length - 1];
     var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
     var widthPerCol = surplusWidth / positions.length;
@@ -1814,8 +1821,8 @@
       position.left += (i + 0.5) * widthPerCol;
     });
     return positions;
-  };
-  var centerAllSameSurplusWidth = function () {
+  });
+  var centerAllSameSurplusWidth = mapSurplusWidthFunc(function () {
     var w = 0;
     return function (gridWidth, positions, _, i) {
       if (i === 0) {
@@ -1831,8 +1838,8 @@
         return centerSurplusWidth(gridWidth, positions);
       }
     };
-  };
-  var centerFirstRowThenAlignLeftSurplusWidth = function () {
+  });
+  var centerFirstRowThenAlignLeftSurplusWidth = mapSurplusWidthFunc(function () {
     var left = 0;
     return function (gridWidth, positions, i) {
       if (i === 0) {
@@ -1847,10 +1854,10 @@
         return positions;
       }
     };
-  };
+  });
   // don't read this function, please
   var evenlySplitSurplusWidthWithMinPerRow = function (minPerRow) {
-    return function (gridWidth, positions) {
+    return mapSurplusWidthFunc(function (gridWidth, positions) {
       var lastPosition = positions[positions.length - 1];
       var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
       var widthPerCol = gridWidth / Math.max(minPerRow, positions.length);
@@ -1865,9 +1872,9 @@
         position.left += surplusWidth / 2;
       });
       return positions;
-    };
+    });
   };
-  var justifySurplusWidth = function (gridWidth, positions) {
+  var justifySurplusWidth = mapSurplusWidthFunc(function (gridWidth, positions) {
     var lastPosition = positions[positions.length - 1];
     var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
     positions.map(function (position, i) {
@@ -1876,8 +1883,8 @@
       }
     });
     return positions;
-  };
-  var justifyAndCenterSurplusWidth = function (gridWidth, positions) {
+  });
+  var justifyAndCenterSurplusWidth = mapSurplusWidthFunc(function (gridWidth, positions) {
     var lastPosition = positions[positions.length - 1];
     var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
     positions.map(function (position, i) {
@@ -1885,21 +1892,21 @@
         surplusWidth / (2 * positions.length);
     });
     return positions;
-  };
+  });
   var surplusWidthAlign = function (t) {
-    return function (gridWidth, positions) {
+    return mapSurplusWidthFunc(function (gridWidth, positions) {
       var lastPosition = positions[positions.length - 1];
       var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
       positions.map(function (position, i) {
         position.left += t * surplusWidth;
       });
       return positions;
-    };
+    });
   };
   var surplusWidthAlignLeft = surplusWidthAlign(0);
   var surplusWidthAlignCenter = surplusWidthAlign(0.5);
   var surplusWidthAlignRight = surplusWidthAlign(1);
-  var superSurplusWidth = function (gridWidth, positions) {
+  var superSurplusWidth = mapSurplusWidthFunc(function (gridWidth, positions) {
     var lastPosition = positions[positions.length - 1];
     var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
     if (positions.length === 1) {
@@ -1919,10 +1926,10 @@
     }
     // if there are 3+ things in the row, then justify
     return justifySurplusWidth(gridWidth, positions);
-  };
+  });
 
   var giveToNth = function (n) {
-    return function (gridWidth, positions) {
+    return mapSurplusWidthFunc(function (gridWidth, positions) {
       var lastPosition = positions[positions.length - 1];
       var surplusWidth = gridWidth - (lastPosition.left + lastPosition.width);
       positions.map(function (position, i) {
@@ -1934,7 +1941,7 @@
         }
       });
       return positions;
-    };
+    });
   };
   var giveToFirst = giveToNth(0);
   var giveToSecond = giveToNth(1);
@@ -2202,7 +2209,7 @@
           left += w;
           return position;
         });
-        positions = config.surplusWidthFunc(width, positions);
+        positions = config.surplusWidthFunc(width, [positions])[0];
         return positions;
       };
       stream.combine([
@@ -3717,8 +3724,12 @@
             });
           }
 
+          var rowCells = rows.map(function (row) {
+            return row.cells;
+          });
+          config.surplusWidthFunc(gridWidth, rowCells);
           rows.map(function (row, i) {
-            row.cells = config.surplusWidthFunc(gridWidth, row.cells, i);
+            row.cells = rowCells[i];
           });
 
           return rows;
