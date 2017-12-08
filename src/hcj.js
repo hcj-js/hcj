@@ -1855,6 +1855,35 @@
       }
     };
   });
+  var centerLargestRowThenAlignLeftSurplusWidth = function (gridWidth, rows) {
+    var minLeft = 0;
+    var rowsSoFar = [];
+    return rows.map(function (positions, i) {
+      positions = centerSurplusWidth(gridWidth, [positions])[0];
+      if (i === 0) {
+        minLeft = positions[0].left;
+        rowsSoFar = [positions];
+      }
+      else {
+        var thisRowLeft = positions[0].left;
+        if (minLeft < thisRowLeft) {
+          positions.map(function (position, i) {
+            position.left += (minLeft - thisRowLeft);
+          });
+        }
+        else {
+          rowsSoFar.map(function (positions) {
+            positions.map(function (position, i) {
+              position.left += (thisRowLeft - minLeft);
+            });
+          });
+          minLeft = thisRowLeft;
+        }
+        rowsSoFar.push(positions);
+      }
+      return positions;
+    });
+  };
   // don't read this function, please
   var evenlySplitSurplusWidthWithMinPerRow = function (minPerRow) {
     return mapSurplusWidthFunc(function (gridWidth, positions) {
@@ -5428,6 +5457,7 @@
         ignore: ignoreSurplusWidth,
         center: centerSurplusWidth,
         centerFirstRowThenAlignLeft: centerFirstRowThenAlignLeftSurplusWidth,
+        centerLargestRowThenAlignLeft: centerLargestRowThenAlignLeftSurplusWidth,
         evenlySplit: evenlySplitSurplusWidth,
         evenlySplitCenter: evenlySplitCenterSurplusWidth,
         evenSplit: evenlySplitSurplusWidth,
