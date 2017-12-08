@@ -3381,7 +3381,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     // var s = stream.once(nothing);
     var s = stream.create();
     if (c1) {
-      stream.push(s, c1);
+      stream.push(s, c1 || nothing);
     }
     cP.then(function (c) {
       stream.push(s, c);
