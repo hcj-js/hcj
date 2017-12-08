@@ -149,7 +149,7 @@ $(function () {
     ]));
   };
 
-  var objectDefinition = function (props) {
+  var objectDefinition = function (props, noBullet, commentString, noGray) {
     var maxPropLength = 0;
     var maxTypeLength = 0;
     props.map(function (prop) {
@@ -161,20 +161,20 @@ $(function () {
           bottomToTop: true,
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm('&#8226;&nbsp;`' + prop.name + '&nbsp'.repeat(maxPropLength - prop.name.length) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.type.length) + '`'),
+          pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp'.repeat(maxPropLength - prop.name.length) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.type.length) + '`'),
           c.all([
-            c.backgroundColor({font: color.gray}),
+            noGray ? hcj.funcs.id : c.backgroundColor({font: color.gray}),
           ])(c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
-            pm('`&nbsp;--&nbsp;`'),
+            pm('`&nbsp;' + (commentString || '--') + '&nbsp;`'),
             p0(prop.description),
           ])),
         ]);
     }));
   };
 
-  var typeSignatures = function (sigs) {
+  var typeSignatures = function (sigs, noBullet) {
     var maxPropLength = 0;
     sigs.map(function (sig) {
       maxPropLength = Math.max(maxPropLength, sig.name.length);
@@ -184,7 +184,7 @@ $(function () {
           bottomToTop: true,
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm('&#8226;&nbsp;`' + sig.name + '&nbsp'.repeat(maxPropLength - sig.name.length) + '`'),
+          pm((noBullet ? '`' : '&#8226;&nbsp;`') + sig.name + '&nbsp'.repeat(maxPropLength - sig.name.length) + '`'),
           c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
@@ -222,7 +222,7 @@ $(function () {
       }, {
         name: 'height',
         type: 'Stream Number',
-        description: 'Width available to the instance.',
+        description: 'Height available to the instance.',
       }, {
         name: 'left',
         type: 'Stream Number',
@@ -241,7 +241,7 @@ $(function () {
         description: 'Top position of "$el" relative to the page.',
       }]),
     ]),
-    p('When a component is rendered, it must create an element and append it to the context\'s `$el` property.  The component does not need to size and position itself within its parent; that is done by its parent layout.  The reason the `context` passed to it has `width`, `height`, and so on is so that it can size and position its children.'),
+    p('When a component is rendered, it must create an element and append it to the context\'s `$el` property.  The component does not need to size and position itself within its parent; that is done by its parent layout.  The reason the `context` passed to it has `width` and `height` properties and so on is so that it can size and position its children.'),
     docStack2([
       p('An `instance` is an object with the following properties:'),
       objectDefinition([{
@@ -262,8 +262,8 @@ $(function () {
         description: 'Removes the instance.',
       }]),
     ]),
-    p('`$el` is given a non-static `position`, and sized and located to match the `context` passed into the component.'),
-    p('`minWidth` is a stream of numbers giving the minimum width the instance requires to display sanely.  Likewise, `minHeight` is a stream of functions that, given a hypothetical width, return the height required by the instance at that width.'),
+    p('`$el` is always given a non-static `position`, and sized and located to match the `context` passed into the component.'),
+    p('`minWidth` is a stream of numbers giving the minimum width required by the instance to display sanely.  Likewise, `minHeight` is a stream of functions that, given a hypothetical width, return the height required by the instance at that width.'),
     p('The `remove` property is a function that removes `$el` from the DOM and performs any other cleanup required by the instance, such as closing open connections.'),
     p("In HCJ terminology, a `layout` is a function that takes one or more components and returns a component.  A `style` is a function that takes exactly one component and returns a component.  Therefore, all styles are layouts."),
     c.all([
@@ -275,7 +275,7 @@ $(function () {
       minWidth: 600,
     })),
     p("Figure 1: Red arrows depict the context belonging to the blue component inside the green layout."),
-    p("In most cases, the `width` and `height` context streams are the only ones that are used."),
+    p("In most cases, the `width` and `height` streams are all that are needed.  The other streams are provided so that layouts can position children relative to their overall on-screen location if need be."),
   ];
 
   var libraryModules = [
@@ -493,7 +493,7 @@ $(function () {
     p('Each is a property of the `window.hcj.component` object.'),
     p('Below each function, there is a Haskell-esque "type signature" showing the parameters that each function can take, followed by an English description.  This "type signature" borrows syntax from Haskell and C#, and uses some of its own shorthand.  The function arrow `->` is borrowed from Haskell; `a -> b` is a function taking a parameter of type `a` and returning type `b`.  Additionally, `(a , b) -> c` denotes a two-argument function, while `(a ; b) -> c` denotes a two-argument function that can be curried, i.e. `f :: (a ; b) -> c` can be called either as `f(x, y)` or as `f(x)(y)`.  The type `a?`, is shorthand for `Maybe a`, denoting "Either an `a` or the value `undefined`".  And `a | b` denotes a variable that can have type `a` or type `b`.'),
 
-    h2('text'),
+    h2('Text'),
     p('`text :: (TextConfig? ; SpanConfig | [SpanConfig]) -> Component`'),
     p('The `text` function can take one or two arguments: an optional `TextConfig`, followed by either a single `SpanConfig` or an array of `SpanConfigs`.  It returns a `Component`.'),
     p('By default, a text component has a minimum width of 300px, and its minimum height is computed by measuring the height of the element.  These can be changed by passing in a `TextConfig` object.'),
@@ -585,7 +585,7 @@ $(function () {
       "}]);",
     ]),
 
-    h2('image'),
+    h2('Image'),
     p('`image :: ImageConfig -> Component`'),
     p('Creates an image component.  By default, an image\'s minimum width is its native width, and its minimum height function attempts to maintain its aspect ratio.'),
     p("An `ImageConfig` object has the following properties:"),
@@ -608,7 +608,7 @@ $(function () {
     }]),
     p('Note: When an image is placed into a context whose proportions are not the image\'s aspect ratio, it will stretch.  The most common solution is to wrap images with the `hcj.component.keepAspectRatio` layout.'),
 
-    h2('barH, barV, and rectangle'),
+    h2('BarH, BarV, and Rectangle'),
     typeSignatures([{
       name: 'barH',
       type: 'Number -> Component',
@@ -621,7 +621,7 @@ $(function () {
     }]),
     p("`barH` and `barV` create horizontal and vertical separators of the size you specify.  `rectangle` takes an object with `h` and `v` or `x` and `y` properties, and creates a rectangle of that size."),
 
-    h2('empty'),
+    h2('Empty'),
     typeSignatures([{
       name: 'empty',
       type: 'String -> Component',
@@ -634,14 +634,12 @@ $(function () {
   ];
 
   var standardLibraryLayouts = [
-    p('These are the layouts that ship with hcj.js.'),
-    p('Some take optional configuration objects as their first parameter.  All such layouts can be curried.  This is denoted by a semicolon separating the layout\'s parameters, e.g. `someLayout :: (Maybe SomeLayoutConfig; [Component]) -> Component` can be called as `someLayout(config, components)`, `someLayout(config)(components)`, or just `someLayout(components)`.'),
-    p('These layouts are all properties of the `window.hcj.component` object.'),
+    p('These are the layouts that ship with hcj.js.  All are properties of the `window.hcj.component` object.'),
 
-    h2('alignHorizontal / alignH / alignLRM'),
+    h2('AlignHorizontal / AlignH / AlignLRM'),
     typeSignatures([{
       name: 'alignHorizontal',
-      type: '{l: Maybe Component, r: Maybe Component, m: Maybe Component} -> Component',
+      type: '{l: Component?, r: Component?, m: Component?} -> Component',
     }, {
       name: 'alignHLeft',
       type: 'Component -> Component',
@@ -652,26 +650,24 @@ $(function () {
       name: 'alignHMiddle',
       type: 'Component -> Component',
     }]),
-    p('Takes an object with optional `l`, `r`, and `m` properties.  Aligns components left, right, and middle.'),
+    p('Takes an object with optional `l`, `r`, and `m` properties.  Aligns elements left, right, and middle.'),
     docStack2([
       p('Example:'),
       codeBlock([
-        "var c = window.hcj.component;",
+        "var logo = hcj.component.image({src: 'logo.png'});",
+        "var menu = hcj.component.text('menu');",
         "&nbsp;",
-        "var logo = c.image({src: 'logo.png'});",
-        "var menu = c.text('menu');",
-        "&nbsp;",
-        "var header = c.alignH({",
+        "var header = hcj.component.alignH({",
         "  l: logo,",
         "  r: menu,",
         "});",
       ]),
     ]),
 
-    h2('alignVertical / alignV / alignTBM'),
+    h2('AlignVertical / AlignV / AlignTBM'),
     typeSignatures([{
       name: 'alignVertical',
-      type: '{t: Maybe Component, b: Maybe Component, m: Maybe Component} -> Component',
+      type: '{t: Component?, b: Component?, m: Component?} -> Component',
     }, {
       name: 'alignVTop',
       type: 'Component -> Component',
@@ -682,78 +678,198 @@ $(function () {
       name: 'alignVMiddle',
       type: 'Component -> Component',
     }]),
-    p('Takes an object with optional `t`, `b`, and `m` properties.  Aligns components top, bottom, and middle.'),
-
-    h2('componentStream'),
-    p('`componentStream :: Stream(Component) -> Component`'),
-    p('Takes an hcj stream of components and returns a component that displays the latest one.'),
-
-    h2('promiseComponent'),
-    p('`promiseComponent :: (Promise(Component), Maybe Component) -> Component`'),
-    p('Takes a promise that resolves to a component and an optional initial component to display, and returns a corresponding componentStream.'),
-
-    h2('grid'),
-    p('`grid :: GridConfig -> [Component] -> Component`'),
-    p('A responsive grid layout.  Components are placed into rows.'),
-    stack([
-      p("&#8226; `padding`: padding amount between components"),
-      p("&#8226; `surplusWidthFunc`: splits surplus width among components in each row; see `sideBySide`"),
-      p("&#8226; `surplusHeightFunc`: splits surplus hegiht among grid rows; see `stack`"),
-      p("&#8226; `useFullWidth`: if set, the grid's min width is computued as the sum of the min widths of the child components, rather than as the largest of the min widths of the child components"),
-      p("&#8226; `bottomToTop`: if set, grid rows are arranged in reverse order: they stack upward instead of downward"),
+    p('Takes an object with optional `t`, `b`, and `m` properties.  Aligns elements top, bottom, and middle.'),
+    docStack2([
+      p('Example:'),
+      codeBlock([
+        "var logo = hcj.component.image({src: 'logo.png'});",
+        "var menu = hcj.component.text('menu');",
+        "&nbsp;",
+        "var header = hcj.component.alignV({",
+        "  t: logo,",
+        "  m: menu,",
+        "});",
+      ]),
     ]),
 
-    h2('keepAspectRatio'),
-    p('`keepAspectRatio :: KeepAspectRatioConfig -> Component -> Component`'),
-    p('Behaves much like the `background` CSS property.'),
-    p("Positions a component in a space, maintaining its aspect ratio.  Will exhibit strange behavior when the child component's aspect ratio is not constant."),
-    p('A `KeepAspectRatioConfig` may have any of the following properties:'),
-    stack([
-      p("&#8226; fill: If set, the child component covers the space and may be cropped.  If not set, the child component is contained within the space and there may be margins."),
-      p("&#8226; top: If set, the top of the child component is aligned with the top of the keepAspectRatio component."),
-      p("&#8226; bottom: If set, the bottom of the child component is aligned with the bottom of the keepAspectRatio component."),
-      p("&#8226; left: If set, the left of the child component is aligned with the left of the keepAspectRatio component."),
-      p("&#8226; right: If set, the left of the child component is aligned with the left of the keepAspectRatio component."),
+    h2('ComponentStream'),
+    p('`componentStream :: Stream Component -> Component`'),
+    p('Takes an hcj stream of components and returns a component that displays latest one in the stream.'),
+    docStack2([
+      p('Example:'),
+      codeBlock([
+        "var componentS = hcj.stream.map(hcj.viewport.widthS, function (windowWidth) {",
+        "  return hcj.component.text('' + windowWidth);",
+        "};",
+        "var windowWidth = componentStream(componentS);",
+      ]),
     ]),
 
-    h2('largestWidthThatFits'),
+    h2('Grid'),
+    p('`grid :: (GridConfig? ; [Component]) -> Component`'),
+    p('Responsive grid layout.  Components are placed into rows.'),
+    p('A `GridConfig` is an object with the following properties:'),
+    objectDefinition([{
+      name: 'padding',
+      type: 'Number?',
+      description: 'Padding amount between components.',
+    }, {
+      name: 'surplusWidthFunc',
+      type: 'SurplusWidthFunc?',
+      description: 'Splits any surplus width among components in each row; see `sideBySide`.',
+    }, {
+      name: 'surplusHeightFunc',
+      type: 'SurplusHeightFunc?',
+      description: 'Splits surplus height among grid rows; see `stack`.',
+    }, {
+      name: 'useFullWidth',
+      type: 'Bool?',
+      description: 'If set, the grid\'s min width is computued as the sum of the min widths of the child components, rather than as the largest of the min widths of the child components.',
+    }, {
+      name: 'bottomToTop',
+      type: 'Bool?',
+      description: 'If set, grid rows are arranged in reverse order: they stack upward instead of downward.',
+    }, {
+      name: 'maxPerRow',
+      type: 'Number?',
+      description: 'Max components per row.',
+    }, {
+      name: 'rowOrColumn',
+      type: 'Bool?',
+      description: 'If set, grid elements will always be arranged in either a single row if they fit horizontally, or a single column if they do not.',
+    }]),
+
+    h2('LargestWidthThatFits'),
     p('`largestWidthThatFits :: [Component] -> Component`'),
-    p('Chooses the largest-width component that fits inside its own given width, among the components passed in.  (Currently will crash if none fit.)'),
+    p('Chooses the largest-width component that fits, among the components passed in.'),
+    p('The minimum width of this component is the smallest of the minimum widths of its children, and the minimum height is of the largest component that fits the given width.'),
 
-    h2('overlays'),
-    p('`overlays :: OverlaysConfig -> [Component] -> Component`'),
-    p('Places components one directly on top of another.'),
-    p('The OverlaysConfig is not currently used.'),
+    h2('Overlays'),
+    p('`overlays :: [Component] -> Component`'),
+    p('Places components directly on top of one another.'),
+    p('The minimum width and minimum height of the overlay are the max of the minimum widths and minimum heights of its children.'),
 
-    h2('promiseComponent'),
-    p('see componentStream'),
+    h2('PromiseComponent'),
+    p('`promiseComponent :: (Promise Component , Component?) -> Component`'),
+    p('Takes a promise that resolves to a component, and an optional initial component.  Displays the initial component until the promise resolves, then switches to the resolved component.'),
 
-    h2('sideBySide'),
-    p('`sideBySide :: SideBySideConfig -> [Component] -> Component`'),
-    p('Puts components directly side by side.'),
+    h2('SideBySide'),
+    p('`sideBySide :: (SideBySideConfig ; [Component]) -> Component`'),
+    p('Places components directly side by side.'),
     p('A `SideBySideConfig` may have the following properties:'),
-    stack([
-      p("&#8226; `padding`: Padding amount between components."),
-      p("&#8226; `surplusWidthFunc`: Similar to a `stack`, a `sideBySide` can have surplus width.  A `surplusWidthFunc` function takes two arguments.  The first is the actual width of the `sideBySide`.  The second is an array of objects with `left` and `width` properties, giving the computed left coordinate and min width of each child within the stack.  It returns a new array of objects with `left` and `width` coordinates."),
-    ]),
+    objectDefinition([{
+      name: 'Padding',
+      type: 'Number?',
+      description: 'Padding amount between components.',
+    }, {
+      name: 'surplusWidthFunc',
+      type: 'SurplusWidthFunc?',
+      description: 'Distribute surplus width among the stacked items.  Surplus width function is always called with a single row.',
+    }]),
+    p('When the width of a row is greater than its minimum width, it has surplus width.  A `SurplusWidthFunc` takes two parameters: the total width available, and an array of "rows", each an array of "columns".  Each column is an object with a `left` and a `width` property initialized with its left position and width.  The function returns an array of rows (possibly by mutating the input array) giving new left and width values for each column.'),
+    h3('surplusWidthFunc'),
+    p('`SurplusWidthFunc :: (Number , [[{left: Number, width: Number}]]) -> [[{left: Number, width: Number}]]`'),
+    p('HCJ comes with a small number of `SurplusWidthFunc`s for you to use.  These are all members of the `window.hcj.funcs.surplusWidth` object:'),
+    objectDefinition([{
+      name: 'ignore',
+      type: 'SurplusWidthFunc',
+      description: 'Ignores surplus width.',
+    }, {
+      name: 'center',
+      type: 'SurplusWidthFunc',
+      description: 'Centers rows horizontally.',
+    }, {
+      name: 'evenSplit',
+      type: 'SurplusWidthFunc',
+      description: 'Evenly splits each row\'s surplus width among its columns, increasing their widths.',
+    }, {
+      name: 'justify',
+      type: 'SurplusWidthFunc',
+      description: 'Repositions each row\'s columns so that they are evenly spaced, but does not increase their widths.',
+    }, {
+      name: 'giveToNth',
+      type: 'Number -> SurplusWidthFunc',
+      description: 'Gives all surplus width to the nth column of each row.',
+    }, {
+      name: 'centerLargestRowThenAlignLeft',
+      type: 'SurplusWidthFunc',
+      description: 'Centers the largest row.  All rows are then left-aligned together.',
+    }]),
+    p('Note that unlike a `SurplusHeightFunc`, which only operates on a single column of elements, a `SurplusWidthFunc` operates on multiple rows at once.'),
 
-    h2('stack'),
-    p('`stack :: StackConfig -> [Component] -> Component`'),
-    p('Puts components in a stack, one on top of another.'),
-    p('A `StackConfig` may have the following properties:'),
-    stack([
-      p("&#8226; `padding`: Padding amount between components."),
-      p("&#8226; `surplusHeightFunc`: There can be surplus height, i.e. the actual height of the stack can be greater than the minimim heights of all of the children.  A `surplusHeightFunc` function takes two arguments.  The first argument is the actual height of the stack (in pixels).  The second argument is an array of objects with `top` and `height` properties, giving the computed top coordinate and min height of each child within the stack (in pixels).  It returns a new array of objects with `top` and `height` properties."),
-    ]),
+    h2('Stack'),
+    p('`stack :: (StackConfig? ; [Component]) -> Component`'),
+    p('Positions components one on top of another.  The minimum width of a stack is the largest of the minimum widths of its children.  The minimum height of a stack is the sum of the minimum heights of its children.'),
+    p('A `StackConfig` is an object with the following properties:'),
+    objectDefinition([{
+      name: 'padding',
+      type: 'Number?',
+      description: 'Padding amount between components.',
+    }, {
+      name: 'surplusHeightFunc',
+      type: 'SurplusHeightFunc?',
+      description: 'Distribute surplus height among the stacked items.',
+    }]),
+    p('When the height of a stack is greater than its minimum height, it has surplus height.  A `SurplusHeightFunc` takes two parameters: the total height available, and an array of "rows", each an object with a `top` and a `height` property initialized with its top position and height.  It returns an array of rows (possibly by mutating the input array) giving new top and height values for each row.'),
+    h3('surplusHeightFunc'),
+    p('`SurplusHeightFunc :: (Number , [{top: Number, height: Number}]) -> [{top: Number, height: Number}]`'),
+    p('HCJ comes with a small number of `SurplusHeightFunc`s for you to use.  These are all members of the `window.hcj.funcs.surplusHeight` object:'),
+    objectDefinition([{
+      name: 'ignore',
+      type: 'SurplusHeightFunc',
+      description: 'Ignores surplus height.',
+    }, {
+      name: 'center',
+      type: 'SurplusHeightFunc',
+      description: 'Centers rows vertically.',
+    }, {
+      name: 'evenSplit',
+      type: 'SurplusHeightFunc',
+      description: 'Evenly splits surplus height among rows.',
+    }, {
+      name: 'giveToNth',
+      type: 'Number -> SurplusHeightFunc',
+      description: 'Gives all surplus height to the nth row.',
+    }]),
   ];
 
   var standardLibraryComponentModifiers = [
     p('While the layouts in the previous section take multiple components and return a component, layouts that take exactly one component and return a component, sometimes called `styles`, can add much customization and functionality.'),
     p('These styles are all properties of the `window.hcj.component` object.'),
+    p('A style again is a function that takes one component and returns a component, so the type `Style` is equivalent to the type `(Component -> Component)`.'),
 
-    h2('all, compose'),
-    p('`all :: [Component -> Component] -> Component -> Component`'),
-    p('The `hcj.component.all` (aka `hcj.component.compose`) function is listed first because it is real good.  It performs function composition, i.e. applies multiple styles, one after another.'),
+    h2('$$, $addClass, $attr, $css, $on, $prop'),
+    objectDefinition([{
+      name: '$$',
+      type: '((JQuery , Context) -> ())',
+      description: '`Style`',
+    }, {
+      name: '$addClass',
+      type: 'String',
+      description: '`Style`',
+    }, {
+      name: '$attr',
+      type: '(String , String)',
+      description: '`Style`',
+    }, {
+      name: '$css',
+      type: '(String , String)',
+      description: '`Style`',
+    }, {
+      name: '$on',
+      type: '(String , (Event -> ()))',
+      description: '`Style`',
+    }, {
+      name: '$prop',
+      type: '(String , String)',
+      description: '`Style`',
+    }], true, '->', true),
+    p('The `$$` function takes a function that operates on the root element of an instance (and can also read from its context), and returns a style.'),
+    p('`$addClass`, `$attr`, `$css`, `$on`, and `$prop` operate on a component using the JQuery methods they are named for.'),
+
+    h2('All'),
+    p('`all :: [Style] -> Style`'),
+    p('The `hcj.component.all` function performs function composition.  It applies multiple styles, one after another.'),
     p('Example:'),
     codeBlock([
       "var title = all([",
@@ -765,138 +881,230 @@ $(function () {
       "  }),",
       "])(text('Text'));",
     ]),
-    p('Example showing nesting:'),
-    codeBlock([
-      "var prettyBorder = all([",
-      "  border(white, {",
-      "    all: 1,",
-      "  });",
-      "  border(gray, {",
-      "    all: 1,",
-      "  });",
-      "  border(black, {",
-      "    all: 1,",
-      "  });",
-      "]);",
-      "&nbsp;",
-      "var button = all([",
-      "  margin({",
-      "    all: 10,",
-      "  }),",
-      "  prettyBorder,",
-      "])(text('Submit'));",
-    ]),
 
-    h2('$$, $addClass, $attr, $css, $on, $prop'),
-    stack([
-      p('`$$ :: ($ -> IO ()) -> Component -> Component`'),
-      p('`$addClass :: String -> Component -> Component`'),
-      p('`$attr :: (String, String) -> Component -> Component`'),
-      p('`$css :: (String, String) -> Component -> Component`'),
-      p('`$on :: (String, (Event -> IO ())) -> Component -> Component`'),
-      p('`$prop :: (String, String) -> Component -> Component`'),
-    ]),
-    p('These methods demonstrate HCJ\'s jquery dependency.  Defined using `and`, `hcj.component.$$` takes a function of the JQuery selector of an instance.  The rest of these methods are simply defined in terms of `$$`.'),
-
-    h2('and'),
-    p('`and :: ((Instance, Context) -> IO ()) -> Component -> Component`'),
-    p('The `hcj.component.and` function is a misc method that lets you operate on an instance each time a component is rendered.  It takes a function of an instance and a context, and it returns a function from a component to a component.  Example:'),
+    h2('And'),
+    p('`and :: ((Instance , Context) -> ()) -> Component -> Component`'),
+    p('The `hcj.component.and` function lets you arbitrarily operate on an instance while reading from its context.  It takes a function that takes an instance and a context, and returns a style.'),
+    p('Example:'),
     codeBlock([
       "var turnBlue = and(function (i) {",
       "  i.$el.css('background-color', 'blue');",
       "});",
     ]),
 
-    h2('backgroundColor'),
-    p('`backgroundColor :: BackgroundColorConfig -> Component -> Component`'),
-    p('Applies a background color and a font color to a component'),
-    stack([
-      p('A `BackgroundColorConfig` is an object or a stream of objects.  If it is an object, then its properties may be streams instead of single values.  In any case, it has the following properties:'),
-      p("&#8226; background: background color"),
-      p("&#8226; font: font color"),
-      p("&#8226; backgroundHover: background color on hover"),
-      p("&#8226; fontHover: font color on hover"),
+    h2('BackgroundColor'),
+    p('`backgroundColor :: (BackgroundColorConfig | Stream BackgroundColorConfig) -> Style`'),
+    p('Applies background and font colors to a component.'),
+    docStack2([
+      p('A `BackgroundColorConfig` is an object with the following properties:'),
+      objectDefinition([{
+        name: 'background',
+        type: 'Color?',
+        description: 'Background color.',
+      }, {
+        name: 'font',
+        type: 'Color?',
+        description: 'Font color.',
+      }, {
+        name: 'backgroundHover',
+        type: 'Color?',
+        description: 'Background color on hover.',
+      }, {
+        name: 'fontHover',
+        type: 'Color?',
+        description: 'Font color on hover.',
+      }]),
     ]),
 
-    h2('border'),
-    p('`border :: Color -> BorderConfig -> Component -> Component`'),
+    h2('Border'),
+    p('`border :: (Color , BorderConfig) -> Style`'),
     p('Adds a colored border around a component.'),
-    p('A `Color` is an object with `r`, `g`, `b`, and `a` properties.  (see below)'),
-    stack([
+    docStack2([
       p('A `BorderConfig` is an object with the following properties:'),
-      p("&#8226; all: border to apply to all sides"),
-      p("&#8226; top: border to apply to the top"),
-      p("&#8226; bottom: border to apply to bottom"),
-      p("&#8226; left: border to apply to the left side"),
-      p("&#8226; right: border to apply to the right side"),
-      p("&#8226; radius: border radius"),
+      objectDefinition([{
+        name: 'all',
+        type: 'Number?',
+        description: 'Border size on all sides.',
+      }, {
+        name: 'top',
+        type: 'Number?',
+        description: 'Border size on top side.',
+      }, {
+        name: 'bottom',
+        type: 'Number?',
+        description: 'Border size on bottom side.',
+      }, {
+        name: 'left',
+        type: 'Number?',
+        description: 'Border size on left side.',
+      }, {
+        name: 'right',
+        type: 'Number?',
+        description: 'Border size on right side.',
+      }, {
+        name: 'radius',
+        type: 'Number?',
+        description: 'Border radius.',
+      }]),
     ]),
 
-    h2('crop'),
+    h2('Crop'),
     p('Crops a component down to a proportion of its size.'),
-    p('`crop :: CropConfig -> Component -> Component`'),
-    stack([
-      p("A `CropConfig` can either be a number, which is treated as an object with an 'all' property of that value, or an object with any of the following properties:"),
-      p("&#8226; all: crop percentage on all sides"),
-      p("&#8226; top: crop percentage from the top"),
-      p("&#8226; bottom: crop percentage from the bottom"),
-      p("&#8226; left: crop percentage from the left"),
-      p("&#8226; right: crop percentage from the right"),
+    p('`crop :: CropConfig -> Style`'),
+    docStack2([
+      p('A `CropConfig` is an object with the following properties:'),
+      objectDefinition([{
+        name: 'all',
+        type: 'Number?',
+        description: 'Crop proportion on all sides.',
+      }, {
+        name: 'top',
+        type: 'Number?',
+        description: 'Crop proportion on top side.',
+      }, {
+        name: 'bottom',
+        type: 'Number?',
+        description: 'Crop proportion on bottom side.',
+      }, {
+        name: 'left',
+        type: 'Number?',
+        description: 'Crop proportion on left side.',
+      }, {
+        name: 'right',
+        type: 'Number?',
+        description: 'Crop proportion on right side.',
+      }]),
     ]),
 
-    h2('link'),
-    p('`link :: Component -> Component`'),
-    p('Applies a certain hover effect.'),
+    h2('KeepAspectRatio'),
+    p('`keepAspectRatio :: (KeepAspectRatioConfig? ; Component) -> Component`'),
+    p("Actively protects the aspect ratio of a component.  Aspect ratio is defined as the component's minimum width divided by its minimum height at its minimum width.  Component can cover the entire display area, or be contained within the display area."),
+    p('A `KeepAspectRatioConfig` may have any of the following properties:'),
+    objectDefinition([{
+      name: 'fill',
+      type: 'Bool?',
+      description: 'If set, the child component covers the display area, and is cropped if necessary.  If false or not set, component is contained within the display area.',
+    }, {
+      name: 'top',
+      type: 'Bool?',
+      description: 'If set, child component\'s top is aligned with the top of the display area.',
+    }, {
+      name: 'bottom',
+      type: 'Bool?',
+      description: 'If set, child component\'s bottom is aligned with the bottom of the display area.',
+    }, {
+      name: 'left',
+      type: 'Bool?',
+      description: 'If set, child component\'s left side is aligned with the left side of the display area.',
+    }, {
+      name: 'right',
+      type: 'Bool?',
+      description: 'If set, child component\'s right side is aligned with the right side of the display area.',
+    }]),
 
-    h2('linkTo'),
-    p('`linkTo :: LinkConfig -> Component -> Component`'),
-    p('Wraps component it in an `a` tag with a particular href.'),
-    stack([
+    h2('Link'),
+    p('`link :: Style`'),
+    p('Sets the `pointer: cursor` CSS style.'),
+
+    h2('LinkTo'),
+    p('`linkTo :: LinkConfig -> Style`'),
+    p('Wraps component it in an `a` tag with the given href.'),
+    docStack2([
       p('A `LinkConfig` is an object with the following properties:'),
-      p("&#8226; href: href property (required)"),
-      p("&#8226; target: link target"),
+      objectDefinition([{
+        name: 'href',
+        type: 'String',
+        description: 'Link href.',
+      }, {
+        name: 'target',
+        type: 'String?',
+        description: 'Link target.',
+      }]),
     ]),
 
-    h2('margin, padding'),
-    p('`margin :: MarginConfig -> Component -> Component`'),
+    h2('Margin, Padding'),
+    typeSignatures([{
+      name: 'margin',
+      type: 'MarginConfig -> Style',
+    }, {
+      name: 'padding',
+      type: 'MarginConfig -> Style',
+    }]),
     p('Adds some space around a component.'),
-    stack([
-      p('A `MarginConfig` may have any of the following properties:'),
-      p("&#8226; all: margin to apply to all sides"),
-      p("&#8226; top: margin to apply to the top"),
-      p("&#8226; bottom: margin to apply to bottom"),
-      p("&#8226; left: margin to apply to the left side"),
-      p("&#8226; right: margin to apply to the right side"),
+    p('In HCJ, there is no difference between the concepts of padding and margin.'),
+    docStack2([
+      p('A `MarginConfig` is an object with the following properties:'),
+      objectDefinition([{
+        name: 'all',
+        type: 'Number?',
+        description: 'Margin to apply to all sides.',
+      }, {
+        name: 'top',
+        type: 'Number?',
+        description: 'Margin to apply to top side.',
+      }, {
+        name: 'bottom',
+        type: 'Number?',
+        description: 'Margin to apply to bottom side.',
+      }, {
+        name: 'left',
+        type: 'Number?',
+        description: 'Margin to apply to left side.',
+      }, {
+        name: 'right',
+        type: 'Number?',
+        description: 'Margin to apply to right side.',
+      }]),
     ]),
 
-    h2('minHeight'),
-    p('`minHeight :: MinHeight -> Component -> Component`'),
-    p('`minHeightAtLeast :: MinHeightAtLeast -> Component -> Component`'),
-    p('Overrides the min height of a component.'),
-    p('The `MinHeight` can be a function from numbers to numbers, a stream of functions from numbers to numbers, or a function that takes the `Instance` and `Context` and returns a stream of functions from numbers to numbers.'),
-    p('minHeightAtLeast takes a number or a stream of numbers, and sets the min height of a component to be at least that great.'),
+    h2('MinHeight'),
+    p('`minHeight :: (Number -> Number) -> Style`'),
+    p('`minHeightAtLeast :: (Number | Stream Number) -> Style`'),
+    p('Overrides the minimum height of a component.'),
+    p('The `minHeight` function takes a function from numbers to numbers and sets the component\'s min height to that function.'),
+    p('The `minHeightAtLeast` function takes a number or a stream of numbers, and sets the minimum height of a component to be at least that amount.'),
 
-    h2('minWidth'),
-    p('`minWidth :: MinWidth -> Component -> Component`'),
-    p('`minWidthAtLeast :: MinWidthAtLeast -> Component -> Component`'),
-    p('Overrides the min width of a component.'),
-    p('The `MinWidth` can be a number, a stream of numbers, or a function that takes the `Instance` and `Context` and returns a stream of numbers.'),
-    p('minWidthAtLeast takes a number or a stream of numbers, and sets the min width of a component to be at least that great.'),
+    h2('MinWidth'),
+    p('`minWidth :: MinWidth -> Style`'),
+    p('`minWidthAtLeast :: (Number | Stream Number) -> Style`'),
+    p('Overrides the minimum width of a component.'),
+    p('The `minWidth` function takes a number and sets the minimum width of the instance to be that number.'),
+    p('The `minWidthAtLeast` function takes a number or a stream of numbers, and sets the minimum width of a component to be at least that amount.'),
 
-    h2('onThis'),
-    stack([
-      p('`onThis :: String -> (Event -> IO ()) -> Component -> Component`'),
-      p('`changeThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`clickThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`keydownThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`keyupThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`mousedownThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`mousemoveThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`mouseoverThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`mouseoutThis :: (Event -> IO ()) -> Component -> Component`'),
-      p('`mouseupThis :: (Event -> IO ()) -> Component -> Component`'),
-    ]),
-    p('`onThis` is a curried form of the `$on` function.  Additional functions are also provided where it is called with its first argument.'),
+    h2('OnThis'),
+    p('Signs up an event handler.'),
+    typeSignatures([{
+      name: 'onThis',
+      type: 'String -> (Event -> ()) -> Style',
+    }, {
+      name: 'changeThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'clickThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'keydownThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'keyupThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'mousedownThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'mousemoveThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'mouseoverThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'mouseoutThis',
+      type: '(Event -> ()) -> Style',
+    }, {
+      name: 'mouseupThis',
+      type: '(Event -> ()) -> Style',
+    }]),
+    p('`changeThis` is defined as `onThis("change")`, etc.'),
   ];
 
   var standardLibraryStreams = [
