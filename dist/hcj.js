@@ -5389,6 +5389,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       and: and,
       backgroundColor: backgroundColor,
       bar: bar,
+      barH: bar.h,
+      barV: bar.v,
       basicFloat: basicFloat,
       border: border,
       box: rectangle,
