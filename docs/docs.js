@@ -149,7 +149,7 @@ $(function () {
     ]));
   };
 
-  var objectDefinition = function (props, noBullet, commentString, noGray) {
+  var objectDefinition = function (props, noBullet, commentString, noGray, noBottomToTop) {
     var maxPropLength = 0;
     var maxTypeLength = 0;
     props.map(function (prop) {
@@ -158,7 +158,7 @@ $(function () {
     });
     return stack(props.map(function (prop) {
       return c.grid({
-          bottomToTop: true,
+          bottomToTop: !noBottomToTop,
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
           pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp'.repeat(maxPropLength - prop.name.length) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.type.length) + '`'),
@@ -167,14 +167,14 @@ $(function () {
           ])(c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
-            pm('`&nbsp;' + (commentString || '--') + '&nbsp;`'),
+            pm('`' + (commentString || '&nbsp;--&nbsp;') + '`'),
             p0(prop.description),
           ])),
         ]);
     }));
   };
 
-  var typeSignatures = function (sigs, noBullet) {
+  var typeSignatures = function (sigs, noBullet, typeofString) {
     var maxPropLength = 0;
     sigs.map(function (sig) {
       maxPropLength = Math.max(maxPropLength, sig.name.length);
@@ -188,7 +188,7 @@ $(function () {
           c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
-            pm('`&nbsp;::&nbsp;`'),
+            pm(typeofString || '`&nbsp;::&nbsp;`'),
             p0('`' + sig.type + '`'),
           ]),
         ]);
@@ -863,7 +863,7 @@ $(function () {
       name: '$prop',
       type: '(String , String)',
       description: '`Style`',
-    }], true, '->', true),
+    }], true, '&nbsp;->&nbsp;', true, true),
     p('The `$$` function takes a function that operates on the root element of an instance (and can also read from its context), and returns a style.'),
     p('`$addClass`, `$attr`, `$css`, `$on`, and `$prop` operate on a component using the JQuery methods they are named for.'),
 
@@ -1217,17 +1217,171 @@ $(function () {
   ];
 
   var standardLibraryForms = [
-    p("Hcj takes the liberty of providing some reactive form components."),
+    p("Hcj provides some reactive form components for your convenience."),
 
-    h2('fieldType'),
-    p('The object `window.hcj.forms.fieldType` is used for specifying form types.  Intuitively, a form type determines both the type that the user inputs, and the form element\'s logical internal type.  An HCJ form component maintains a stream of the latter type, pushing to it and/or updating the user-facing values of the former type(s).'),
-    p('Its values are the form type constructors.  These are either literally form types, or functions that take some parameters and return form types.  A form type is a row type, an object with at least a `type` property tagging the form type, and optionally extra properties determined by the tag.'),
-    p('Here are the form type constructors, with demos:'),
+    h2('FieldKind, FieldType, FormComponent'),
+    p('HCJ\'s standard library has a fairly intricate model of form components and their types.  Logically it is based on simple dependent types, specifically type families.  HCJ\'s model of form types is extensible, so you can add your own form types by extending the `FieldKind` type and then extending the other types as needed.'),
+    h3('FieldKind'),
+    p('The `FieldKind` type declares the kind of form field you will be using.  It is a subset of the `String` type.  The `FieldKind` values included in HCJ\'s standard library are:'),
+    typeSignatures([{
+      name: '"button"',
+      type: 'FieldKind',
+    }, {
+      name: '"checkbox"',
+      type: 'FieldKind',
+    }, {
+      name: '"date"',
+      type: 'FieldKind',
+    }, {
+      name: '"dropdown"',
+      type: 'FieldKind',
+    }, {
+      name: '"hidden"',
+      type: 'FieldKind',
+    }, {
+      name: '"image"',
+      type: 'FieldKind',
+    }, {
+      name: '"number"',
+      type: 'FieldKind',
+    }, {
+      name: '"password"',
+      type: 'FieldKind',
+    }, {
+      name: '"radios"',
+      type: 'FieldKind',
+    }, {
+      name: '"text"',
+      type: 'FieldKind',
+    }, {
+      name: '"textarea"',
+      type: 'FieldKind',
+    }, {
+      name: '"time"',
+      type: 'FieldKind',
+    }], true),
+    p('These essentially correspond to the HTML5 form inputs.  Each kind of form input has a corresponding `FieldKind`, putting `&lt;textarea&gt;` elements on the same level as `&lt;input type="text" /&gt;` and so on.'),
+    h3('FieldType'),
+    p('A `FieldType` is a minimal complete description of a field of a given `FieldKind`, from which the field can be rendered.  It does not include the field\'s `name` attribute.'),
+    p('For each `FieldKind`, the corresponding `FieldType` is constructed differently.  For instance, a text field doesn\'t require any special data to render, while a dropdown requires a set of options.  To represent this logically, we use a type family.  For each `k :: FieldKind`, we have a type `FieldType k`.  In other words:'),
+    p('`FieldType :: FieldKind -> Type`'),
+    p('Each `FieldType` is constructed in its own particular way.  The `FieldType`s corresponding to the `FieldKind`s included with HCJ have the following constructors.  These are all properties of the `hcj.forms.fieldType` object:'),
+    objectDefinition([{
+      name: 'button',
+      type: '(String , OnClick) ->',
+      description: '`FieldType "button"`',
+    }, {
+      name: 'checkbox',
+      type: '',
+      description: '`FieldType "checkbox"`',
+    }, {
+      name: 'date',
+      type: '',
+      description: '`FieldType "date"`',
+    }, {
+      name: 'dropdown',
+      type: '[{name: String, value: String}] ->',
+      description: '`FieldType "dropdown"`',
+    }, {
+      name: 'hidden',
+      type: '',
+      description: '`FieldType "hidden"`',
+    }, {
+      name: 'image',
+      type: '',
+      description: '`FieldType "image"`',
+    }, {
+      name: 'number',
+      type: '',
+      description: '`FieldType "number"`',
+    }, {
+      name: 'password',
+      type: '',
+      description: '`FieldType "password"`',
+    }, {
+      name: 'radios',
+      type: '[String] ->',
+      description: '`FieldType "radios"`',
+    }, {
+      name: 'text',
+      type: '',
+      description: '`FieldType "text"`',
+    }, {
+      name: 'textarea',
+      type: '',
+      description: '`FieldType "textarea"`',
+    }, {
+      name: 'time',
+      type: '',
+      description: '`FieldType "time"`',
+    }], true, '&nbsp;', true, true),
+    p('Most of these constructors are not even functions, but literal `FieldType`s, since there is no additional data required to render the element beyond its `FieldKind`.  The only built-in `FieldType`s that do take additional data are `button`, `dropdown`, and `radios`.'),
+    p('`button` takes two parameters: the name to display on the button, and an `OnClick` handler.  This `OnClick` handler receives three parameters: the event object, its value stream (which we will get to later), and a `disable` function that disables the button and returns an `enable` function that re-enables it.'),
+    p('`dropdown` takes one parameter: an array of objects with `name` and `value` properties giving the options to display in the dropdown.'),
+    p('`radios` also takes one parameter: an array of strings giving the values for each button.'),
+    p('Each `FieldType k` is an object that has a `kind` property with value `k`, plus additional properties as needed.'),
+    h3('FormComponent'),
+    p('Each `FieldKind` needs to be displayed a certain way.  Most can be converted into single components, but `radios` in particular yields multiple radio buttons that you may want to place separately or into a custom layout.'),
+    p('Therefore we introduce a second type family, `FormComponent :: FieldKind -> Type`.  This family gives the type that you can expect when you go to render a certain `FieldType` into usable components.'),
+    typeSignatures([{
+      name: 'FormComponent "button"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "checkbox"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "date"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "dropdown"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "hidden"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "image"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "number"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "password"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "radios"',
+      type: '[Component]',
+    }, {
+      name: 'FormComponent "text"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "textarea"',
+      type: 'Component',
+    }, {
+      name: 'FormComponent "time"',
+      type: 'Component',
+    }], true, '`&nbsp;=&nbsp;`'),
+    p('The `hcj.forms.formComponent` object renders `FieldType`s into their corresponding `FormComponent`s.  It has the following properties, one key for each `FieldKind`:'),
+    stack([
+      objectDefinition([{
+        name: 'button',
+        type: '(FieldType "button", String?, (Stream String)?)',
+        description: '`FormComponent "button"`',
+      }, {
+        name: 'checkbox',
+        type: '(FieldType "checkbox", String?, (Stream String)?)',
+        description: '`FormComponent "checkbox"`',
+      }], false, '&nbsp;->&nbsp;', true, true),
+      p('&#8226;&nbsp;`etc.`'),
+    ]),
+    p('These functions each take three parameters: first the `FieldType`, next the `name` attribute, and last the value stream.  This is a bi-directional stream: it receives a value whenever the user edits the form field, and the form field changes whenever the stream receives a new value.  Each of these functions returns the `FormComponent` corresponding to its `FieldKind`: an array of `Component`s for radio buttons, and a single `Component` for all other `FieldKind`s.'),
+  ];
+
+  var standardLibraryFormExamples = [
     c.stream(0, function (s) {
       return docStack([
         h3('button'),
-        pm('`button : (String, (Event, Stream, Disable) -> IO ()) -> FormType`'),
-        p('Takes a button title and an onClick handler, and returns a button FormType.  The onClick handler receives the click event, the form element\'s stream for pushing to, and a `disable` function, which "disables" the button and returns an `enable` function, which re-enables the button.  Click events will only be processed if the button is enabled.  The returned FormType has three extra properties: `enabledS`, a boolean stream that tells whether the button is enabled and which you may push to, as well as `name` and `onClick`, the passed-in values.'),
+        pm('`button : (String, (Event, Stream, Disable) -> IO ()) -> FieldType`'),
+        p('Takes a button title and an onClick handler, and returns a button FieldType.  The onClick handler receives the click event, the form element\'s stream for pushing to, and a `disable` function, which "disables" the button and returns an `enable` function, which re-enables the button.  Click events will only be processed if the button is enabled.  The returned FieldType has three extra properties: `enabledS`, a boolean stream that tells whether the button is enabled and which you may push to, as well as `name` and `onClick`, the passed-in values.'),
         p('The demo pushes 1 + the stream\'s last value onto the stream each time the button is pressed.  It also disables the button for a while.'),
         stack([
           c.all([
@@ -1404,23 +1558,9 @@ $(function () {
         ]),
       ]);
     }),
+  ];
 
-    h2('formComponent'),
-    p('`formStyle.text : (String, Stream, FieldType) -> Component`'),
-    p("The `window.hcj.forms.formComponent` object has exactly the same keys as `window.hcj.forms.fieldType`.  Its values are functions that take parameters and return form inputs.  These parameters are the name/id of the element, the value stream, and the form type if needed."),
-    p("Note: the `window.hcj.forms.formComponent.radios` function returns not one component but an array of components."),
-    p("Example:"),
-    codeBlock([
-      "var dropdownFormType = forms.fieldType.dropdown([{",
-      "  name: 'A',",
-      "  value: 'a',",
-      "}, {",
-      "  name: 'B',",
-      "  value: 'b',",
-      "}]));",
-      "var dropdown = forms.formComponent.dropdown('dropdown', stream.create(), dropdownFormType);",
-    ]),
-
+  var standardLibraryFormFor = [
     h2('formStyle'),
     p('`formStyle.text : (String, String, Stream, FieldType) -> (Component -> Component)`'),
     p("The `window.hcj.forms.formStyle` object has exactly the same keys as `window.hcj.forms.fieldType`.  Its values are functions that take four paramaters: a field name, the name/id attribute, a stream, and an optional form type.  They return styles that should be applied to the `formComponent` output values."),
@@ -2304,8 +2444,14 @@ $(function () {
     title: 'API - Styles',
     components: standardLibraryComponentModifiers,
   }, {
-    title: 'API - Forms',
+    title: 'API - Forms Intro',
     components: standardLibraryForms,
+  }, {
+    title: 'API - Forms Examples',
+    components: standardLibraryFormExamples,
+  }, {
+    title: 'API - FormFor',
+    components: standardLibraryFormFor,
   }, {
     title: 'API - Colors',
     components: standardLibraryColors,
@@ -2376,7 +2522,7 @@ $(function () {
     var page = pages[index];
     return c.basicFloat({
       padding: 10,
-      clearHanging: true,
+      // clearHanging: true,
     }, sidebar, [
       h1m('hcj.js'),
       pm('v0.2.1 alpha'),
