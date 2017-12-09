@@ -4600,12 +4600,13 @@
     },
     image: function (k, s) {
       return input(function ($el, ctx, mw, mh) {
-        mw();
-        mh();
         $el.prop('name', k);
         $el.prop('type', 'file');
         $el.prop('accept', 'image/*');
+        mw();
+        mh();
         $el.on('change', function (ev) {
+          mw();
           var file = ev.target.files.length > 0 && ev.target.files[0];
           if (file) {
             var reader = new FileReader();
