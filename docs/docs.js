@@ -555,6 +555,10 @@ $(function () {
         name: 'lineHeight',
         type: 'Number?',
         description: 'Line height of the text span.',
+      }, {
+        name: 'verticalAlign',
+        type: 'String?',
+        description: 'Vertical align of the text span.',
       }]),
     ]),
     p('Examples:'),

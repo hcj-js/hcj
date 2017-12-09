@@ -1569,7 +1569,7 @@
           if (c.weight) {
             if (stream.isStream(c.weight)) {
               spanStreams.push(stream.map(c.weight, function (x) {
-                $span.css('font-weight', c.x);
+                $span.css('font-weight', x);
               }));
             }
             else {
@@ -1579,7 +1579,7 @@
           if (c.family) {
             if (stream.isStream(c.family)) {
               spanStreams.push(stream.map(c.family, function (x) {
-                $span.css('font-family', c.x);
+                $span.css('font-family', x);
               }));
             }
             else {
@@ -1599,27 +1599,37 @@
           if (c.shadow) {
             if (stream.isStream(c.shadow)) {
               spanStreams.push(stream.map(c.shadow, function (x) {
-                $span.css('text-shadow', c.x);
+                $span.css('text-shadow', x);
               }));
             }
             else {
               $span.css('text-shadow', c.shadow);
             }
           }
-          if (c.align) {
-            if (stream.isStream(c.align)) {
-              spanStreams.push(stream.map(c.align, function (x) {
-                $span.css('vertical-align', c.x);
+          if (c.verticalAlign) {
+            if (stream.isStream(c.verticalAlign)) {
+              spanStreams.push(stream.map(c.verticalAlign, function (x) {
+                $span.css('vertical-align', x);
               }));
             }
             else {
-              $span.css('vertical-align', c.align);
+              $span.css('vertical-align', c.verticalAlign);
             }
           }
           if (c.spanCSS) {
             c.spanCSS.map(function (css) {
               $span.css(css.name, css.value);
             });
+          }
+          if (c.lineHeight) {
+            if (stream.isStream(c.lineHeight)) {
+              spanStreams.push(stream.map(c.lineHeight, function (x) {
+                $span.css('line-height', x);
+              }));
+            }
+            else {
+              $span.css('line-height', c.lineHeight);
+            }
           }
           if (c.linkTo) {
             var $a = $(document.createElement('a'));
@@ -1752,6 +1762,31 @@
           }
           else {
             $el.css('text-align', config.align);
+          }
+        }
+        if (config.verticalAlign) {
+          if (stream.isStream(config.verticalAlign)) {
+            spanStreams.push(stream.map(config.verticalAlign, function (x) {
+              $el.css('vertical-align', x);
+            }));
+          }
+          else {
+            $el.css('vertical-align', config.verticalAlign);
+          }
+        }
+        if (config.spanCSS) {
+          config.spanCSS.map(function (css) {
+            $el.css(css.name, css.value);
+          });
+        }
+        if (config.lineHeight) {
+          if (stream.isStream(config.lineHeight)) {
+            spanStreams.push(stream.map(c.lineHeight, function (x) {
+              $el.css('line-height', x);
+            }));
+          }
+          else {
+            $el.css('line-height', config.lineHeight);
           }
         }
 
