@@ -1641,16 +1641,26 @@
             //           return a + width;
             //         }, 0)) ||
             //         300;
-            var mw = config.minWidth ||
-                  (config.measureWidth && measureWidth($el)) ||
-                  null;
-            var mh = (config.oneLine && $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')))) || function (w) {
-              // TODO: loop over spans
-              var fontSize = config.size || parseInt($el.css('font-size'));
-              var str = $el.text();
-              var lineHeight = config.lineHeight;
-              return Math.ceil(fontSize * str.length * 0.5 / w) * fontSize * config.lineHeight;
-            };
+            var mw = null;
+            if (config.hasOwnProperty('minWidth')) {
+              mw = config.minWidth;
+            }
+            else if (config.measureWidth) {
+              mw = measureWidth($el);
+            }
+            var mh;
+            if (config.oneLine) {
+              mh = $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')));
+            }
+            else if (config.approximateHeight) {
+              mh = function (w) {
+                // TODO: loop over spans
+                var fontSize = config.size || parseInt($el.css('font-size'));
+                var str = $el.text();
+                var lineHeight = config.lineHeight;
+                return Math.ceil(fontSize * str.length * 0.5 / w) * fontSize * config.lineHeight;
+              };
+            }
             if (!config.oneLine) {
               stream.defer(function () {
                 var mh = (config.minHeight && constant(config.minHeight)) ||
