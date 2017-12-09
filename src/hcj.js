@@ -4772,8 +4772,6 @@
           }
         });
         $el.on('click', function () {
-          var borderWidthH = getFormElementBorderWidthH($el);
-          var borderWidthV = getFormElementBorderWidthV($el);
           var currentOuterWidth = $el.outerWidth(true);
           var currentOuterHeight = $el.outerHeight(true);
           if (lastOuterWidth !== currentOuterWidth) {
