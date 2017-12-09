@@ -4569,6 +4569,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         }),
       ])(text({
         str: t.name,
+      }, {
         el: button,
         measureWidth: true,
       }));

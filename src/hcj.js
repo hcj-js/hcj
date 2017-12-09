@@ -4491,6 +4491,7 @@
         }),
       ])(text({
         str: t.name,
+      }, {
         el: button,
         measureWidth: true,
       }));
