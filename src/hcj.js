@@ -1498,8 +1498,6 @@
         config = config.reduce($.extend, {});
       }
 
-      config.lineHeight = config.lineHeight || 1;
-
       return (config.el || div)(function ($el, ctx) {
         var didMH = false;
         var mwS = (config.minWidth ||
@@ -1648,17 +1646,18 @@
             else if (config.measureWidth) {
               mw = measureWidth($el);
             }
+            var lineHeightCss = $el.css('line-height')
+            var fontSize = config.size || parseInt($el.css('font-size'));
+            var lineHeightPx = config.lineHeight && config.lineHeight * fontSize || (lineHeightCss.indexOf('px') !== -1 && parseFloat(lineHeightCss));
             var mh;
             if (config.oneLine) {
-              mh = $el.css('line-height').indexOf('px') !== -1 && constant(parseFloat($el.css('line-height')));
+              mh = constant(lineHeightPx);
             }
             else if (config.approximateHeight) {
               mh = function (w) {
                 // TODO: loop over spans
-                var fontSize = config.size || parseInt($el.css('font-size'));
                 var str = $el.text();
-                var lineHeight = config.lineHeight;
-                return Math.ceil(fontSize * str.length * 0.5 / w) * fontSize * config.lineHeight;
+                return Math.ceil(lineHeightPx * str.length * 0.5 / w) * lineHeightPx;
               };
             }
             if (!config.oneLine) {
@@ -1755,26 +1754,6 @@
             $el.css('text-align', config.align);
           }
         }
-
-        // if (config.minWidth) {
-        //     stream.push(mw, config.minWidth);
-        // }
-        // else if (config.measureWidth) {
-        //     stream.push(mw, measureWidth($el));
-        // }
-        // else {
-        //     stream.push(mw, 0);
-        // }
-
-        // if (config.minHeight) {
-        //     stream.push(mh, config.minHeight);
-        // }
-        // else if (config.measureHeight) {
-        //     stream.push(mh, measureHeight($el));
-        // }
-        // else {
-        //     stream.push(mh, constant(0));
-        // }
 
         pushDimensions();
 
