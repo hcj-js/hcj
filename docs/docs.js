@@ -149,19 +149,26 @@ $(function () {
     ]));
   };
 
+  String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+  };
+
   var objectDefinition = function (props, noBullet, commentString, noGray, noBottomToTop) {
     var maxPropLength = 0;
     var maxTypeLength = 0;
     props.map(function (prop) {
-      maxPropLength = Math.max(maxPropLength, prop.name.length);
-      maxTypeLength = Math.max(maxTypeLength, prop.type.length);
+      prop.nameLength = prop.name.replaceAll('&nbsp;', ' ').length;
+      prop.typeLength = prop.type.replaceAll('&nbsp;', ' ').length;
+      maxPropLength = Math.max(maxPropLength, prop.nameLength);
+      maxTypeLength = Math.max(maxTypeLength, prop.typeLength);
     });
     return stack(props.map(function (prop) {
       return c.grid({
           bottomToTop: !noBottomToTop,
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp'.repeat(maxPropLength - prop.name.length) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.type.length) + '`'),
+          pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp'.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.typeLength) + '`'),
           c.all([
             noGray ? hcj.funcs.id : c.backgroundColor({font: color.gray}),
           ])(c.sideBySide({
@@ -1224,52 +1231,52 @@ $(function () {
     p("Hcj provides some reactive form components for your convenience."),
 
     h2('FieldKind, FieldType, FormComponent'),
-    p('HCJ\'s standard library has a fairly intricate model of form components and their types.  Logically it is based on simple dependent types, specifically type families.  HCJ\'s model of form types is extensible, so you can add your own form types by extending the `FieldKind` type and then extending the other types as needed.'),
+    p('HCJ\'s standard library has an intricate model of form components and their types.  Logically it is based on some basic dependent types, specifically type families.  HCJ\'s model of form types is extensible, so you can add your own types of form elements by extending the `FieldKind` type and then extending the other types as needed.'),
+    p('It is not required to understand this model to display individual form components; the examples in the next section should give you a good picture of how to do that.  However, the highly convenient `FormFor` function described in the section after next does depend on these interrelationships, so for that it may be worthwhile to read this section.'),
     h3('FieldKind'),
-    p('The `FieldKind` type declares the kind of form field you will be using.  It is a subset of the `String` type.  The `FieldKind` values included in HCJ\'s standard library are:'),
+    p('The instances of the `FieldKind` type correspond with the kinds of form inputs that can be included in your forms.  A `FieldKind` names the kind of form element, but does not have any additional data about its validation or its contents.'),
+    p('The `FieldKind` type can be considered a subset of the `String` type - all `FieldKind` values should be strings.  The HCJ standard library supports the following `FieldKind` values:'),
     typeSignatures([{
       name: '"button"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"checkbox"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"date"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"dropdown"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"hidden"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"image"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"number"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"password"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"radios"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"text"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"textarea"',
-      type: 'FieldKind',
+      type: '',
     }, {
       name: '"time"',
-      type: 'FieldKind',
-    }], true),
-    p('These essentially correspond to the HTML5 form inputs.  Each kind of form input has a corresponding `FieldKind`, putting `&lt;textarea&gt;` elements on the same level as `&lt;input type="text" /&gt;` and so on.'),
+      type: '',
+    }], true, '&nbsp;'),
     h3('FieldType'),
-    p('A `FieldType` is a minimal complete description of a field of a given `FieldKind`, from which the field can be rendered.  It does not include the field\'s `name` attribute.'),
-    p('For each `FieldKind`, the corresponding `FieldType` is constructed differently.  For instance, a text field doesn\'t require any special data to render, while a dropdown requires a set of options.  To represent this logically, we use a type family.  For each `k :: FieldKind`, we have a type `FieldType k`.  In other words:'),
-    p('`FieldType :: FieldKind -> Type`'),
-    p('Each `FieldType` is constructed in its own particular way.  The `FieldType`s corresponding to the `FieldKind`s included with HCJ have the following constructors.  These are all properties of the `hcj.forms.fieldType` object:'),
+    p('A `FieldType` is a minimal complete description of a form field, from which the field can be rendered.  (It does not include the field\'s `name` attribute.)'),
+    p('For each `FieldKind`, the corresponding `FieldType` is constructed differently.  For instance, a text field doesn\'t require any special data to render, while a dropdown requires a set of options.  To represent this logically, we use a type family `FieldType :: FieldKind -> Type`.  In other words, for each `k :: FieldKind`, we have a type `FieldType k`.'),
+    p('Each `FieldType k` is constructed in its own particular way.  The `FieldTypes` corresponding to the `FieldKinds` included with HCJ have the following constructors.  These are all properties of the `hcj.forms.fieldType` object:'),
     objectDefinition([{
       name: 'button',
       type: '(String , OnClick) ->',
@@ -1319,14 +1326,14 @@ $(function () {
       type: '',
       description: '`FieldType "time"`',
     }], true, '&nbsp;', true, true),
-    p('Most of these constructors are not even functions, but literal `FieldType`s, since there is no additional data required to render the element beyond its `FieldKind`.  The only built-in `FieldType`s that do take additional data are `button`, `dropdown`, and `radios`.'),
+    p('Most of these "constructors" are not functions, but literal `FieldTypes`.  The only built-in `FieldTypes` that require additional data are `button`, `dropdown`, and `radios`.'),
     p('`button` takes two parameters: the name to display on the button, and an `OnClick` handler.  This `OnClick` handler receives three parameters: the event object, its value stream (which we will get to later), and a `disable` function that disables the button and returns an `enable` function that re-enables it.'),
-    p('`dropdown` takes one parameter: an array of objects with `name` and `value` properties giving the options to display in the dropdown.'),
-    p('`radios` also takes one parameter: an array of strings giving the values for each button.'),
-    p('Each `FieldType k` is an object that has a `kind` property with value `k`, plus additional properties as needed.'),
+    p('`dropdown` takes one parameter: an array of objects with `name` and `value` properties giving the options to display.'),
+    p('`radios` also takes one parameter: an array of strings giving the values for each radio.'),
+    p('All values of type `FieldType k`, for any `k`, are objects that have a `kind` property with value `k`, plus additional properties as needed.'),
     h3('FormComponent'),
-    p('Each `FieldKind` needs to be displayed a certain way.  Most can be converted into single components, but `radios` in particular yields multiple radio buttons that you may want to place separately or into a custom layout.'),
-    p('Therefore we introduce a second type family, `FormComponent :: FieldKind -> Type`.  This family gives the type that you can expect when you go to render a certain `FieldType` into usable components.'),
+    p('Each form element is displayed in a certain way.  Most form elements can be displayed via single components, but `radios` in particular yields multiple radio buttons that you may want to place separately or into a custom layout.'),
+    p('Therefore we introduce another type family, `FormComponent :: FieldKind -> Type`.  This type family gives the type that you can expect when you go to render a certain `FieldType` into components suitable for inclusion on a page.'),
     typeSignatures([{
       name: 'FormComponent "button"',
       type: 'Component',
@@ -1364,204 +1371,379 @@ $(function () {
       name: 'FormComponent "time"',
       type: 'Component',
     }], true, '`&nbsp;=&nbsp;`'),
-    p('The `hcj.forms.formComponent` object renders `FieldType`s into their corresponding `FormComponent`s.  It has the following properties, one key for each `FieldKind`:'),
-    stack([
-      objectDefinition([{
-        name: 'button',
-        type: '(FieldType "button", String?, (Stream String)?)',
-        description: '`FormComponent "button"`',
-      }, {
-        name: 'checkbox',
-        type: '(FieldType "checkbox", String?, (Stream String)?)',
-        description: '`FormComponent "checkbox"`',
-      }], false, '&nbsp;->&nbsp;', true, true),
-      p('&#8226;&nbsp;`etc.`'),
-    ]),
-    p('These functions each take three parameters: first the `FieldType`, next the `name` attribute, and last the value stream.  This is a bi-directional stream: it receives a value whenever the user edits the form field, and the form field changes whenever the stream receives a new value.  Each of these functions returns the `FormComponent` corresponding to its `FieldKind`: an array of `Component`s for radio buttons, and a single `Component` for all other `FieldKind`s.'),
+    p('The `hcj.forms.formComponent` function converts `FieldTypes` into their corresponding `FormComponents`.'),
+    p('`hcj.forms.formComponent :: (FormType k , String? , (Stream String)?) -> FormComponent k`'),
+    p('There are three parameters: a `FormType k`, a `name` attribute, and a value stream.  The return value is an array of `Components` when passed a "radios" field type, and a single `Component` for all other field types.'),
+    p('The value stream is bi-directional: it receives a value whenever the user edits the field, and the field changes whenever the stream receives a new value.  This stream should be used for field validation.'),
   ];
 
   var standardLibraryFormExamples = [
-    c.stream(0, function (s) {
-      return docStack([
-        h3('button'),
-        pm('`button : (String, (Event, Stream, Disable) -> IO ()) -> FieldType`'),
-        p('Takes a button title and an onClick handler, and returns a button FieldType.  The onClick handler receives the click event, the form element\'s stream for pushing to, and a `disable` function, which "disables" the button and returns an `enable` function, which re-enables the button.  Click events will only be processed if the button is enabled.  The returned FieldType has three extra properties: `enabledS`, a boolean stream that tells whether the button is enabled and which you may push to, as well as `name` and `onClick`, the passed-in values.'),
-        p('The demo pushes 1 + the stream\'s last value onto the stream each time the button is pressed.  It also disables the button for a while.'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.button('button', s, forms.fieldType.button('Button', function (ev, s, disable) {
-            var enable = disable();
-            stream.push(s, 1 + (s.lastValue || 0));
-            setTimeout(function () {
-              enable();
-            }, 1000);
-          }))),
-          c.componentStream(stream.map(s, function (str) {
-            return p(str + ' presses');
-          })),
-        ]),
+    p('These form inputs are all created using `hcj.forms.formComponent` function.'),
+    h2('Text Input'),
+    p('The first and only required argument to the `hcj.forms.formComponent` function is the `FieldType` of the desired form input.'),
+    hcj.forms.formComponent(hcj.forms.fieldType.text),
+    codeBlock([
+      'hcj.forms.formComponent(hcj.forms.fieldType.text)',
+    ]),
+    h2('Text Input with Name'),
+    p('The second argument that you can pass to `hcj.forms.formComponent` is the "name" attribute of your form input.'),
+    hcj.forms.formComponent(hcj.forms.fieldType.text, "name"),
+    codeBlock([
+      'hcj.forms.formComponent(hcj.forms.fieldType.text, "name")'
+    ]),
+    h2('Text Input with Name and Value Stream'),
+    p('The third argument to `hcj.forms.formComponent` is a value stream.  This stream is updated when the input\'s value changes, and vice versa.'),
+    hcj.forms.formComponent(hcj.forms.fieldType.text, "name", stream.create()),
+    codeBlock([
+      'var textValueS = hcj.stream.create();',
+      '&nbsp;',
+      'return hcj.forms.formComponent(hcj.forms.fieldType.text, "name", textValueS);'
+    ]),
+    h2('Button'),
+    p('A button that increments a counter.'),
+    (function (s) {
+      // Counter stream, initialized with 0.
+      var countStream = hcj.stream.once(0);
+      
+      // Button field type.
+      var incrementCountStreamButton = hcj.forms.fieldType.button('Push Me', function (ev, countStream, disable) {
+        hcj.stream.push(countStream, 1 + countStream.lastValue);
+
+        var enable = disable();
+        setTimeout(function () {
+          enable();
+        }, 1000);
+      });
+      
+      // Render the button, followed by the counter.
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft, // Align the button left
+        ])(hcj.forms.formComponent(incrementCountStreamButton, 'button', countStream)),
+        hcj.component.componentStream(hcj.stream.map(countStream, function (str) {
+          return hcj.component.text(str + ' presses');
+        })),
       ]);
-    }),
-    c.stream(false, function (s) {
-      return docStack([
-        h3('checkbox'),
-        pm('`checkbox : FormType`'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.checkbox('checkbox', s)),
-          c.componentStream(stream.map(s, function (checked) {
-            return p(checked ? 'checked' : 'unchecked');
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      '// Create counter stream initialized with 0.',
+      'var countStream = hcj.stream.once(0);',
+      '&nbsp;',
+      '// Button field type.',
+      'var incrementCountStreamButton = hcj.forms.fieldType.button(\'Push Me\', function (ev, countStream, disable) {',
+      '  hcj.stream.push(countStream, 1 + countStream.lastValue);',
+      '&nbsp;',
+      '  var enable = disable();',
+      '  setTimeout(function () {',
+      '    enable();',
+      '  }, 1000);',
+      '});',
+      '&nbsp;',
+      '// Render the button, followed by the counter.',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft, // Align the button left',
+      '  ])(hcj.forms.formComponent(incrementCountStreamButton, \'button\', countStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(countStream, function (str) {',
+      '    return hcj.component.text(str + \' presses\');',
+      '  })),',
+      ']);',
+    ]),
+    h2('Checkbox'),
+    p('A checkbox that controls a text element.'),
+    (function (s) {
+      var checkedStream = hcj.stream.once(false);
+
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.checkbox, 'checkbox', checkedStream)),
+        hcj.component.componentStream(hcj.stream.map(checkedStream, function (checked) {
+          return hcj.component.text(checked ? 'checked' : 'unchecked');
+        })),
       ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('date'),
-        pm('`date : FormType`'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.date('date', s)),
-          c.componentStream(stream.map(s, function (d) {
-            return p(d + '');
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      'var checkedStream = hcj.stream.once(false);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.checkbox, \'checkbox\', checkedStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(checkedStream, function (checked) {',
+      '    return hcj.component.text(checked ? \'checked\' : \'unchecked\');',
+      '  })),',
+      ']);',
+    ]),
+    h2('Date'),
+    p('Date input that controls a text element.'),
+    (function () {
+      var dateStream = hcj.stream.once(null);
+      
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.date, 'date', dateStream)),
+        hcj.component.componentStream(hcj.stream.map(dateStream, function (d) {
+          return hcj.component.text(d + '');
+        })),
       ]);
-    }),
-    c.stream('a', function (s) {
-      return docStack([
-        h3('dropdown'),
-        pm('`dropdown : [{name: String, value: String}] -> FormType`'),
-        p('Takes an array of objects with `name` and `value` properties giving the options\' names and values.'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.dropdown('dropdown', s, forms.fieldType.dropdown([{
-            name: 'A',
-            value: 'a',
-          }, {
-            name: 'B',
-            value: 'b',
-          }]))),
-          c.componentStream(stream.map(s, function (v) {
-            return p(v);
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      'var dateStream = hcj.stream.once(null);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.date, \'date\', dateStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(dateStream, function (d) {',
+      '    return hcj.component.text(d + \'\');',
+      '  })),',
+      ']);',
+    ]),
+    h2('Dropdown'),
+    p('Text element shows currently selected option'),
+    (function () {
+      var dropdownStream = hcj.stream.once('a');
+
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.dropdown([{
+          name: 'A',
+          value: 'a',
+        }, {
+          name: 'B',
+          value: 'b',
+        }]), 'dropdown', dropdownStream)),
+        hcj.component.componentStream(hcj.stream.map(dropdownStream, function (v) {
+          return hcj.component.text(v);
+        })),
       ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('image'),
-        pm('`image : FormType`'),
-        p('File with accept="image/*".  Will be changed to `file` function by hcj version 1.0.'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.image('image', s)),
-          c.componentStream(stream.map(s, function (file) {
-            return file ? c.all([
-              c.alignHLeft,
-            ])(c.image({
-              src: file,
-            })) : c.nothing;
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      'var dropdownStream = hcj.stream.once(\'a\');',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.dropdown([{',
+      '    name: \'A\',',
+      '    value: \'a\',',
+      '  }, {',
+      '    name: \'B\',',
+      '    value: \'b\',',
+      '  }]), \'dropdown\', dropdownStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(dropdownStream, function (v) {',
+      '    return hcj.component.text(v);',
+      '  })),',
+      ']);',
+    ]),
+    h2('Image'),
+    p('File with accept="image/*".'),
+    (function () {
+      var fileStream = hcj.stream.once(null);
+      
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.image, 'image', fileStream)),
+        hcj.component.componentStream(hcj.stream.map(fileStream, function (file) {
+          return file ? hcj.component.all([
+            hcj.component.alignHLeft,
+          ])(hcj.component.image({
+            src: file,
+          })) : hcj.component.nothing;
+        })),
       ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('number'),
-        pm('`number : FormType`'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.number('number', s)),
-          c.componentStream(stream.map(s, function (number) {
-            return p(number + '');
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      'var fileStream = hcj.stream.once(null);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.image, \'image\', fileStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(fileStream, function (file) {',
+      '    return file ? hcj.component.all([',
+      '      hcj.component.alignHLeft,',
+      '    ])(hcj.component.image({',
+      '      src: file,',
+      '    })) : hcj.component.nothing;',
+      '  })),',
+      ']);',
+    ]),
+    h2('Number'),
+    p('Text element shows number currently entered into the input.'),
+    (function (s) {
+      var numberStream = hcj.stream.once(null);
+
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.number, 'number', numberStream)),
+        hcj.component.componentStream(hcj.stream.map(numberStream, function (number) {
+          return hcj.component.text(number + '');
+        })),
       ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('password'),
-        pm('`password : FormType`'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.password('password', s)),
-          c.componentStream(stream.map(s, function (password) {
-            var str = '';
-            if (password) {
-              for (var i = 0; i < password.length; i++) {
-                str += '*';
-              }
+    })(),
+    showCodeBlock([
+      'var numberStream = hcj.stream.once(null);',
+      '&nbsp;',
+      ' return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.number, \'number\', numberStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(numberStream, function (number) {',
+      '    return hcj.component.text(number + \'\');',
+      '  })),',
+      ']);',
+    ]),
+    h2('Password'),
+    p('Text element shows an asterisk for each character of the password.'),
+    (function () {
+      var passwordStream = hcj.stream.once(null);
+
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.password, 'password', passwordStream)),
+        hcj.component.componentStream(hcj.stream.map(passwordStream, function (password) {
+          var str = '';
+          if (password) {
+            for (var i = 0; i < password.length; i++) {
+              str += '*';
             }
-            return p(str);
-          })),
-              ]),
-              ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('radios'),
-        pm('`radios : [String] -> FormType`'),
-        p('Takes an arrary of strings giving the buttons\' unique values.'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(stack(forms.formComponent.radios('radios', s, forms.fieldType.radios(['first', 'second'])))),
-          c.componentStream(stream.map(s, function (v) {
-            return p(v || '');
-          })),
-        ]),
+          }
+          return hcj.component.text(str);
+        })),
       ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('text'),
-        pm('`text : FormType`'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.text('text', s)),
-          c.componentStream(stream.map(s, function (v) {
-            return p(v || '');
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      'var passwordStream = hcj.stream.once(null);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.password, \'password\', passwordStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(passwordStream, function (password) {',
+      '    var str = \'\';',
+      '    if (password) {',
+      '      for (var i = 0; i < password.length; i++) {',
+      '        str += \'*\';',
+      '      }',
+      '    }',
+      '    return hcj.component.text(str);',
+      '  })),',
+      ']);',
+    ]),
+    h2('Radios'),
+    p('Takes an arrary of strings giving the buttons\' unique values.  `hcj.forms.formComponent` returns an array of radio button components, not a single component.'),
+    (function () {
+      var valueStream = hcj.stream.once(null);
+      
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.component.stack(hcj.forms.formComponent(hcj.forms.fieldType.radios(['first', 'second']), 'radios', valueStream))),
+        hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {
+          return hcj.component.text(v || '');
+        })),
       ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('textarea'),
-        pm('`textarea : FormType`'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.textarea('textarea', s)),
-          c.componentStream(stream.map(s, function (v) {
-            return v ? docStack(v.split(/[\r\n]+/).map(p)) : c.nothing;
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      'var valueStream = hcj.stream.once(null);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.component.stack(hcj.forms.formComponent(hcj.forms.fieldType.radios([\'first\', \'second\']), \'radios\', valueStream))),',
+      '  hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {',
+      '    return hcj.component.text(v || \'\');',
+      '  })),',
+      ']);',
+    ]),
+    h2('Text'),
+    (function () {
+      var valueStream = hcj.stream.once(null);
+      
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.text, 'text', valueStream)),
+        hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {
+          return hcj.component.text(v || '');
+        })),
       ]);
-    }),
-    c.stream(null, function (s) {
-      return docStack([
-        h3('time'),
-        pm('`time : FormType`'),
-        stack([
-          c.all([
-            c.alignHLeft,
-          ])(forms.formComponent.time('time', s)),
-          c.componentStream(stream.map(s, function (v) {
-            return p(v || '');
-          })),
-        ]),
+    })(),
+    showCodeBlock([
+      'var valueStream = hcj.stream.once(null);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.text, \'text\', valueStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {',
+      '    return hcj.component.text(v || \'\');',
+      '  })),',
+      ']);',
+    ]),
+    h2('Textarea'),
+    p('Displays content of a textarea.  Double-newline for paragraph break.'),
+    (function (s) {
+      var valueStream = hcj.stream.once(null);
+      
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.textarea, 'textarea', valueStream)),
+        hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {
+          return v ? stack({
+            padding: 10,
+          }, v.split(/[\r\n][\r\n]/).map(hcj.component.text)) : hcj.component.nothing;
+        })),
       ]);
-    }),
+    })(),
+    showCodeBlock([
+      'var valueStream = hcj.stream.once(null);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.textarea, \'textarea\', valueStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {',
+      '    return v ? stack({',
+      '      padding: 10,',
+      '    }, v.split(/[\r\n][\r\n]/).map(hcj.component.text)) : hcj.component.nothing;',
+      '  })),',
+      ']);',
+    ]),
+    h2('time'),
+    p('Text element shows the value of the time input.'),
+    (function () {
+      var valueStream = hcj.stream.once(null);
+      
+      return hcj.component.stack([
+        hcj.component.all([
+          hcj.component.alignHLeft,
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.time, 'time', valueStream)),
+        hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {
+          return hcj.component.text(v || '');
+        })),
+      ]);
+    })(),
+    showCodeBlock([
+      'var valueStream = hcj.stream.once(null);',
+      '&nbsp;',
+      'return hcj.component.stack([',
+      '  hcj.component.all([',
+      '    hcj.component.alignHLeft,',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.time, \'time\', valueStream)),',
+      '  hcj.component.componentStream(hcj.stream.map(valueStream, function (v) {',
+      '    return hcj.component.text(v || \'\');',
+      '  })),',
+      ']);',
+    ]),
   ];
 
   var standardLibraryFormFor = [
@@ -2448,7 +2630,7 @@ $(function () {
     title: 'API - Styles',
     components: standardLibraryComponentModifiers,
   }, {
-    title: 'API - Forms Intro',
+    title: 'API - Forms',
     components: standardLibraryForms,
   }, {
     title: 'API - Forms Examples',
