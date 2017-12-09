@@ -4607,6 +4607,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }));
     },
     date: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4630,6 +4631,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }));
     },
     dropdown: function (k, s, type) {
+      s = s || stream.create();
       return select(function ($el, ctx, mw, mh) {
         $el.prop('name', k);
         type.options.map(function (option) {
@@ -4664,6 +4666,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       });
     },
     hidden: function (k, s) {
+      s = s || stream.create();
       return input(function ($el) {
         $el.prop('name', k);
         $el.prop('type', 'hidden');
@@ -4677,6 +4680,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       });
     },
     image: function (k, s) {
+      s = s || stream.create();
       return input(function ($el, ctx, mw, mh) {
         $el.prop('name', k);
         $el.prop('type', 'file');
@@ -4697,6 +4701,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       });
     },
     number: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4719,6 +4724,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }));
     },
     password: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4744,6 +4750,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }));
     },
     radios: function (k, s, type) {
+      s = s || stream.create();
       return type.options.map(function (option) {
         return all([
           applyRadioBorder,
@@ -4766,6 +4773,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       });
     },
     text: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4790,6 +4798,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }));
     },
     textarea: function (k, s) {
+      s = s || stream.create();
       return all([
         applyTextareaBorder,
       ])(textarea(function ($el, ctx) {
@@ -4847,6 +4856,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }));
     },
     time: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {

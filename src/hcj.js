@@ -4529,6 +4529,7 @@
       }));
     },
     date: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4552,6 +4553,7 @@
       }));
     },
     dropdown: function (k, s, type) {
+      s = s || stream.create();
       return select(function ($el, ctx, mw, mh) {
         $el.prop('name', k);
         type.options.map(function (option) {
@@ -4586,6 +4588,7 @@
       });
     },
     hidden: function (k, s) {
+      s = s || stream.create();
       return input(function ($el) {
         $el.prop('name', k);
         $el.prop('type', 'hidden');
@@ -4599,6 +4602,7 @@
       });
     },
     image: function (k, s) {
+      s = s || stream.create();
       return input(function ($el, ctx, mw, mh) {
         $el.prop('name', k);
         $el.prop('type', 'file');
@@ -4619,6 +4623,7 @@
       });
     },
     number: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4641,6 +4646,7 @@
       }));
     },
     password: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4666,6 +4672,7 @@
       }));
     },
     radios: function (k, s, type) {
+      s = s || stream.create();
       return type.options.map(function (option) {
         return all([
           applyRadioBorder,
@@ -4688,6 +4695,7 @@
       });
     },
     text: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4712,6 +4720,7 @@
       }));
     },
     textarea: function (k, s) {
+      s = s || stream.create();
       return all([
         applyTextareaBorder,
       ])(textarea(function ($el, ctx) {
@@ -4769,6 +4778,7 @@
       }));
     },
     time: function (k, s) {
+      s = s || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
