@@ -4468,7 +4468,7 @@
       return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
     },
   });
-  var formComponent = {
+  var formComponentObj = {
     button: function (_, s, t) {
       s = s || stream.create();
       return all([
@@ -4779,6 +4779,16 @@
       }));
     },
   };
+  var formComponent = function (t, n, s) {
+    return formComponentObj[t.kind || t.type](n, s, t);
+  };
+  for (var key in formComponentObj) {
+    // For backward compatibility between v0.2.1 and v0.2.  Can be
+    // removed in v0.3.
+    if (formComponentObj.hasOwnProperty(key)) {
+      formComponent[key] = formComponentObj[key];
+    }
+  }
   var buttonInput = constant(all([
     minWidth(150),
   ]));
