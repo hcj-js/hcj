@@ -3563,9 +3563,13 @@
     });
   });
 
-  var makeSticky = function (str) {
-    str = str || onceZeroS;
+  var makeSticky = uncurryConfig(function (str) {
     return layout(function ($el, context, c) {
+      if ($.type(str) === 'number') {
+        str = stream.once(str);
+      }
+      str = str || onceZeroS;
+
       $el.addClass('makeSticky');
 
       var ctx = {
@@ -3581,24 +3585,29 @@
         context.left,
         context.leftOffset,
       ], function (scroll, diffAmount, top, topOffset, left, leftOffset) {
-        if (top + topOffset > scroll + diffAmount) {
-          $el.css('position', 'absolute');
-          $el.css('transition', '');
-          $el.css('left', px(left));
-        }
-        else if (top + topOffset < scroll + diffAmount) {
-          var leftPosition = left + leftOffset;
-          $el.css('position', 'fixed');
-          $el.css('left', px(leftPosition));
-          $el.css('top', px(diffAmount));
-          setTimeout(function () {
-            $el.css('transition', 'inherit');
-          }, 20);
-        }
+        stream.defer(function () {
+          if (top + topOffset > scroll + diffAmount) {
+            i.$el.css('position', 'absolute');
+            i.$el.css('transition', '');
+            i.$el.css('top', px(0));
+            i.$el.css('left', px(0));
+          }
+          else if (top + topOffset < scroll + diffAmount) {
+            var leftPosition = left + leftOffset;
+            i.$el.css('position', 'fixed');
+            i.$el.css('left', px(leftPosition));
+            i.$el.css('top', px(diffAmount));
+            setTimeout(function () {
+              i.$el.css('transition', 'inherit');
+            }, 20);
+          }
+        });
       });
       return i;
     });
-  };
+  }, function (c) {
+    return !($.type(c) === 'number') && !stream.isStream(c);
+  });
 
   // // var stickyHeaderBody = function (body1, header, body2) {
   // //     return div.all([
@@ -5422,6 +5431,7 @@
       layout: layout,
       link: link,
       linkTo: linkTo,
+      makeSticky: makeSticky,
       margin: margin,
       maxHeightStream: withMaxHeightStream,
       minHeight: withMinHeightStream,
