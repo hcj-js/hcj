@@ -4395,53 +4395,53 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var fieldType = {
     button: function (name, onClick) {
       return {
-        type: 'button',
+        kind: 'button',
         enabledS: stream.once(true),
         name: name || '',
         onClick: onClick,
       };
     },
     checkbox: {
-      type: 'checkbox',
+      kind: 'checkbox',
     },
     date: {
-      type: 'date',
+      kind: 'date',
     },
     // options is array of strings, or objects with name and value
     // properties
     dropdown: function (options) {
       return {
-        type: 'dropdown',
+        kind: 'dropdown',
         options: options,
       };
     },
     hidden: {
-      type: 'hidden',
+      kind: 'hidden',
     },
     image: {
-      type: 'image',
+      kind: 'image',
     },
     number: {
-      type: 'number',
+      kind: 'number',
     },
     password: {
-      type: 'password',
+      kind: 'password',
     },
     // options is array of objects with 'name' and 'value' properties
     radios: function (options) {
       return {
-        type: 'radios',
+        kind: 'radios',
         options: options,
       };
     },
     text: {
-      type: 'text',
+      kind: 'text',
     },
     textarea: {
-      type: 'textarea',
+      kind: 'textarea',
     },
     time: {
-      type: 'time',
+      kind: 'time',
     },
   };
   var dateInputRegexp = /(\d*)-(\d*)-(\d*)/; // year month day
@@ -4939,14 +4939,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
                 var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
                 var label = labels[name];
                 var type = fields[name];
-                var fieldStyle = (type && style[type.type]) || constant(id);
+                var fieldStyle = (type && style[type.kind || type.type]) || constant(id);
                 fieldStreams[name] = fieldStream;
-                fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.type](name, fieldStream, type));
+                fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.kind || type.type](name, fieldStream, type));
               });
               var disabledS = stream.once(false);
               var submit = function (name) {
                 var fieldType = submitButtonFieldTypeF();
-                var fieldStyle = style[fieldType.type] || constant(id);
+                var fieldStyle = style[fieldType.kind || fieldType.type] || constant(id);
                 // TODO: use formComponent[fieldType.type] instead of text
                 return fieldStyle('', stream.create(), fieldType, name)(text({
                   el: button,
