@@ -703,6 +703,24 @@ $(function () {
       ]),
     ]),
 
+    h2('BasicFloat'),
+    p('`basicFloat :: (BasicFloatConfig? ; Component , [Component]) -> Component'),
+    p('Takes a single component to "float", and an array of components to display around it.'),
+    p('A `BasicFloatConfig` is an object with the following properties:'),
+    objectDefinition([{
+      name: 'padding',
+      type: 'Number?',
+      description: 'Padding amount between components.  Padding is also applied around the outsides of the stacked components, but not around the outside of the floating component.',
+    }, {
+      name: 'clearHanging',
+      type: 'Bool?',
+      description: 'If set, then the first component that extends below the floating component will be "cleared", i.e. placed entirely below the floating component.',
+    }, {
+      name: 'float',
+      type: 'String?',
+      description: 'If set to "right" floating component floats right, if "left" floating component floats left.  Default is "left".',
+    }]),
+    
     h2('ComponentStream'),
     p('`componentStream :: Stream Component -> Component`'),
     p('Takes an hcj stream of components and returns a component that displays latest one in the stream.'),
@@ -1033,6 +1051,11 @@ $(function () {
       }]),
     ]),
 
+    c.makeSticky(h2('MakeSticky')),
+    p('`makeSticky :: (Number | Stream Number)? -> Style`'),
+    p('Causes a component to stick to the top of the screen instead of scrolling off.'),
+    p('A number or a stream of numbers can be optionally passed in before applying `makeSticky` to a component.  The component will then become sticky before it scrolls off the screen, at a distance from the top of the screen equal to the number you pass in.'),
+
     h2('Margin, Padding'),
     typeSignatures([{
       name: 'margin',
@@ -1116,6 +1139,19 @@ $(function () {
       type: '(Event -> ()) -> Style',
     }]),
     p('`changeThis` is defined as `onThis("change")`, etc.'),
+
+    h2('OverflowHorizontal'),
+    p('`overflowHorizontal :: OverflowHorizontalConfig -> Style`'),
+    p('Overrides the minimum width of a component, and displays a horizontal scrollbar if necessary.'),
+    objectDefinition([{
+      name: 'minWidth',
+      type: 'Number',
+      description: 'Minimum width of the overflowHorizontal component.',
+    }]),
+
+    h2('ToggleHeight'),
+    p('`toggleHeight :: Stream Bool -> Style`'),
+    p('Toggles the minimum height of a component.  Its own height is used if the stream contains `true`, and 0 is used if the stream contains `false`.'),
   ];
 
   var standardLibraryStreams = [
