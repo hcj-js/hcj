@@ -6,7 +6,13 @@ It could be worse.
 
 `git clone https://github.com/hcj-js/hcj.git`
 
-## Contributing ##
+## Docs ##
+
+Latest docs are located at http://hcj-js.github.io/hcj/index.html
+
+v0.2 docs: http://hcj-js.github.io/hcj/docs-0.2/index.html
+
+## Building from Source ##
 
 To build HCJ from the sources in the `src` directory, run `make`.  You
 will need the following software installed (in addition to `make`, of
@@ -21,21 +27,11 @@ additionally need:
 * npm
 * phantomjs
 
-## Docs ##
+## Versioning ##
 
-Docs are located at http://hcj-js.github.io/hcj/index.html
+HCJ follows [semantic versioning](https://semver.org/).
 
-The docs are an HCJ example application.  Their source is in the
-`docs` directory.  The `docs.html` template file is the root HTML file
-that you edit; `index.html` is generated from it by running `make
-docs`.
-
-Running `make docs` uses Phantom JS, a headless webkit web browser, to
-render each page of the HCJ docs, concatenate the page contents, and
-splice it in to `index.html` for SEO purposes.  This extra build step
-for SEO is always necessary for HCJ applications, as HCJ a pure
-javascript website framework.
-
-### Old Versions ###
-
-v0.2 docs: http://hcj-js.github.io/hcj/docs-0.2/index.html
+Before the 1.0.0 release we follow semantic versioning shifted down by
+one decimal place: breaking changes may occur between 0.2 and 0.3,
+feature additions and deprecations between 0.2 and 0.2.1, and patches
+between 0.2.1 and 0.2.1.1.
