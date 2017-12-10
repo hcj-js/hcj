@@ -3871,19 +3871,15 @@
   var basicFloat = uncurryConfig(function (config) {
     return layout(function ($el, ctx, c, cs) {
       // first context belongs to floating element c, rest to cs
-      var contexts = [{
-        width: stream.create(),
-        height: stream.create(),
-      }];
-      cs.map(function () {
-        contexts.push({
+      var ccs = [c].concat(cs);
+      var contexts = ccs.map(function () {
+        return {
           top: stream.create(),
           left: stream.create(),
           width: stream.create(),
           height: stream.create(),
-        });
+        };
       });
-      var ccs = [c].concat(cs);
       var iis = ccs.map(function (c, index) {
         return c(contexts[index]);
       });
@@ -3899,6 +3895,8 @@
         var floatWidth = (!mws[0] || mws[0] > w - mw - 2 * config.padding) ? w : mw;
         var floatHeight = mh(floatWidth);
         var dims = [{
+          left: config.float === 'right' ? (w - floatWidth) : 0,
+          top: 0,
           width: floatWidth,
           height: floatHeight,
         }];
@@ -3913,7 +3911,7 @@
           if (top < topBelowFloat && mwi > w - (floatWidth + 2 * config.padding)) {
             top = topBelowFloat;
           }
-          var dimLeft = top < topBelowFloat ? floatWidth + config.padding : config.padding;
+          var dimLeft = top < topBelowFloat ? (config.float === 'right' ? config.padding : floatWidth + config.padding) : config.padding;
           var dimTop = top;
           var dimWidth = top < topBelowFloat ? w - (floatWidth + 2 * config.padding) : w - 2 * config.padding;
           var dimHeight = mhi(dimWidth);
@@ -3955,12 +3953,10 @@
       ], function (w, mws, mhs) {
         positionItems(w, mws, mhs).dims.map(function (dim, i) {
           var context = contexts[i];
+          stream.push(context.left, dim.left);
+          stream.push(context.top, dim.top);
           stream.push(context.width, dim.width);
           stream.push(context.height, dim.height);
-          if (i > 0) {
-            stream.push(context.left, dim.left);
-            stream.push(context.top, dim.top);
-          }
         });
       });
       return {
