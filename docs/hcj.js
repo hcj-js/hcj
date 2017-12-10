@@ -4579,8 +4579,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
   });
   var formComponentObj = {
-    button: function (_, s, t) {
-      s = s || stream.create();
+    button: function (def) {
+      var t = def.type;
+      var s = def.stream || stream.create();
       return all([
         and(function (i) {
           stream.map(t.enabledS, function (enabled) {
@@ -4606,8 +4607,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         measureWidth: true,
       }));
     },
-    checkbox: function (k, s) {
-      s = s || stream.create();
+    checkbox: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return all([
         applyCheckboxBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4628,8 +4630,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         mh();
       }));
     },
-    date: function (k, s) {
-      s = s || stream.create();
+    date: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4652,8 +4655,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       }));
     },
-    dropdown: function (k, s, type) {
-      s = s || stream.create();
+    dropdown: function (def) {
+      var k = def.name;
+      var type = def.type;
+      var s = def.stream || stream.create();
       return select(function ($el, ctx, mw, mh) {
         $el.prop('name', k);
         type.options.map(function (option) {
@@ -4687,8 +4692,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         mh();
       });
     },
-    file: function (k, s) {
-      s = s || stream.create();
+    file: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return input(function ($el, ctx, mw, mh) {
         $el.prop('name', k);
         $el.prop('type', 'file');
@@ -4700,8 +4706,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       });
     },
-    hidden: function (k, s) {
-      s = s || stream.create();
+    hidden: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return input(function ($el) {
         $el.prop('name', k);
         $el.prop('type', 'hidden');
@@ -4714,8 +4721,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         };
       });
     },
-    image: function (k, s) {
-      s = s || stream.create();
+    image: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return input(function ($el, ctx, mw, mh) {
         $el.prop('name', k);
         $el.prop('type', 'file');
@@ -4735,8 +4743,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       });
     },
-    number: function (k, s) {
-      s = s || stream.create();
+    number: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4758,8 +4767,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       }));
     },
-    password: function (k, s) {
-      s = s || stream.create();
+    password: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4784,8 +4794,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       }));
     },
-    radios: function (k, s, type) {
-      s = s || stream.create();
+    radios: function (def) {
+      var k = def.name;
+      var type = def.type;
+      var s = def.stream || stream.create();
       return type.options.map(function (option) {
         return all([
           applyRadioBorder,
@@ -4807,8 +4819,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         }));
       });
     },
-    text: function (k, s) {
-      s = s || stream.create();
+    text: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4832,8 +4845,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       }));
     },
-    textarea: function (k, s) {
-      s = s || stream.create();
+    textarea: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return all([
         applyTextareaBorder,
       ])(textarea(function ($el, ctx) {
@@ -4888,8 +4902,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         };
       }));
     },
-    time: function (k, s) {
-      s = s || stream.create();
+    time: function (def) {
+      var k = def.name;
+      var s = def.stream || stream.create();
       return all([
         applyFormBorder,
       ])(input(function ($el, ctx, mw, mh) {
@@ -4912,8 +4927,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }));
     },
   };
-  var formComponent = function (t, n, s) {
-    return formComponentObj[t.kind || t.type](n, s, t);
+  var formComponent = function (def) {
+    return formComponentObj[def.type.kind || def.type.type](def);
   };
   for (var key in formComponentObj) {
     // For backward compatibility between v0.2.1 and v0.2.  Can be
@@ -4963,38 +4978,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
     textarea: textInput,
     time: textInput,
   };
+  var defaultStyle = function (type, label, name, fieldStream) {
+    return formStyle[type.kind](label, name, fieldStream, type);
+  };
 
-  // submitButtonFieldTypeF - function returning the field type to use
-  // for the submit button.  Can just be hcj.forms.fieldType.button.
-
-  // formComponent - object with one key for each kind of field type.
-  // Values are functions that take the field's name, value stream
-  // initialized with its default value if there is one, and field
-  // type, and return (most often) a Component or an array of
-  // Components.
-
-  // TODO: Try to combine formComponent and style into one object.
-  var formFor = function (submitButtonFieldTypeF, formComponent) {
-    // fields - Object.  Keys become "name" attributes of the form
-    // fields, and values are their field types.
-
-    // labels (optional) - Object with same keys as "fields".  Values
-    // are give the label for each form element.
+  var formForOld = function (submitButtonFieldTypeF, formComponent) {
     return function (fields, labels) {
       labels = labels || {};
-
-      // defaults (optional) - Same keys as "field".  Gives default
-      // values for each field.
       return function (defaults) {
         defaults = defaults || {};
         return function (mkOnSubmit) {
-
-          // style - Object with one key for each kind of field type.
-          // Values are functions that take take a field's name, value
-          // stream initialized with its default value if provided,
-          // field type, and label if present, and return a "form
-          // style", which is a function which takes the value
-          // returned by formComponent above and returns a Component.
           return function (style) {
             style = style || {};
             var names = Object.keys(fields);
@@ -5008,7 +5001,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
                 var type = fields[name];
                 var fieldStyle = (type && style[type.kind || type.type]) || constant(id);
                 fieldStreams[name] = fieldStream;
-                fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.kind || type.type](name, fieldStream, type));
+                fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.kind || type.type]({
+                  name: name,
+                  stream: fieldStream,
+                  type: type,
+                }));
               });
               var disabledS = stream.once(false);
               var submit = function (name) {
@@ -5052,6 +5049,74 @@ function waitForWebfonts(fonts, callback, maxTime) {
             };
           };
         };
+      };
+    };
+  };
+
+  var formFor = function (formComponent, style, customSubmitComponentF) {
+    if ($.type(style) !== 'function') {
+      return formForOld(formComponent, style);
+    }
+    return function (mkOnSubmit, fields, labels, defaults) {
+      labels = labels || {};
+      defaults = defaults || {};
+
+      var names = Object.keys(fields);
+      return function (f) {
+        var fieldStreams = {};
+        var fieldInputs = {};
+        names.map(function (name) {
+          var type = fields[name];
+          var defaultValue = defaults[name];
+          var label = labels[name];
+          var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
+          fieldStreams[name] = fieldStream;
+          fieldInputs[name] = style(type, label, name, fieldStream)(formComponent(type, name, fieldStream));
+        });
+        var disabledS = stream.once(false);
+        var submitComponentF = customSubmitComponentF ? function (name) {
+          return customSubmitComponentF(name, disabledS);
+        } :  function (name) {
+          return all([
+            $$(function ($el) {
+              stream.map(disabledS, function (disabled) {
+                $el.prop('disabled', disabled);
+              });
+            }),
+          ])(text({
+            el: button,
+            measureWidth: true,
+          }, {
+            str: name,
+          }));
+        };
+        if (typeof mkOnSubmit === 'function') {
+          var onSubmit = mkOnSubmit(fieldStreams, function () {
+            stream.push(disabledS, true);
+            return function () {
+              stream.push(disabledS, false);
+            };
+          });
+          var setupFormSubmit = function ($el) {
+            $el.on('submit', function (ev) {
+              if (disabledS.lastValue) {
+                ev.preventDefault();
+                return;
+              }
+              onSubmit.onSubmit(ev);
+            });
+          };
+        }
+        else {
+          var setupFormSubmit = function ($el) {
+            $el.prop('method', mkOnSubmit.method)
+              .prop('action', mkOnSubmit.action);
+          };
+        }
+        return layout('form', function ($el, ctx, c) {
+          setupFormSubmit($el);
+          return c();
+        })(f(fieldInputs, submitComponentF, fieldStreams, onSubmit && onSubmit.resultS));
       };
     };
   };
@@ -5587,6 +5652,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       ul: ul,
     },
     forms: {
+      defaultStyle: defaultStyle,
       formComponent: formComponent,
       formFor: formFor,
       formStyle: formStyle,
