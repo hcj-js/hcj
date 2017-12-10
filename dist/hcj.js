@@ -4448,6 +4448,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         options: options,
       };
     },
+    file: {
+      kind: 'file',
+    },
     hidden: {
       kind: 'hidden',
     },
@@ -4686,6 +4689,19 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
         mw();
         mh();
+      });
+    },
+    file: function (k, s) {
+      s = s || stream.create();
+      return input(function ($el, ctx, mw, mh) {
+        $el.prop('name', k);
+        $el.prop('type', 'file');
+        mw();
+        mh();
+        $el.on('change', function (ev) {
+          mw();
+          stream.push(s, ev.target.files);
+        });
       });
     },
     hidden: function (k, s) {
@@ -4941,6 +4957,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
     checkbox: constant(id),
     date: textInput,
     dropdown: buttonInput,
+    file: textInput,
+    hidden: id,
     image: textInput,
     number: textInput,
     password: textInput,

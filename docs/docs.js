@@ -1249,10 +1249,10 @@ $(function () {
       name: '"dropdown"',
       type: '',
     }, {
-      name: '"hidden"',
+      name: '"file"',
       type: '',
     }, {
-      name: '"image"',
+      name: '"hidden"',
       type: '',
     }, {
       name: '"number"',
@@ -1294,13 +1294,13 @@ $(function () {
       type: '[{name: String, value: String}] ->',
       description: '`FieldType "dropdown"`',
     }, {
+      name: 'file',
+      type: '',
+      description: '`FieldType "file"`',
+    }, {
       name: 'hidden',
       type: '',
       description: '`FieldType "hidden"`',
-    }, {
-      name: 'image',
-      type: '',
-      description: '`FieldType "image"`',
     }, {
       name: 'number',
       type: '',
@@ -1347,10 +1347,10 @@ $(function () {
       name: 'FormComponent "dropdown"',
       type: 'Component',
     }, {
-      name: 'FormComponent "hidden"',
+      name: 'FormComponent "file"',
       type: 'Component',
     }, {
-      name: 'FormComponent "image"',
+      name: 'FormComponent "hidden"',
       type: 'Component',
     }, {
       name: 'FormComponent "number"',
@@ -1539,38 +1539,68 @@ $(function () {
       '  })),',
       ']);',
     ]),
-    h2('Image'),
+    h2('File'),
     p('File with accept="image/*".'),
     (function () {
-      var fileStream = hcj.stream.once(null);
+      var filesStream = hcj.stream.once(null);
+
+      var previewComponentStream = stream.once(c.nothing);
+
+      hcj.stream.map(filesStream, function (files) {
+        var file = files && files.length > 0 && files[0];
+        if (file) {
+          var reader = new FileReader();
+          reader.onload = function (e) {
+            stream.push(previewComponentStream, hcj.component.all([
+              hcj.component.alignHLeft,
+            ])(hcj.component.image({
+              src: e.target.result,
+            })));
+          };
+          reader.readAsDataURL(file);
+        }
+        else {
+          stream.push(previewComponentStream, c.nothing);
+        }
+      });
       
       return hcj.component.stack([
         hcj.component.all([
+          c.$attr('accept', 'image/*'),
           hcj.component.alignHLeft,
-        ])(hcj.forms.formComponent(hcj.forms.fieldType.image, 'image', fileStream)),
-        hcj.component.componentStream(hcj.stream.map(fileStream, function (file) {
-          return file ? hcj.component.all([
-            hcj.component.alignHLeft,
-          ])(hcj.component.image({
-            src: file,
-          })) : hcj.component.nothing;
-        })),
+        ])(hcj.forms.formComponent(hcj.forms.fieldType.file, 'image', filesStream)),
+        hcj.component.componentStream(previewComponentStream),
       ]);
     })(),
     showCodeBlock([
-      'var fileStream = hcj.stream.once(null);',
+      'var filesStream = hcj.stream.once(null);',
+      '&nbsp;',
+      ' var previewComponentStream = hcj.stream.once(hcj.component.nothing);',
+      '&nbsp;',
+      ' hcj.stream.map(filesStream, function (files) {',
+      '  var file = files && files.length > 0 && files[0];',
+      '  if (file) {',
+      '    var reader = new FileReader();',
+      '    reader.onload = function (e) {',
+      '      hcj.stream.push(previewComponentStream, hcj.component.all([',
+      '        hcj.component.alignHLeft,',
+      '      ])(hcj.component.image({',
+      '        src: e.target.result,',
+      '      })));',
+      '    };',
+      '    reader.readAsDataURL(file);',
+      '  }',
+      '  else {',
+      '    hcj.stream.push(previewComponentStream, hcj.component.nothing);',
+      '  }',
+      '});',
       '&nbsp;',
       'return hcj.component.stack([',
       '  hcj.component.all([',
+      '    hcj.component.$attr(\'accept\', \'image/*\'),',
       '    hcj.component.alignHLeft,',
-      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.image, \'image\', fileStream)),',
-      '  hcj.component.componentStream(hcj.stream.map(fileStream, function (file) {',
-      '    return file ? hcj.component.all([',
-      '      hcj.component.alignHLeft,',
-      '    ])(hcj.component.image({',
-      '      src: file,',
-      '    })) : hcj.component.nothing;',
-      '  })),',
+      '  ])(hcj.forms.formComponent(hcj.forms.fieldType.file, \'image\', filesStream)),',
+      '  hcj.component.componentStream(previewComponentStream),',
       ']);',
     ]),
     h2('Number'),
