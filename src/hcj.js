@@ -790,7 +790,7 @@
             childInstances.map(function (i) {
               return i.remove();
             });
-            i.remove();
+            i.remove && i.remove();
           },
         };
       });
@@ -816,7 +816,7 @@
           childInstances.map(function (i) {
             return i.remove();
           });
-          i.remove();
+          i.remove && i.remove();
         },
       };
     });

@@ -868,7 +868,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
             childInstances.map(function (i) {
               return i.remove();
             });
-            i.remove();
+            i.remove && i.remove();
           },
         };
       });
@@ -894,7 +894,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           childInstances.map(function (i) {
             return i.remove();
           });
-          i.remove();
+          i.remove && i.remove();
         },
       };
     });
@@ -5508,7 +5508,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       changeThis: changeThis,
       clickThis: clickThis,
       component: component,
-      componentStream: componentStreamWithExit,
+      componentStream: componentStream,
       compose: all,
       container: container,
       crop: crop,
