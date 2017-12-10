@@ -723,8 +723,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
     }
 
     instance.remove = function () {
-      if (buildResult.onRemove) {
-        buildResult.onRemove();
+      if (buildResult.remove) {
+        buildResult.remove();
       }
       $el.remove();
     };
@@ -3328,7 +3328,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return {
         minWidth: minWidth,
         minHeight: minHeight,
-        onRemove: function () {
+        remove: function () {
           if (i) {
             i.remove();
           }
@@ -3391,7 +3391,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return {
         minWidth: minWidthS,
         minHeight: minHeightS,
-        onRemove: function () {
+        remove: function () {
           stream.end(localCStream);
           if (i) {
             i.remove();
