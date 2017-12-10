@@ -2849,15 +2849,15 @@ $(function () {
   }, {
     title: 'API - Styles',
     components: standardLibraryComponentModifiers,
-  }, {
-    title: 'API - Forms',
-    components: standardLibraryForms,
-  }, {
-    title: 'API - Forms Examples',
-    components: standardLibraryFormExamples,
-  }, {
-    title: 'API - FormFor',
-    components: standardLibraryFormFor,
+  // }, {
+  //   title: 'API - Forms',
+  //   components: standardLibraryForms,
+  // }, {
+  //   title: 'API - Forms Examples',
+  //   components: standardLibraryFormExamples,
+  // }, {
+  //   title: 'API - FormFor',
+  //   components: standardLibraryFormFor,
   }, {
     title: 'API - Colors',
     components: standardLibraryColors,
