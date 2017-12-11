@@ -2590,11 +2590,11 @@
       ], function (width, height, mhs) {
         var top = 0;
         var positions = mhs.map(function (mh, index) {
+          var minHeight = mh(width);
           var position = {
             top: top,
-            height: mh(width),
+            height: minHeight,
           };
-          var minHeight = mh(width);
           if (config.collapsePadding) {
             if (minHeight > 0) {
               top += minHeight + config.padding;
@@ -2671,11 +2671,12 @@
           var idx = -1;
           var positions = mhs.map(function (mh) {
             idx += 1;
+            var minHeight = mh(width);
             var position = {
               top: top + config.padding * idx,
-              height: mh(width),
+              height: minHeight,
             };
-            top += mh(width);
+            top += minHeight;
             return position;
           });
           positions = config.surplusHeightFunc(height, positions);
