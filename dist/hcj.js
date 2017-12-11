@@ -1563,6 +1563,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var nothing = empty("div");
 
   var once300S = stream.once(300);
+  var bodyFontSize = $('body').css('font-size');
+  var bodyLineHeight = $('body').css('line-height');
+  var bodyFontFamily = $('body').css('font-family');
   var text = uncurryConfig(function (config) {
     // config2 is present in v0.2.1 for backward compatibility, it may
     // be removed in a future version
@@ -1620,9 +1623,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var fontStyle = 'normal';
           var fontVariant = 'normal';
           var fontWeight = c.weight || config.weight || 'normal';
-          var fontSize = c.size || config.size || $el.css('font-size');
-          var lineHeight = c.lineHeight || config.lineHeight || $el.css('line-height');
-          var fontFamily = c.family || config.family || $el.css('font-family');
+          var fontSize = c.size || config.size || bodyFontSize;
+          var lineHeight = c.lineHeight || config.lineHeight || bodyLineHeight;
+          var fontFamily = c.family || config.family || bodyFontFamily;
           c.font = [
             fontStyle,
             fontVariant,
