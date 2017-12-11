@@ -4000,14 +4000,7 @@
       var minHeightS = $.isFunction(getMinHeightStream) ? getMinHeightStream(i, ctx) : getMinHeightStream;
       return {
         minWidth: i.minWidth,
-        minHeight: stream.combine([
-          i.minHeight,
-          minHeightS,
-        ], function (mh, minHeight) {
-          return function (w) {
-            return Math.max(mh(w), minHeight(w));
-          };
-        }),
+        minHeight: minHeightS,
       };
     });
   };
