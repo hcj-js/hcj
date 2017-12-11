@@ -37,6 +37,9 @@ footer, header, hgroup, menu, nav, section {
 body {
 	line-height: 1.2;
 }
+.text span {
+	white-space: pre-wrap;
+}
 ol, ul {
 	list-style: none;
 }

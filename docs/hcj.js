@@ -1602,9 +1602,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
           var $span = $(document.createElement('span'));
           var updateStr = function (str) {
-            if (index === 0) {
-              str = ' ' + str;
-            }
             if (index === strs.length - 1) {
               str = str + ' ';
             }
@@ -1623,14 +1620,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var fontStyle = 'normal';
           var fontVariant = 'normal';
           var fontWeight = c.weight || config.weight || 'normal';
-          var fontSize = c.size || config.size || parseInt($el.css('font-size'));
+          var fontSize = c.size || config.size || $el.css('font-size');
           var lineHeight = c.lineHeight || config.lineHeight || $el.css('line-height');
-          var fontFamily = c.family || config.family || 'initial';
+          var fontFamily = c.family || config.family || $el.css('font-family');
           c.font = [
             fontStyle,
             fontVariant,
             fontWeight,
-            fontSize + 'px/' + lineHeight,
+            fontSize + '/' + lineHeight,
             fontFamily,
           ].join(' ');
 
@@ -1721,18 +1718,17 @@ function waitForWebfonts(fonts, callback, maxTime) {
         var firstPush = true;
         var pushDimensions = function () {
           stream.next(function () {
-            // var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
-            //         (config.measureWidth && strs.reduce(function (a, c, index) {
-            //           var width = measureTextWidth(c.str, c.font);
-            //           return a + width;
-            //         }, 0)) ||
-            //         300;
             var mw = null;
             if (config.hasOwnProperty('minWidth')) {
               mw = config.minWidth;
             }
             else if (config.measureWidth) {
-              mw = measureWidth($el);
+              mw = strs.reduce(function (a, c, index) {
+                var width = measureTextWidth(c.str, c.font);
+                return a + width;
+              }, 0);
+              // TODO: check for canvas browser support and use this as a fallback:
+              // mw = measureWidth($el);
             }
             var lineHeightCss = $el.css('line-height')
             var fontSize = config.size || parseInt($el.css('font-size'));
@@ -2668,11 +2664,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
       ], function (width, height, mhs) {
         var top = 0;
         var positions = mhs.map(function (mh, index) {
+          var minHeight = mh(width);
           var position = {
             top: top,
-            height: mh(width),
+            height: minHeight,
           };
-          var minHeight = mh(width);
           if (config.collapsePadding) {
             if (minHeight > 0) {
               top += minHeight + config.padding;
@@ -2749,11 +2745,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var idx = -1;
           var positions = mhs.map(function (mh) {
             idx += 1;
+            var minHeight = mh(width);
             var position = {
               top: top + config.padding * idx,
-              height: mh(width),
+              height: minHeight,
             };
-            top += mh(width);
+            top += minHeight;
             return position;
           });
           positions = config.surplusHeightFunc(height, positions);
