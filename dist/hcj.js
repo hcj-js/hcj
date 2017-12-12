@@ -1595,15 +1595,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
             };
             strs[index] = c;
           }
-          if (c.font) {
-            c = $.extend(c, c.font);
-          }
-          if (c.fonts) {
-            c.fonts.map(function (font) {
-              c = $.extend(c, font);
-            });
-          }
-          var $span = $(document.createElement('span'));
           var updateStr = function (str) {
             if (index === strs.length - 1) {
               str = str + ' ';
@@ -1611,13 +1602,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
             $span.html(str);
             c.words = str.split(' ');
           };
+          var $span;
           if (stream.isStream(c.str)) {
+            $span = $(document.createElement('span'));
             spanStreams.push(stream.map(c.str, function (x) {
               updateStr(x);
             }));
           }
           else {
-            updateStr(c.str);
+            $span = $('<span>' + c.str + '</span>');
           }
           c.size = c.size || config.size;
           var fontStyle = 'normal';
