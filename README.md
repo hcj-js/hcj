@@ -35,3 +35,9 @@ Before the 1.0.0 release we follow semantic versioning shifted down by
 one decimal place: breaking changes may occur between 0.2 and 0.3,
 feature additions and deprecations between 0.2 and 0.2.1, and patches
 between 0.2.1 and 0.2.1.1.
+
+## Powered by HCJ ##
+
+* [http://anarchyinteractive.com](http://anarchyinteractive.com)
+* [http://tedxmadison.com](http://tedxmadison.com)
+* [https://www.holibirthday.com](https://www.holibirthday.com)
