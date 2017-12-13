@@ -46,30 +46,30 @@ $(function () {
   var font = {
     h1: {
       family: 'sans-serif',
-      size: "40px",
+      size: 40,
       weight: 'bold',
     },
     h2: {
       family: 'sans-serif',
-      size: "30px",
+      size: 30,
     },
     h3: {
       family: 'sans-serif',
-      size: "20px",
+      size: 20,
     },
     p: {
       approximateHeight: true,
       family: 'sans-serif',
-      size: "15px",
+      size: 15,
     },
     p0: {
       minWidth: 100,
       family: 'sans-serif',
-      size: "15px",
+      size: 15,
     },
     code: {
       family: 'monospace',
-      size: "15px",
+      size: 15,
     },
   };
 
@@ -96,7 +96,7 @@ $(function () {
   };
   var text = function (font) {
     return function (str) {
-      return c.text(font, processBackticks(str));
+      return c.text(processBackticks(str), font);
     };
   };
   var h1 = text(font.h1);
@@ -122,7 +122,7 @@ $(function () {
         minWidth: 300,
       }),
     ])(stack(strs.map(function (str) {
-      return c.text(str, [font.code, {
+      return c.text(str.split(' ').join('&nbsp;'), [font.code, {
         measureWidth: true,
         oneLine: true,
       }]);
@@ -145,9 +145,7 @@ $(function () {
           return shown ? '[hide code]' : '[show code]';
         }),
       })),
-      c.componentStream(stream.map(shownS, function (shown) {
-        return shown ? codeBlock(strs) : c.nothing;
-      })),
+      c.toggleHeight(shownS)(codeBlock(strs)),
     ]));
   };
 
@@ -170,13 +168,13 @@ $(function () {
           bottomToTop: !noBottomToTop,
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm((noBullet ? '`' : '&#8226; `') + prop.name + ' '.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + ' '.repeat(maxTypeLength - prop.typeLength) + '`'),
+          pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp'.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.typeLength) + '`'),
           c.all([
             noGray ? hcj.funcs.id : c.backgroundColor({font: color.gray}),
           ])(c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
-            pm('`' + (commentString || ' -- ') + '`'),
+            pm('`' + (commentString || '&nbsp;--&nbsp;') + '`'),
             p0(prop.description),
           ])),
         ]);
@@ -192,11 +190,11 @@ $(function () {
       return c.grid({
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm((noBullet ? '`' : '&#8226; `') + sig.name + ' '.repeat(maxPropLength - sig.name.length) + '`'),
+          pm((noBullet ? '`' : '&#8226;&nbsp;`') + sig.name + '&nbsp'.repeat(maxPropLength - sig.name.length) + '`'),
           c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
-            pm(typeofString || '` :: `'),
+            pm(typeofString || '`&nbsp;::&nbsp;`'),
             p0('`' + sig.type + '`'),
           ]),
         ]);
@@ -644,7 +642,7 @@ $(function () {
         type: 'Number -> Component',
       }, {
         name: 'rectangle',
-        type: '{[h, x]: Number, [v, y]: Number} -> Component',
+        type: ' {[h, x]: Number, [v, y]: Number} -> Component',
       }]),
       p("`barH` and `barV` create horizontal and vertical separators of the size you specify.  `rectangle` takes an object with `h` and `v` or `x` and `y` properties, and creates a rectangle of that size."),
 
