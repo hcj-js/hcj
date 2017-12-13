@@ -1641,12 +1641,11 @@
               mw = config.minWidth;
             }
             else if (config.measureWidth) {
-              mw = strs.reduce(function (a, c, index) {
-                var width = measureTextWidth(c.str, c.font);
-                return a + width;
-              }, 0);
-              // TODO: check for canvas browser support and use this as a fallback:
-              // mw = measureWidth($el);
+              // mw = strs.reduce(function (a, c, index) {
+              //   var width = measureTextWidth(c.str, c.font);
+              //   return a + width;
+              // }, 0);
+              mw = measureWidth($el);
             }
             var lineHeightCss = $el.css('line-height')
             var fontSize = config.size || parseInt($el.css('font-size'));
