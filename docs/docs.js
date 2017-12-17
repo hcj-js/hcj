@@ -88,10 +88,9 @@ $(function () {
           str: s,
         };
       }
-      return {
+      return $.extend({
         str: s,
-        font: font.code,
-      };
+      }, font.code);
     });
   };
   var text = function (font) {
@@ -168,7 +167,7 @@ $(function () {
           bottomToTop: !noBottomToTop,
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp'.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.typeLength) + '`'),
+          pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp;'.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.typeLength) + '`'),
           c.all([
             noGray ? hcj.funcs.id : c.backgroundColor({font: color.gray}),
           ])(c.sideBySide({
@@ -190,7 +189,7 @@ $(function () {
       return c.grid({
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm((noBullet ? '`' : '&#8226;&nbsp;`') + sig.name + '&nbsp'.repeat(maxPropLength - sig.name.length) + '`'),
+          pm((noBullet ? '`' : '&#8226;&nbsp;`') + sig.name + '&nbsp;'.repeat(maxPropLength - sig.name.length) + '`'),
           c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
@@ -642,7 +641,7 @@ $(function () {
         type: 'Number -> Component',
       }, {
         name: 'rectangle',
-        type: ' {[h, x]: Number, [v, y]: Number} -> Component',
+        type: '{[h, x]: Number, [v, y]: Number} -> Component',
       }]),
       p("`barH` and `barV` create horizontal and vertical separators of the size you specify.  `rectangle` takes an object with `h` and `v` or `x` and `y` properties, and creates a rectangle of that size."),
 
