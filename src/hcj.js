@@ -262,27 +262,16 @@
       var arr = [];
       var out = stream.create();
 
-      var running = false;
       var tryRunF = function () {
-        if (!running) {
-          running = true;
-          streamDeferFunc.next(function () {
-            running = false;
-            for (var i = 0; i < streams.length; i++) {
-              if (arr[i] === undefined) {
-                return;
-              }
-            }
-            stream.push(out, f.apply(null, arr));
-          });
+        for (var i = 0; i < streams.length; i++) {
+          if (arr[i] === undefined) {
+            return;
+          }
         }
+        stream.push(out, f.apply(null, arr));
       };
 
       streams.reduce(function (i, s) {
-        if (s.lastValue !== undefined) {
-          arr[i] = s.lastValue;
-          tryRunF();
-        }
         stream.onValue(s, function (v) {
           arr[i] = v;
           tryRunF();
@@ -295,27 +284,16 @@
     combineInto: function (streams, f, out) {
       var arr = [];
 
-      var running = false;
       var tryRunF = function () {
-        if (!running) {
-          running = true;
-          streamDeferFunc.next(function () {
-            running = false;
-            for (var i = 0; i < streams.length; i++) {
-              if (arr[i] === undefined) {
-                return;
-              }
-            }
-            stream.push(out, f.apply(null, arr));
-          });
+        for (var i = 0; i < streams.length; i++) {
+          if (arr[i] === undefined) {
+            return;
+          }
         }
+        stream.push(out, f.apply(null, arr));
       };
 
       streams.reduce(function (i, s) {
-        if (s.lastValue !== undefined) {
-          arr[i] = s.lastValue;
-          tryRunF();
-        }
         stream.onValue(s, function (v) {
           arr[i] = v;
           tryRunF();
@@ -323,7 +301,7 @@
         return i + 1;
       }, 0);
     },
-    all: function (streams, f) {
+    all: function (streams) {
       return stream.combine(streams, function () {
         return Array.prototype.slice.call(arguments);
       });
@@ -333,21 +311,14 @@
       var obj = {};
       var out = stream.create();
 
-      var running = false;
       var tryRunF = function () {
-        if (!running) {
-          running = true;
-          streamDeferFunc.next(function () {
-            running = false;
-            for (var i = 0; i < keys.length; i++) {
-              var key = keys[i];
-              if (obj[key] === undefined) {
-                return;
-              }
-            }
-            stream.push(out, $.extend({}, obj));
-          });
+        for (var i = 0; i < keys.length; i++) {
+          var key = keys[i];
+          if (obj[key] === undefined) {
+            return;
+          }
         }
+        stream.push(out, $.extend({}, obj));
       };
 
       keys.map(function (key, i) {
@@ -980,12 +951,12 @@
     b: 255,
   });
 
-  var mapMinWidths = function (is, ctx) {
+  var mapMinWidths = function (is) {
     return stream.all(is.map(function (i) {
       return i.minWidth;
     }));
   };
-  var mapMinHeights = function (is, ctx) {
+  var mapMinHeights = function (is) {
     return stream.all(is.map(function (i) {
       return i.minHeight;
     }));
