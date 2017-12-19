@@ -2840,11 +2840,11 @@ $(function () {
     title: 'API - Colors',
     components: standardLibraryColors,
   }, {
+    title: 'API - Streams',
+    components: standardLibraryStreams,
+  }, {
     title: 'Examples',
     components: testPage,
-  }, {
-    title: 'Streams',
-    components: standardLibraryStreams,
   }, {
     title: 'Defining Componentss',
     components: definingComponents,
