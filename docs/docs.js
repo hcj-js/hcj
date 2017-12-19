@@ -58,7 +58,6 @@ $(function () {
       size: 20,
     },
     p: {
-      approximateHeight: true,
       family: 'sans-serif',
       size: 15,
     },
@@ -1174,112 +1173,92 @@ $(function () {
 
   var standardLibraryStreams = function () {
     return [
-      p("In order for nested elements to communicate dimensions with each other, a common stream interface is needed.  There is no native Javascript stream implementation, and for this kind of application certain performance characteristics are preferred, so HCJ specifies a stream interface to use, and also provides a grimy little implementation of it."),
-      p("An hcj stream is an object with two properties:"),
-      stack([
-        p("&#8226; lastValue: the most recent data point"),
-        p("&#8226; listeners: array of functions that are run when there is new data (private member, do not access)"),
-      ]),
-      p('Streams can be defined either declaratively or imperatively.  That is, you can let a stream be an operation applied to other streams, or you can just create it and push to it like a bus.  Unlike in other stream implementations:'),
-      stack([
-        p("&#8226; The most recent data point is accessible through the `lastValue` property, and may be read off at your leisure."),
-        p("&#8226; If you push one value through a stream multiple times, it will only be hanlded the first time."),
-        p("&#8226; If you push multiple values through a stream quickly (synchronously), intermediate values will be skipped."),
-      ]),
-      p('Note: to skip intermediate values, `setTimeout` calls are made.  When streams are defined in terms of each other, multiple `setTimeout` calls are made in sequence.  If you want to run some code after all stream operations are finished (e.g. after the page has finished rendering in response to some change), you must call `stream.defer` instead of `setTimeout`.  (Furthermore, when writing components and layouts, if you want to defer the execution of a block of code and then push to a stream, call `stream.next` instead of `setTimeout`.  Otherwise, `stream.defer` calls will not know to wait for your code.)'),
+      p("HCJ provides a stream library that components use to communicate with their parents and children."),
+      p("An hcj stream is defined as an object with two properties:"),
+      objectDefinition([{
+        name: 'lastValue',
+        type: 'T',
+        description: 'The most recent data point.',
+      }, {
+        name: 'listeners',
+        type: '[T -> ()]',
+        description: 'Array of functions that are run whenever there is a new data point.',
+      }]),
+      p('Broadly, there are two ways to define HCJ streams.  The first is with `stream.create` or `stream.once`.  Streams created with these methods receive new data points whenever you push to them (see `stream.push` and `stream.pushAll`).'),
+      p('The second way is to apply an operation to another stream or streams.  `stream.map` and `stream.reduce` are the most common operations.  Streams defined this way generally receive new values whenever their input streams receive new values.'),
+      p('HCJ streams are optimized for communicating dimensions between parents and children, not for aggregating data.  If you push a value through a stream multiple times, it will only be handled the first time.  If you push multiple values through a stream synchronously, only the last one is guaranteed to be handled.'),
+      p('To guarantee that an action is run after all stream operations have "settled", use `hcj.stream.defer` instead of `setTimeout`.  To run actions synchronously and push to a stream after they are complete, use `hcj.stream.next` instead of `setTimeout`.'),
 
+      h1('Stream Methods'),
       p('Here are the stream functions.  These are all properties of the `window.hcj.stream` object:'),
 
-      h2('combine'),
-      p('`combine : ([Stream a, Stream b, ...], ((a, b, ...) -> x)) -> Stream x`'),
-      p('Takes an array of streams, and a function.  Result stream applies the function to the latest values from all input streams.'),
+      h2('Combine'),
+      p('`combine :: ([Stream a, Stream b, ...] , (a, b, ...) -> x) -> Stream x`'),
+      p('Takes an array of streams and a function.  Applies the function to the latest values from all input streams, updating output stream whenever any input changes.'),
 
-      h2('combineInto'),
-      p('`combine : ([Stream a, Stream b, ...], ((a, b, ...) -> x), Stream x) -> IO ()`'),
-      p('Imperative form of `combine`.  Takes an array of streams, a function, and a target stream, and pushes all values into the target stream.'),
+      h2('CombineInto'),
+      p('`combineInto :: ([Stream a, Stream b, ...] , (a, b, ...) -> x , Stream x) -> ()`'),
+      p('Like `combine`, but instead of returning a stream, pushes all values into a stream created with `create` or `once`.'),
 
-      h2('combineObject'),
-      p('`combineObject : {x: Stream a, y: Stream b, ...} -> Stream {x: a, y: b, ...}`'),
+      h2('CombineObject'),
+      p('`combineObject :: {x: Stream a, y: Stream b, ...} -> Stream {x: a, y: b, ...}`'),
       p('Takes an object whose properties are streams, returns a stream of objects.'),
 
-      h2('create'),
-      p('`create : Maybe a -> Stream a`'),
-      p('Creates a stream, and initializes it using the optional argument passed in.  The `push` or `pushAll` functions can be used to push in additional points into the stream.'),
-      p('Example:'),
-      codeBlock([
-        "var onceFiftyS = stream.create(50);",
-      ]),
+      h2('Create'),
+      p('`create :: () -> Stream a`'),
+      p('Creates a stream with no initial value.'),
 
-      h2('debounce'),
-      p('`debounce : Stream a -> Number -> Stream a`'),
-      p('Pushes to output stream no more quickly than the given number of milliseconds.'),
+      h2('Debounce'),
+      p('`debounce :: (Stream a , Number) -> Stream a`'),
+      p('Pushes values from input stream directly to output stream, no more frequently than the given number of milliseconds.'),
 
-      h2('delay'),
-      p('`delay : Stream a -> Number -> Stream a`'),
-      p('Pushes to output stream after waiting the given number of milliseconds.'),
+      h2('Delay'),
+      p('`delay :: Stream a -> Number -> Stream a`'),
+      p('Pushes values directly to the output stream after waiting the given number of milliseconds.'),
 
-      h2('filter'),
-      p('`filter : Stream a -> (a -> Bool) -> Stream a`'),
-      p('Returns a stream that includes only the values for which the provided predicate returns something truthy.'),
+      h2('Filter'),
+      p('`filter :: (Stream a , a -> Bool) -> Stream a`'),
+      p('Takes a stream and a predicate.  Returns a stream that includes only the values for which the predicate is truthy.'),
 
-      h2('fromPromise'),
-      p('`fromPromise : Promise a -> a -> Stream a`'),
-      p('Takes a promise, and an optional initial value.  Returns a stream (optionally initialized with the initial value), which receives the value from the promise when it resolves.'),
+      h2('FromPromise'),
+      p('`fromPromise :: (Promise a , a?) -> Stream a`'),
+      p('Takes a promise, and an optional initial value.  Returns a stream that receives a value when the promise resolves, and initialized with the initial value if one is provided.'),
 
-      h2('map'),
-      p('`map : Stream a -> (a -> b) -> Stream b'),
-      p('Applies a function to each data point of a stream.'),
-      p('Example:'),
-      codeBlock([
-        "var centsS = stream.create();",
-        "var dollarAmountS = stream.map(centsS, function (cents) {",
-        "  return Math.floor(cents / 100) + '.' + (cents % 100);",
-        "})",
-      ]),
+      h2('Map'),
+      p('`map :: (Stream a , a -> b) -> Stream b'),
+      p('Applies a function to each point of a stream.'),
 
-      h2('promise'),
-      p('`promise : Stream a -> Promise a`'),
+      h2('Once'),
+      p('`once :: a -> Stream a`'),
+      p('Creates a stream with an initial value.'),
+
+      h2('OnValue'),
+      p('`onValue :: (Stream a , a -> ()) -> ()'),
+      p('Like `map` but does not return a stream.'),
+
+      h2('Promise'),
+      p('`promise :: Stream a -> Promise a`'),
       p('Returns a promise that resolves as soon as there is a data point in the stream.'),
 
-      h2('prop'),
-      p('`prop : Stream {x: a} -> ("x" : String) -> Stream a`'),
-      p('Maps over a stream of objects, accessing the specified key.  That type signature uses some made-up notation for polymorphic row types.'),
+      h2('Prop'),
+      p('`prop :: (Stream {x: a, ...} , "x") -> Stream a`'),
+      p('Maps over a stream of objects, accessing the specified key.'),
 
-      h2('push'),
-      p('`push : Stream a -> a -> IO ()`'),
-      p('Pushes a value onto a stream.'),
-      p('Example:'),
-      codeBlock([
-        "var clickS = stream.create();",
-        "$el.on('click', function (ev) {",
-        "  stream.push(clickS, ev)",
-        "})",
-      ]),
+      h2('Push'),
+      p('`push : (Stream a , a) -> ()`'),
+      p('Pushes a value onto a stream created with `create` or `once`.'),
 
-      h2('pushAll'),
-      p('`pushAll : Stream a -> Stream a -> IO ()`'),
-      p('Pushes all values from one stream onto another stream.'),
-      p('Example:'),
-      codeBlock([
-        "var sourceS = stream.create();",
-        "var targetS = stream.create();",
-        "stream.pushAll(sourceS, targetS);",
-      ]),
+      h2('PushAll'),
+      p('`pushAll : (Stream a , Stream a) -> ()`'),
+      p('Pushes all values from one stream onto another stream.  Source stream is first, target second.'),
 
-      h2('reduce'),
-      p('`reduce : Stream a -> (b -> a -> b) -> b -> Stream b'),
-      p('Applies a function to each data point of a stream, keeping a running total.  Like array reduce, but the reduce callback has the orders of the arguments reversed.'),
-      p('Example:'),
-      codeBlock([
-        "var clickS = stream.create();",
-        "var countClicksS = stream.reduce(clickS, function (x)",
-        "  return x + 1;",
-        "}, 0);",
-      ]),
+      h2('Reduce'),
+      p('`reduce : (Stream a , b -> a -> b , b) -> Stream b'),
+      p('Applies a function to each data point of a stream, keeping a running total.'),
 
-      h2('splitObject'),
+      h2('SplitObject'),
       p('`splitObject : {x: a, y: b, ...} -> {x: Stream a, y: Stream a, ...}`'),
-      p('Takes an object, returns an object where each property is a stream initialized with the value from the input object.'),
+      p('Takes an object, and returns an object whose values are a streams initialized with the values from the input object.'),
     ];
   };
 
@@ -2930,7 +2909,7 @@ $(function () {
       // clearHanging: true,
     }, sidebar, [
       h1m('hcj.js'),
-      pm('v0.2.1 alpha'),
+      pm('v0.3 (development)'),
       pm('It could be worse.'),
       h1m(page.title),
     ].concat(page.components()));
