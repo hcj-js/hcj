@@ -46,29 +46,29 @@ $(function () {
   var font = {
     h1: {
       family: 'sans-serif',
-      size: 40,
+      size: 40 + 'px',
       weight: 'bold',
     },
     h2: {
       family: 'sans-serif',
-      size: 30,
+      size: 30 + 'px',
     },
     h3: {
       family: 'sans-serif',
-      size: 20,
+      size: 20 + 'px',
     },
     p: {
       family: 'sans-serif',
-      size: 15,
+      size: 15 + 'px',
     },
     p0: {
       minWidth: 100,
       family: 'sans-serif',
-      size: 15,
+      size: 15 + 'px',
     },
     code: {
       family: 'monospace',
-      size: 15,
+      size: 15 + 'px',
     },
   };
 
@@ -217,10 +217,10 @@ $(function () {
       p("The `component` is the building block of the HCJ framework.  Components can be composed to create new components, or rendered as web pages."),
       p("A component technically is a function taking a `context` and returning an `instance`.  The `context` specifies the page area that a component is rendered into, and the `instance` the minimum dimensions of the component."),
       docStack2([
-        p("Specifically, a `context` is an object that has all of the following properties.  Here, `$el` is a JQuery object, and the rest are HCJ streams:"),
+        p("Specifically, a `context` is an object that has all of the following properties.  Here, `el` is a DOM node, and the rest are HCJ streams:"),
         objectDefinition([{
-          name: '$el',
-          type: 'JQuery',
+          name: 'el',
+          type: 'Node',
           description: 'Parent element of the instance.',
         }, {
           name: 'width',
@@ -241,19 +241,19 @@ $(function () {
         }, {
           name: 'leftOffset',
           type: 'Stream Number',
-          description: 'Left position of "$el" relative to the page.',
+          description: 'Left position of "el" relative to the page.',
         }, {
           name: 'topOffset',
           type: 'Stream Number',
-          description: 'Top position of "$el" relative to the page.',
+          description: 'Top position of "el" relative to the page.',
         }]),
       ]),
-      p('When a component is rendered, it must create an element and append it to the context\'s `$el` property.  The component does not need to size and position itself within its parent; that is done by its parent layout.  The reason the `context` passed to it has `width` and `height` properties and so on is so that it can size and position its children.'),
+      p('When a component is rendered, it must create an element and append it to the context\'s `el` property.  The component does not need to size and position itself within its parent; that is done by its parent layout.  The reason the `context` passed to it has `width` and `height` properties and so on is so that it can size and position its children.'),
       docStack2([
         p('An `instance` is an object with the following properties:'),
         objectDefinition([{
-          name: '$el',
-          type: 'JQuery',
+          name: 'el',
+          type: 'Node',
           description: 'Root element of the instance.',
         }, {
           name: 'minWidth',
@@ -269,9 +269,9 @@ $(function () {
           description: 'Removes the instance.',
         }]),
       ]),
-      p('`$el` is always given a non-static `position`, and sized and located to match the `context` passed into the component.'),
+      p('`el` is always given a non-static `position`, and sized and located to match the `context` passed into the component.'),
       p('`minWidth` is a stream of numbers giving the minimum width required by the instance to display sanely.  Likewise, `minHeight` is a stream of functions that, given a hypothetical width, return the height required by the instance at that width.'),
-      p('The `remove` property is a function that removes `$el` from the DOM and performs any other cleanup required by the instance, such as closing open connections.'),
+      p('The `remove` property is a function that removes `el` from the DOM and performs any other cleanup required by the instance, such as closing open connections.'),
       p("In HCJ terminology, a `layout` is a function that takes one or more components and returns a component.  A `style` is a function that takes exactly one component and returns a component.  Therefore, all styles are layouts."),
       c.all([
         c.alignHLeft,
@@ -303,11 +303,11 @@ $(function () {
       p("We provide a handy `hcj.component.component` function for defining components.  It takes two arguments, an optional tag name (which defaults to 'div') and a `build` method, and returns a component."),
       p("`component : (String? , BuildComponent) -> Component`"),
       stack([
-        p("`type BuildComponent = (JQuery, Context) -> {minWidth, minHeight, onRemove}`"),
+        p("`type BuildComponent = (Node, Context) -> {minWidth, minHeight, onRemove}`"),
       ]),
-      p("The build method initializes the component and indicates its minimum dimensions.  It is passed two arguments: `$el`, the created root element of the component (as a jquery object), and `context`, the context as it was passed into the component."),
+      p("The build method initializes the component and indicates its minimum dimensions.  It is passed two arguments: `el`, the created root element of the component, and `context`, the context as it was passed into the component."),
       p("It returns an object with `minWidth` and `minHeight` properties, and an optional `onRemove` property.  The `minWidth` and `minHeight` properties are streams of numbers, and streams of functions from numbers to numbers, respectively.  Any returned `onRemove` function will be called when the instance's `remove` function is called."),
-      p("To measure elements' minimum sizes, HCJ provides `hcj.measure.width` and `hcj.measure.height`.  These functions take JQuery selectors of elements, and return numbers and functions from numbers to numbers, respectively.  They clone the element, attach the clone to a sandbox, set a couple CSS properties, measure it, remove the clone, and return the size."),
+      p("To measure elements' minimum sizes, HCJ provides `hcj.measure.width` and `hcj.measure.height`.  These functions take DOM nodes, and return numbers and functions from numbers to numbers, respectively.  They clone the element, attach the clone to a sandbox, set a couple CSS properties, measure it, remove the clone, and return the size."),
       h3("Example:"),
       codeBlock([
         "// component for the imaginary SomeCaptcha",
@@ -315,11 +315,11 @@ $(function () {
         "var c = window.hcj.component;",
         "var stream = window.hcj.stream;",
         "&nbsp;",
-        "var captcha = c.component(function ($el, context) {",
-        "  var minWidthS = stream.once(hcj.measure.width($el));",
-        "  var minHeightS = stream.once(hcj.measure.height($el));",
-        "  var someCaptcha = SomeCaptcha.render($el).then(function () {",
-        "    stream.push(minWidthS, hcj.measure.width($el));",
+        "var captcha = c.component(function (el, context) {",
+        "  var minWidthS = stream.once(hcj.measure.width(el));",
+        "  var minHeightS = stream.once(hcj.measure.height(el));",
+        "  var someCaptcha = SomeCaptcha.render(el).then(function () {",
+        "    stream.push(minWidthS, hcj.measure.width(el));",
         "    context.onRemove(function () {",
         "      someCaptcha.remove();",
         "    });",
@@ -344,7 +344,6 @@ $(function () {
         "        &lt;link rel=\"stylesheet\" type=\"text/css\" href=\"hcj.css\"&gt;",
         "    &lt;/head&gt;",
         "    &lt;body&gt;",
-        "        &lt;script src=\"https://code.jquery.com/jquery-3.1.0.js\"&gt;&lt;/script&gt;",
         "        &lt;script src=\"hcj.min.js\"&gt;&lt;/script&gt;",
         "&nbsp;",
         "        &lt;script&gt;",
@@ -354,7 +353,7 @@ $(function () {
         "    &lt;/body&gt;",
         "&lt;/html&gt;",
       ]),
-      p("This page includes three files: `hcj.css`, `jquery.js`, and `hcj.js`, along with your user script.  The hcj.css file contains a CSS reset, along with some other settings needed by the HCJ framework.  JQuery is a dependency of HCJ.  (See <a href=\"https://github.com/hcj-js/hcj/issues/1\">this issue</a>).  And the hcj.js file, of course, contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it needs the body element to be present for some internal initialization."),
+      p("This page includes two files, `hcj.css` and `hcj.js`, along with your user script.  The hcj.css file contains a CSS reset, along with some other settings needed by the HCJ framework.  The hcj.js file, of course, contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it needs the body element to be present for some internal initialization."),
       p("To render a component, pass it to the `hcj.rootComponent` function.  Rendering components inside any smaller region of the page is not currently supported.  Multiple root components may be used if you wish, to display some modal dialogs."),
       p("Font loading is a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must set their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded."),
       p("This `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
@@ -367,11 +366,11 @@ $(function () {
       p("`container : (String? , BuildContainer) -> Component`"),
       p("`type BuildContainer = (JQuery, Context, Append) -> {minWidth, minHeight, onRemove}`"),
       p("`type Append = (Component, Viewport, Bool) -> Instance`"),
-      p("The build method takes three arguments.  The first two, `$el` and `context`, are passed through from the `component` call that is made internally.  The third argument, `append`, is a function used to append child components to the container."),
+      p("The build method takes three arguments.  The first two, `el` and `context`, are passed through from the `component` call that is made internally.  The third argument, `append`, is a function used to append child components to the container."),
       p("The `append` function takes three arguments: the `component` to append, a `viewport`, and a `noPositionChildren` flag."),
       p("The append function's `viewport` argument is an object that is enriched into a `context` and then passed into the append function's `component` argument.  It has the following optional properties:"),
       stack([
-        p("&#8226; `$el`: Element to append instance to.  Defaults to the container's root element."),
+        p("&#8226; `el`: Element to append instance to.  Defaults to the container's root element."),
         p("&#8226; `width`: Stream giving the width of the viewport.  Defaults to container width."),
         p("&#8226; `height`: Stream giving the height of the viewport.  Defaults to container height."),
         p("&#8226; `left`: Stream giving the left coordinate of the viewport.  Defaults to 0."),
@@ -390,7 +389,7 @@ $(function () {
         "var c = hcj.component",
         "&nbsp;",
         "var someLayout = function (c) {",
-        "  return c.container(function ($el, ctx, append) {",
+        "  return c.container(function (el, ctx, append) {",
         "    var instance = append(c, {",
         "      top: stream.create(5),",
         "    });",
@@ -411,8 +410,8 @@ $(function () {
       p("Imagine we want to define a layout that adds a 10px margin and gives a component a purple background.  Here's how we can do it:"),
       codeBlock([
         "var purpleBackground = function (c) {",
-        "  return c.container(function ($el, context, append) {",
-        "    $el.css('background-color', '#FF00FF');",
+        "  return c.container(function (el, context, append) {",
+        "    el.style.backgroundColor = '#FF00FF';",
         "  &nbsp;",
         "    var instance = append(c, {",
         "      width: stream.map(context.width, function (w) {",
@@ -445,7 +444,7 @@ $(function () {
       p("In this code, first we map over the components argument to initialize an array of viewports, and an array of instances.  Next, we use the HCJ stream library to combine some streams together so that every time the stack's context changes or an appended component's min size changes, positions are recalculated and pushed into the viewports.  Last, we let the min width of the stack be the max of the min widths of the child components, and the min height be the sum of the min heights of the child components."),
       codeBlock([
         "var stack = function (cs) {",
-        "  return c.container(function ($el, context, append) {",
+        "  return c.container(function (el, context, append) {",
         "    var viewports = [];",
         "    var instances = [];",
         "    cs.map(function (c, index) {",
@@ -883,35 +882,6 @@ $(function () {
       p('These styles are all properties of the `window.hcj.component` object.'),
       p('A style again is a function that takes one component and returns a component, so the type `Style` is equivalent to the type `(Component -> Component)`.'),
 
-      h2('$$, $addClass, $attr, $css, $on, $prop'),
-      objectDefinition([{
-        name: '$$',
-        type: '((JQuery , Context) -> ())',
-        description: '`Style`',
-      }, {
-        name: '$addClass',
-        type: 'String',
-        description: '`Style`',
-      }, {
-        name: '$attr',
-        type: '(String , String)',
-        description: '`Style`',
-      }, {
-        name: '$css',
-        type: '(String , String)',
-        description: '`Style`',
-      }, {
-        name: '$on',
-        type: '(String , (Event -> ()))',
-        description: '`Style`',
-      }, {
-        name: '$prop',
-        type: '(String , String)',
-        description: '`Style`',
-      }], true, '&nbsp;->&nbsp;', true, true),
-      p('The `$$` function takes a function that operates on the root element of an instance (and can also read from its context), and returns a style.'),
-      p('`$addClass`, `$attr`, `$css`, `$on`, and `$prop` operate on a component using the JQuery methods they are named for.'),
-
       h2('All'),
       p('`all :: [Style] -> Style`'),
       p('The `hcj.component.all` function performs function composition.  It applies multiple styles, one after another.'),
@@ -933,7 +903,7 @@ $(function () {
       p('Example:'),
       codeBlock([
         "var turnBlue = and(function (i) {",
-        "  i.$el.css('background-color', 'blue');",
+        "  i.el.style.backgroundColor = 'blue';",
         "});",
       ]),
 
@@ -1681,15 +1651,16 @@ $(function () {
         });
         
         return hcj.component.stack([
-          hcj.component.all([
-            c.$attr('accept', 'image/*'),
-            hcj.component.alignHLeft,
-          ])(hcj.forms.formComponent({
-            type: hcj.forms.fieldType.file,
-            name: 'image',
-            stream: filesStream,
-          })),
-          hcj.component.componentStream(previewComponentStream),
+          c.text('TODO: remove jquery'),
+          // hcj.component.all([
+          //   c.$attr('accept', 'image/*'),
+          //   hcj.component.alignHLeft,
+          // ])(hcj.forms.formComponent({
+          //   type: hcj.forms.fieldType.file,
+          //   name: 'image',
+          //   stream: filesStream,
+          // })),
+          // hcj.component.componentStream(previewComponentStream),
         ]);
       })(),
       showCodeBlock([
@@ -2088,7 +2059,6 @@ $(function () {
     return [
       p('Improve text measurement by using the canvas measureText method instead of the current strategy of appending the text to an invisible dom element.  Use this to implement a float left/right layout.'),
       p('Figure out how to integrate CSS transitions properly.'),
-      p('Remove JQuery dependency, making hcj smaller and more agnostic.'),
       p('Add more comments.'),
       p('Turing-complete JSON subset that can be evaluated server-side to HTML/CSS and client-side to an HCJ component.'),
     ];
@@ -2109,25 +2079,25 @@ $(function () {
         'var c = window.hcj.component;',
         'var p = c.text;',
         'var pm = c.text({measureWidth: true});',
-        'var h1 = c.text({size: 40});',
-        'var h1m = c.text({size: 40, measureWidth: true});',
+        'var h1 = c.text({size: \'40px\'});',
+        'var h1m = c.text({size: \'40px\', measureWidth: true});',
       ]),
 
       h2("Display all kinds of text"),
       c.text({
-        size: 50,
+        size: 50 + 'px',
       }, "big text"),
       showCodeBlock([
         'c.text({',
-        '  size: 50,',
+        '  size: \'50px\',',
         '}, "big text");',
       ]),
       c.text({
-        size: 10,
+        size: 10 + 'px',
       }, "little text"),
       showCodeBlock([
         'c.text({',
-        '  size: 10,',
+        '  size: \'10px\',',
         '}, "little text");',
       ]),
       c.text({
@@ -2148,14 +2118,14 @@ $(function () {
       ]),
       c.text([{
         str: 'f',
-        size: 25,
+        size: 25 + 'px',
       }, {
         str: 'u',
-        size: 20,
+        size: 20 + 'px',
         align: 'top',
       }, {
         str: 'n',
-        size: 25,
+        size: 25 + 'px',
       }, {
         str: 'k',
         align: 'sub',
@@ -2189,14 +2159,14 @@ $(function () {
       showCodeBlock([
         'c.text([{',
         '  str: \'f\',',
-        '  size: 25,',
+        '  size: 25 + \'px\',',
         '}, {',
         '  str: \'u\',',
-        '  size: 20,',
+        '  size: 20 + \'px\',',
         '  align: \'top\',',
         '}, {',
         '  str: \'n\',',
-        '  size: 25,',
+        '  size: 25 + \'px\',',
         '}, {',
         '  str: \'k\',',
         '  align: \'sub\',',

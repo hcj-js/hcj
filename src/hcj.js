@@ -1,7 +1,7 @@
 (function () {
   var uncurryConfig = function (f, valueIsNotConfig) {
     valueIsNotConfig = valueIsNotConfig || function (obj) {
-      return $.type(obj) === 'array' || $.type(obj) === 'function';
+      return Array.isArray(obj) || typeof(obj) === 'function';
     };
     return function () {
       var args = Array.prototype.slice.call(arguments);
@@ -32,7 +32,7 @@
       return function (obj) {
         for (var key in cases) {
           if (cases.hasOwnProperty(key) && obj.hasOwnProperty(key)) {
-            if (!$.isFunction(cases[key])) {
+            if (typeof cases[key] !== 'function') {
               return cases[key];
             }
             return cases[key](obj[key]);
@@ -42,7 +42,7 @@
     }
     for (var key in cases) {
       if (cases.hasOwnProperty(key) && obj.hasOwnProperty(key)) {
-        if (!$.isFunction(cases[key])) {
+        if (typeof(cases[key]) !== 'function') {
           return cases[key];
         }
         return cases[key](obj[key]);
@@ -138,6 +138,18 @@
     return deferFuncContext;
   };
 
+  var extend = function (dest) {
+    for (var i = 1; i < arguments.length; i++) {
+      var src = arguments[i];
+      for (var key in src) {
+        if (src.hasOwnProperty(key)) {
+          dest[key] = src[key];
+        }
+      }
+    }
+  return dest;
+  };
+
   var streamDeferFunc = createDeferFuncContext();
   var stream = {
     create: function (v) {
@@ -206,13 +218,6 @@
       return function () {
         delete s.listeners[index];
       };
-    },
-    promise: function (s) {
-      var d = $.Deferred();
-      stream.map(s, function (v) {
-        d.resolve(v);
-      });
-      return d.promise;
     },
     prop: function (s, str) {
       return stream.map(s, function (v) {
@@ -318,7 +323,7 @@
             return;
           }
         }
-        stream.push(out, $.extend({}, obj));
+        stream.push(out, extend({}, obj));
       };
 
       keys.map(function (key, i) {
@@ -337,13 +342,6 @@
         streams[key] = stream.once(obj[key]);
       });
       return streams;
-    },
-    fromEvent: function ($el, event) {
-      var s = stream.create();
-      $el.on('event', function (ev) {
-        stream.push(s, ev);
-      });
-      return s;
     },
     fromPromise: function (p, initialValue) {
       var out = stream.create();
@@ -387,25 +385,21 @@
   var updateWindowHeight = function () {
     stream.push(windowHeight, window.innerHeight);
   };
-  $(updateWindowWidth);
-  $(updateWindowHeight);
-  $(window).on('resize', function () {
+  updateWindowWidth();
+  updateWindowHeight();
+  window.addEventListener('resize', function () {
     updateWindowWidth();
     updateWindowHeight();
   });
-  var windowResize = stream.once(null, true);
-  $(window).on('resize', function (e) {
-    stream.push(windowResize, e);
-  });
 
   var windowScroll = stream.create(true);
-  $(window).on('scroll', function () {
+  window.addEventListener('scroll', function () {
     stream.push(windowScroll, window.scrollY);
   });
   stream.push(windowScroll, window.scrollY);
 
   var windowHash = stream.create(true);
-  $(window).on('hashchange', function () {
+  window.addEventListener('hashchange', function () {
     stream.push(windowHash, location.pathname);
   });
   stream.push(windowHash, location.pathname);
@@ -416,30 +410,26 @@
   var displayedS = stream.once(false);
 
   var updateDomEls = [];
-  var updateDomKinds = [];
-  var updateDomProps = [];
+  var updateDomStyles = [];
   var updateDomValues = [];
-  var runDomFuncs = function () {
+  var runDomStyles = function () {
     for (var i = 0; i < updateDomEls.length; i++) {
-      updateDomEls[i][updateDomKinds[i]](updateDomProps[i], updateDomValues[i]);
+      updateDomEls[i].style[updateDomStyles[i]] = updateDomValues[i];
     }
     updateDomEls = [];
-    updateDomKinds = [];
-    updateDomProps = [];
+    updateDomStyles = [];
     updateDomValues = [];
   };
-  var updateDomFunc = function ($el, kind, prop, value) {
+  var updateDomStyle = function (el, style, value) {
     if (updateDomEls.length === 0) {
-      stream.defer(runDomFuncs);
+      stream.defer(runDomStyles);
     }
-    updateDomEls.push($el);
-    updateDomKinds.push(kind);
-    updateDomProps.push(prop);
+    updateDomEls.push(el);
+    updateDomStyles.push(style);
     updateDomValues.push(value);
   };
 
   var canvas = document.createElement('canvas');
-  var $canvas = $(canvas);
   var ctx = canvas.getContext('2d');
 
   var decodeDiv = document.createElement('div');
@@ -503,46 +493,55 @@
     };
   };
 
-  var measureWidth = function ($el) {
-    var $sandbox = $('.sandbox');
-    var $clone = $el.clone();
-    $clone.css('width', '')
-      .css('height', '')
-      .css('position', 'absolute')
-      .css('display', 'inline-block')
-      .appendTo($sandbox);
+  var outerWidth = function (el) {
+    var style = window.getComputedStyle(el);
+    return el.offsetWidth + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+  }
+  var outerHeight = function (el) {
+    var style = window.getComputedStyle(el);
+    return el.offsetHeight + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+  }
 
-    var width = $clone.outerWidth(true);
-    $clone.remove();
+  var measureWidth = function (el) {
+    var sandbox = document.querySelector('.sandbox');
+    var clone = el.cloneNode(true);
+    clone.style.width = '';
+    clone.style.height = '';
+    clone.style.position = 'absolute';
+    clone.style.display = 'inline-block';
+    sandbox.appendChild(clone);
+
+    var width = outerWidth(clone);
+    clone.remove();
 
     return width;
   };
 
-  var measureHeight = function ($el) {
+  var measureHeight = function (el) {
     var ws = {};
     return function (w) {
       if (ws[w]) {
         return ws[w];
       }
-      var $sandbox = $('.sandbox');
-      var $clone = $el.clone();
-      $clone.css('width', px(w))
-        .css('height', '')
-        .appendTo($sandbox);
+      var sandbox = document.querySelector('.sandbox');
+      var clone = el.cloneNode(true);
+      clone.style.width = px(w);
+      clone.style.height = '';
+      sandbox.appendChild(clone);
 
-      var height = $clone.outerHeight(true);
+      var height = outerHeight(clone);
       ws[w] = height;
 
-      $clone.remove();
+      clone.remove();
 
       return height;
     };
   };
 
   var renderComponent = function (tagName, build, context) {
-    var $el = $(document.createElement(tagName))
-          .appendTo(context.$el)
-          .css('visibility', 'hidden');
+    var el = document.createElement(tagName);
+    el.style.visibility = 'hidden';
+    context.el.appendChild(el);
 
     var contextComplete = 0;
     stream.onValue(context.width, function (x) {
@@ -551,7 +550,7 @@
       }
       contextComplete = contextComplete | 1;
       if (contextComplete === 15) {
-        updateDomFunc($el, 'css', 'visibility', '');
+        updateDomStyle(el, 'visibility', '');
         contextComplete = -1;
       }
     });
@@ -561,7 +560,7 @@
       }
       contextComplete = contextComplete | 2;
       if (contextComplete === 15) {
-        updateDomFunc($el, 'css', 'visibility', '');
+        updateDomStyle(el, 'visibility', '');
         contextComplete = -1;
       }
     });
@@ -571,7 +570,7 @@
       }
       contextComplete = contextComplete | 4;
       if (contextComplete === 15) {
-        updateDomFunc($el, 'css', 'visibility', '');
+        updateDomStyle(el, 'visibility', '');
         contextComplete = -1;
       }
     });
@@ -581,16 +580,16 @@
       }
       contextComplete = contextComplete | 8;
       if (contextComplete === 15) {
-        updateDomFunc($el, 'css', 'visibility', '');
+        updateDomStyle(el, 'visibility', '');
         contextComplete = -1;
       }
     });
 
     var instance = {
-      $el: $el,
+      el: el,
     };
-    var buildResult = build($el, context, function (config) {
-      var w = measureWidth($el, config);
+    var buildResult = build(el, context, function (config) {
+      var w = measureWidth(el, config);
       if (instance.minWidth) {
         stream.push(instance.minWidth, w);
       }
@@ -598,7 +597,7 @@
         instance.initialMinWidth = w;
       }
     }, function (config) {
-      var h = measureHeight($el, config);
+      var h = measureHeight(el, config);
       if (instance.minHeight) {
         stream.push(instance.minHeight, h);
       }
@@ -619,7 +618,7 @@
       if (buildResult.remove) {
         buildResult.remove();
       }
-      $el.remove();
+      el.remove();
     };
 
     return instance;
@@ -669,16 +668,18 @@
   var ul = curryComponent('ul');
 
   var _scrollbarWidth = function () {
-    var parent, child, width;
-
-    if(width===undefined) {
-      parent = $('<div style="width:50px;height:50px;overflow:auto"><div/></div>').appendTo('body');
-      child=parent.children();
-      width=child.innerWidth()-child.height(99).innerWidth();
-      parent.remove();
-    }
-
-    return width;
+    var parent = document.createElement('div');
+    parent.style.width = '50px';
+    parent.style.height = '50px';
+    parent.style.overflow = 'auto';
+    var child = document.createElement('div');
+    parent.appendChild(child);
+    document.body.appendChild(parent);
+    var widthWithoutScrollbar = child.clientWidth;
+    child.style.height = '100px';
+    var widthWithScrollbar = child.clientWidth;
+    parent.remove();
+    return widthWithoutScrollbar - widthWithScrollbar;
   };
 
   var mapPx = function (s) {
@@ -689,10 +690,10 @@
       return "calc(" + x + ")";
     });
   };
-  var layoutAppend = function (childInstances, $el, context, c, ctx, noRemove) {
+  var layoutAppend = function (childInstances, el, context, c, ctx, noRemove) {
     ctx = ctx || {};
     try {
-      ctx.$el = ctx.$el || $el;
+      ctx.el = ctx.el || el;
       ctx.width = ctx.width || context.width;
       ctx.height = ctx.height || context.height;
       ctx.top = ctx.top || onceZeroS;
@@ -708,18 +709,18 @@
         console.log('not a component');
         debugger;
       }
-      i.$el.css('position', 'absolute');
+      i.el.style.position = 'absolute';
       stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
-        updateDomFunc(i.$el, 'css', 'width', w);
+        updateDomStyle(i.el, 'width', w);
       });
       stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
-        updateDomFunc(i.$el, 'css', 'height', h);
+        updateDomStyle(i.el, 'height', h);
       });
       stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
-        updateDomFunc(i.$el, 'css', 'top', t);
+        updateDomStyle(i.el, 'top', t);
       });
       stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
-        updateDomFunc(i.$el, 'css', 'left', l);
+        updateDomStyle(i.el, 'left', l);
       });
       return i;
     }
@@ -727,18 +728,18 @@
       debugger;
     }
   };
-  var layoutRecurse = function (childInstances, $el, context, cs) {
-    if ($.isArray(cs)) {
+  var layoutRecurse = function (childInstances, el, context, cs) {
+    if (Array.isArray(cs)) {
       return cs.map(function (c) {
-        return layoutRecurse(childInstances, $el, context, c);
+        return layoutRecurse(childInstances, el, context, c);
       });
     }
-    if (!$.isFunction (cs)) {
+    if (typeof(cs) !== 'function') {
       console.log('cs is not a function');
       debugger;
     }
     return function (ctx, noRemove) {
-      return layoutAppend(childInstances, $el, context, cs, ctx, noRemove);
+      return layoutAppend(childInstances, el, context, cs, ctx, noRemove);
     };
   };
 
@@ -747,14 +748,14 @@
     var buildLayout = buildLayoutArg || elArg;
     return function () {
       var args = Array.prototype.slice.call(arguments);
-      return component(el, function ($el, ctx) {
+      return component(el, function (el, ctx) {
         var childInstances = [];
-        $el.css('position', 'absolute')
-          .css('pointer-events', 'none')
-          .css('overflow', 'hidden');
-        var i = buildLayout.apply(null, [$el, ctx].concat(layoutRecurse(childInstances, $el, ctx, args)));
+        el.style.position = 'absolute';
+        el.style.pointerEvents = 'none';
+        el.style.overflow = 'hidden';
+        var i = buildLayout.apply(null, [el, ctx].concat(layoutRecurse(childInstances, el, ctx, args)));
         return {
-          $el: i.$el,
+          el: i.el,
           minWidth: i.minWidth,
           minHeight: i.minHeight,
           remove: function () {
@@ -771,16 +772,16 @@
   var container = function (elArg, buildContainerArg) {
     var el = buildContainerArg ? elArg : 'div';
     var buildContainer = buildContainerArg || elArg;
-    return component(el, function ($el, context) {
+    return component(el, function (el, context) {
       var childInstances = [];
-      $el.css('position', 'absolute')
-        .css('pointer-events', 'none')
-        .css('overflow', 'hidden');
-      var i = buildContainer($el, context, function (c, ctx, noRemove) {
-        return layoutAppend(childInstances, $el, context, c, ctx, noRemove);
+      el.style.position = 'absolute';
+      el.style.pointerEvents = 'none';
+      el.style.overflow = 'hidden';
+      var i = buildContainer(el, context, function (c, ctx, noRemove) {
+        return layoutAppend(childInstances, el, context, c, ctx, noRemove);
       });
       return {
-        $el: i.$el,
+        el: i.el,
         minWidth: i.minWidth,
         minHeight: i.minHeight,
         remove: function () {
@@ -801,7 +802,7 @@
     };
   };
 
-  var rootLayout = layout(function ($el, ctx, c) {
+  var rootLayout = layout(function (el, ctx, c) {
     var i = c();
     stream.combine([
       ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width),
@@ -810,24 +811,24 @@
       ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left),
     ], function (w, h, t, l) {
       stream.push(displayedS, true);
-      updateDomFunc($('body'), 'css', 'height', 'auto');
-      updateDomFunc(i.$el, 'css', 'width', w);
-      updateDomFunc(i.$el, 'css', 'height', h);
-      updateDomFunc(i.$el, 'css', 'top', t);
-      updateDomFunc(i.$el, 'css', 'left', l);
+      updateDomStyle(document.querySelector('body'), 'height', 'auto');
+      updateDomStyle(i.el, 'width', w);
+      updateDomStyle(i.el, 'height', h);
+      updateDomStyle(i.el, 'top', t);
+      updateDomStyle(i.el, 'left', l);
     });
     return i;
   });
 
   var ensureSandbox = function () {
-    if ($('.sandbox').length > 0) {
+    if (document.querySelector('.sandbox')) {
       return;
     }
-    $(document.createElement('div'))
-      .addClass('sandbox')
-      .css('z-index', -1)
-      .css('visibility', 'hidden')
-      .appendTo($('body'));
+    var sandbox = document.createElement('div');
+    sandbox.classList.add('sandbox');
+    sandbox.style.zIndex = '-1';
+    sandbox.style.visibility = 'hidden';
+    document.body.appendChild(sandbox);
   };
   var countComponentsRendered = 0;
   var rootComponent = function (c, config) {
@@ -846,24 +847,24 @@
       var mhAtScrollbarWW = mh(ww - scrollbarWidth);
       if (mhAtWW > wh) {
         if (mhAtScrollbarWW > wh) {
-          $('body').css('overflow-y', 'initial');
+          document.body.style.overflowY = 'initial';
           stream.push(width, ww - scrollbarWidth);
           stream.push(height, mhAtScrollbarWW);
         }
         else {
-          $('body').css('overflow-y', 'scroll');
+          document.body.style.overflowY = 'scroll';
           stream.push(width, ww - scrollbarWidth);
           stream.push(height, mhAtScrollbarWW);
         }
       }
       else {
-        $('body').css('overflow-y', 'initial');
+        document.body.style.overflowY = 'initial';
         stream.push(width, ww);
         stream.push(height, mhAtWW);
       }
     });
     var i = rootLayout(c)({
-      $el: $('body'),
+      el: document.body,
       width: width,
       height: height,
       top: onceZeroS,
@@ -871,21 +872,20 @@
       topOffset: onceZeroS,
       leftOffset: onceZeroS,
     });
-    i.$el.css('position', 'relative')
-      .css('top', '0px')
-      .css('left', '0px')
-      .css('background-color', config.noBackground ? '' : 'white')
-      .addClass('root-component')
-      .addClass('root-component-' + countComponentsRendered);
+    i.el.style.position = 'relative';
+    i.el.style.top = '0px';
+    i.el.style.left = '0px';
+    i.el.style.backgroundColor = config.noBackground ? '' : 'white';
+    i.el.classList.add('root-component');
+    i.el.classList.add('root-component-' + countComponentsRendered);
     countComponentsRendered += 1;
-    var elHeight = i.$el.css('height');
     stream.pushAll(i.minHeight, minHeight);
     stream.combine([
       width,
       height,
     ], function (w, h) {
-      i.$el.css('width', px(w))
-        .css('height', px(h));
+      i.el.style.width = px(w);
+      i.el.style.height = px(h);
     });
     return i;
   };
@@ -975,24 +975,12 @@
       };
     };
   };
-  var $$ = function (f) {
-    return and(function (i, ctx) {
-      return f(i.$el, ctx);
+
+  var css = function (prop, value) {
+    return and(function (i) {
+      i.el.style[prop] = value;
     });
   };
-  var jqueryMethod = function (func) {
-    return function () {
-      var args = Array.prototype.slice.call(arguments);
-      return $$(function ($el) {
-        $el[func].apply($el, args);
-      });
-    };
-  };
-  var $addClass = jqueryMethod('addClass');
-  var $attr = jqueryMethod('attr');
-  var $css = jqueryMethod('css');
-  var $on = jqueryMethod('on');
-  var $prop = jqueryMethod('prop');
 
   var useMinWidth = function (ctx, i) {
     return stream.pushAll(i.minWidth, ctx.width);
@@ -1006,8 +994,8 @@
     }, ctx.height);
   };
   var minWidth = function (mw) {
-    return layout(function ($el, ctx, c) {
-      $el.addClass('minWidth');
+    return layout(function (el, ctx, c) {
+      el.classList.add('minWidth');
       var i = c();
       return {
         minWidth: stream.once(mw),
@@ -1016,8 +1004,8 @@
     });
   };
   var minHeight = function (mh) {
-    return layout(function ($el, ctx, c) {
-      $el.addClass('minHeight');
+    return layout(function (el, ctx, c) {
+      el.classList.add('minHeight');
       var i = c();
       return {
         minWidth: i.minWidth,
@@ -1026,8 +1014,8 @@
     });
   };
   var withDimensions = function (mw, mh) {
-    return layout(function ($el, ctx, c) {
-      $el.addClass('withDimensions');
+    return layout(function (el, ctx, c) {
+      el.classList.add('withDimensions');
       var i = c();
       return {
         minWidth: stream.once(mw),
@@ -1036,10 +1024,10 @@
     });
   };
   var passthrough = function (f, el) {
-    return layout(el || 'div', function ($el, ctx, c) {
-      $el.addClass('passthrough');
+    return layout(el || 'div', function (el, ctx, c) {
+      el.classList.add('passthrough');
       if (f) {
-        f($el);
+        f(el);
       }
       return c();
     });
@@ -1051,38 +1039,38 @@
   var adjustPosition = function (minSize, position) {
     minSize = minSize || {};
     position = position || {};
-    return layout(function ($el, ctx, c) {
-      ctx = $.extend({}, ctx, {
-        $el: $el,
+    return layout(function (el, ctx, c) {
+      ctx = extend({}, ctx, {
+        el: el,
         top: onceZeroS,
         left: onceZeroS,
         width: position.width ? stream.map(ctx.width, function (w) {
-          return position.width(w, $el.children());
+          return position.width(w, el.firstChild);
         }) : ctx.width,
         height: position.height ? stream.map(ctx.height, function (h) {
-          return position.height(h, $el.children());
+          return position.height(h, el.firstChild);
         }) : ctx.height,
         widthCalc: ctx.widthCalc && (position.widthCalc ? stream.map(ctx.widthCalc, function (wc) {
-          return position.widthCalc(wc, $el.children());
+          return position.widthCalc(wc, el.firstChild);
         }) : ctx.widthCalc),
         heightCalc: ctx.heightCalc && (position.heightCalc ? stream.map(ctx.heightCalc, function (hc) {
-          return position.heightCalc(hc, $el.children());
+          return position.heightCalc(hc, el.firstChild);
         }) : ctx.heightCalc),
       });
       var i = c(ctx);
-      return $.extend({}, i, {
+      return extend({}, i, {
         minWidth: minSize.minWidth ? stream.map(i.minWidth, function (mw) {
-          return minSize.minWidth(mw, $el.children());
+          return minSize.minWidth(mw, el.firstChild);
         }) : i.minWidth,
         minHeight: minSize.minHeight ? stream.map(i.minHeight, function (mh) {
-          return minSize.minHeight(mh, $el.children());
+          return minSize.minHeight(mh, el.firstChild);
         }) : i.minHeight,
       });
     });
   };
 
   var adjustMinSize = uncurryConfig(function (config) {
-    return layout(function ($el, ctx, c) {
+    return layout(function (el, ctx, c) {
       var i = c();
       return {
         minWidth: stream.map(i.minWidth, function (mw) {
@@ -1095,32 +1083,31 @@
     });
   });
   var link = all([
-    $css('cursor', 'pointer'),
-    $css('pointer-events', 'initial'),
+    css('cursor', 'pointer'),
+    css('pointer-events', 'initial'),
   ]);
 
-  // var componentName = function (name) {
-  //     return passthrough(function ($el) {
-  //         $el.addClass(name);
-  //     });
-  // };
-
-  var onThis = function (event) {
+  var onThis = function (event, handler) {
+    return and(function (i) {
+      i.el.addEventListener(event, handler);
+    });
+  };
+  var onThisCurried = function (event) {
     return function (handler) {
-      return $on(event, handler);
+      return onThis(event, handler);
     };
   };
-  var changeThis = onThis('change');
-  var clickThis = onThis('click');
-  var inputPropertychangeThis = onThis('input propertychange');
-  var keydownThis = onThis('keydown');
-  var keyupThis = onThis('keyup');
-  var mousedownThis = onThis('mousedown');
-  var mousemoveThis = onThis('mousemove');
-  var mouseoverThis = onThis('mouseover');
-  var mouseoutThis = onThis('mouseout');
-  var mouseupThis = onThis('mouseup');
-  var submitThis = onThis('submit');
+  var changeThis = onThisCurried('change');
+  var clickThis = onThisCurried('click');
+  var inputPropertychangeThis = onThisCurried('input propertychange');
+  var keydownThis = onThisCurried('keydown');
+  var keyupThis = onThisCurried('keyup');
+  var mousedownThis = onThisCurried('mousedown');
+  var mousemoveThis = onThisCurried('mousemove');
+  var mouseoverThis = onThisCurried('mouseover');
+  var mouseoutThis = onThisCurried('mouseout');
+  var mouseupThis = onThisCurried('mouseup');
+  var submitThis = onThisCurried('submit');
 
   var pushOnClick = function (s, f) {
     return clickThis(function (ev) {
@@ -1129,13 +1116,13 @@
   };
 
   var hoverThis = function (cb) {
-    return passthrough(function ($el) {
-      cb(false, $el);
-      $el.on('mouseover', function (ev) {
-        cb(true, $el, ev);
+    return passthrough(function (el) {
+      cb(false, el);
+      el.addEventListener('mouseover', function (ev) {
+        cb(true, el, ev);
       });
-      $el.on('mouseout', function (ev) {
-        cb(false, $el, ev);
+      el.addEventListener('mouseout', function (ev) {
+        cb(false, el, ev);
       });
     });
   };
@@ -1144,21 +1131,21 @@
     f = f || function (v) {
       return v;
     };
-    return $$(function ($el) {
-      $el.css('pointer-events', 'initial');
-      $el.on('mouseover', function (ev) {
+    return and(function (i) {
+      i.el.style.pointerEvents = 'initial';
+      i.el.addEventListener('mouseover', function (ev) {
         stream.push(s, f(ev));
       });
-      $el.on('mouseout', function (ev) {
+      i.el.addEventListener('mouseout', function (ev) {
         stream.push(s, f(false));
       });
     });
   };
 
   var cssStream = function (style, valueS) {
-    return passthrough(function ($el) {
+    return passthrough(function (el) {
       stream.map(valueS, function (value) {
-        $el.css(style, value);
+        el.style[style] = value;
       });
     });
   };
@@ -1197,16 +1184,16 @@
     if (!stream.isStream(s)) {
       s = stream.once(s);
     }
-    return $$(function ($el) {
+    return and(function (i) {
       var bc, fc, bcHover, fcHover, hoverState = false;
       var applyColors = function () {
         var applyBC = hoverState ? (bcHover || bc) : bc;
         var applyFC = hoverState ? (fcHover || fc) : fc;
         if (applyBC) {
-          $el.css('background-color', colorString(applyBC));
+          i.el.style.backgroundColor = colorString(applyBC);
         }
         if (applyFC) {
-          $el.css('color', colorString(applyFC));
+          i.el.style.color = colorString(applyFC);
         }
       };
       stream.map(s, function (colors) {
@@ -1216,11 +1203,11 @@
         fcHover = colors.fontHover || fc;
         applyColors();
       });
-      $el.on('mouseover', function () {
+      i.el.addEventListener('mouseover', function () {
         hoverState = true;
         applyColors();
       });
-      $el.on('mouseout', function () {
+      i.el.addEventListener('mouseout', function () {
         hoverState = false;
         applyColors();
       });
@@ -1234,7 +1221,7 @@
         right = amount.all || 0;
 
     // amount may be a single number
-    if ($.isNumeric(amount)) {
+    if (typeof amount === 'number') {
       top = bottom = left = right = amount;
     }
     // or an object with properties containing 'top', 'bottom', 'left', and 'right'
@@ -1257,8 +1244,8 @@
         }
       }
     }
-    return layout(function ($el, ctx, c) {
-      $el.addClass('crop');
+    return layout(function (el, ctx, c) {
+      el.classList.add('crop');
       var props = stream.create();
       var i = c({
         top: stream.prop(props, 'top'),
@@ -1303,8 +1290,8 @@
   };
   var keepAspectRatio = uncurryConfig(function (config) {
     config = config || {};
-    return layout(function ($el, ctx, c) {
-      $el.addClass('keepAspectRatio');
+    return layout(function (el, ctx, c) {
+      el.classList.add('keepAspectRatio');
       var props = stream.create();
       var i = c({
         top: stream.prop(props, 'top'),
@@ -1395,21 +1382,17 @@
 
   var image = function (config) {
     var srcStream = stream.isStream(config.src) ? config.src : stream.once(config.src);
-    return img(function ($el, ctx) {
+    return img(function (el, ctx) {
       var minWidth = stream.create();
       var minHeight = stream.create();
-      if (srcStream.lastValue) {
-        $el.prop('src', srcStream.lastValue);
-      }
-      $el.prop('alt', config.alt);
-      stream.map(srcStream, function (src) {
-        updateDomFunc($el, 'prop', 'src', src);
+      stream.onValue(srcStream, function (src) {
+        el.src = src;
       });
-      $el.on('load', function () {
-        var aspectRatio = $el[0].naturalWidth / $el[0].naturalHeight;
+      el.addEventListener('load', function () {
+        var aspectRatio = el.naturalWidth / el.naturalHeight;
         var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
               (config.hasOwnProperty('minHeight') && config.minHeight && config.minHeight * aspectRatio) ||
-              $el[0].naturalWidth;
+              el.naturalWidth;
         if (config.minWidth === 0 || config.minHeight === 0) {
           mw = 0;
         }
@@ -1426,27 +1409,27 @@
   };
 
   var linkTo = uncurryConfig(function (config) {
-    if ($.type(config) === 'string') {
+    if (typeof config === 'string') {
       config = {
         href: config,
       };
     }
-    return layout('a', function ($el, ctx, c) {
-      $el.prop('href', config.href);
-      $el.css('pointer-events', 'initial');
+    return layout('a', function (el, ctx, c) {
+      el.href = config.href;
+      el.style.pointerEvents = 'initial';
       if (config.target) {
-        $el.prop('target', config.target);
+        el.target = config.target || '';
       }
       if (!config.defaultStyle) {
-        $el.addClass('no-style');
+        el.classList.add('no-style');
       }
       return c();
     });
   });
 
   var empty = function (el) {
-    return component(el, function ($el, ctx) {
-      $el.addClass('empty');
+    return component(el, function (el, ctx) {
+      el.classList.add('empty');
       return {
         minWidth: onceZeroS,
         minHeight: onceConstantZeroS,
@@ -1456,23 +1439,24 @@
   var nothing = empty("div");
 
   var once300S = stream.once(300);
-  var bodyFontSize = $('body').css('font-size');
-  var bodyLineHeight = $('body').css('line-height');
-  var bodyFontFamily = $('body').css('font-family');
+  var bodyStyle = getComputedStyle(document.body);
+  var bodyFontSize = bodyStyle.fontSize;
+  var bodyLineHeight = bodyStyle.lineHeight;
+  var bodyFontFamily = bodyStyle.fontFamily;
   var text = uncurryConfig(function (config) {
     // config2 is present in v0.2.1 for backward compatibility, it may
     // be removed in a future version
     return function (strs, config2) {
       strs = strs || '';
-      if (!$.isArray(strs)) {
+      if (!Array.isArray(strs)) {
         strs = [strs];
       }
       config = config || config2 || {};
-      if ($.isArray(config)) {
-        config = config.reduce($.extend, {});
+      if (Array.isArray(config)) {
+        config = config.reduce(extend, {});
       }
 
-      return (config.el || div)(function ($el, ctx) {
+      return (config.el || div)(function (el, ctx) {
         var didMH = false;
         var mwS = (config.minWidth ||
                    (config.measureWidth))
@@ -1480,9 +1464,9 @@
               : once300S;
         var mhS = stream.create();
         var spanStreams = [];
-        $el.addClass('text');
+        el.classList.add('text');
         strs.map(function (c, index) {
-          if ($.type(c) === 'string') {
+          if (typeof c === 'string') {
             c = {
               str: c,
             };
@@ -1492,18 +1476,18 @@
             if (index === strs.length - 1) {
               str = str + ' ';
             }
-            $span.html(str);
+            span.innerHTML = str;
             c.words = str.split(' ');
           };
-          var $span;
+          var span = document.createElement('span');
           if (stream.isStream(c.str)) {
-            $span = $(document.createElement('span'));
+            span = document.createElement('span');
             spanStreams.push(stream.map(c.str, function (x) {
               updateStr(x);
             }));
           }
           else {
-            $span = $('<span>' + c.str + '</span>');
+            span.innerHTML = c.str;
           }
           c.size = c.size || config.size;
           var fontStyle = 'normal';
@@ -1523,85 +1507,86 @@
           if (c.size) {
             if (stream.isStream(c.size)) {
               spanStreams.push(stream.map(c.size, function (x) {
-                $span.css('font-size', x);
+                span.style.fontSize = x;
               }));
             }
             else {
-              $span.css('font-size', c.size);
+              span.style.fontSize = c.size;
             }
           }
           if (c.weight) {
             if (stream.isStream(c.weight)) {
               spanStreams.push(stream.map(c.weight, function (x) {
-                $span.css('font-weight', x);
+                span.style.fontWeight = x;
               }));
             }
             else {
-              $span.css('font-weight', c.weight);
+              span.style.fontWeight = c.weight;
             }
           }
           if (c.family) {
             if (stream.isStream(c.family)) {
               spanStreams.push(stream.map(c.family, function (x) {
-                $span.css('font-family', x);
+                span.style.fontFamily = x;
               }));
             }
             else {
-              $span.css('font-family', c.family);
+              span.style.fontFamily = c.family;
             }
           }
           if (c.color) {
             if (stream.isStream(c.color)) {
               spanStreams.push(stream.map(c.color, function (x) {
-                $span.css('color', colorString(x));
+                span.style.color = colorString(x);
               }));
             }
             else {
-              $span.css('color', colorString(c.color));
+              span.style.color = colorString(c.color);
             }
           }
           if (c.shadow) {
             if (stream.isStream(c.shadow)) {
               spanStreams.push(stream.map(c.shadow, function (x) {
-                $span.css('text-shadow', x);
+                span.style.textShadow = x;
               }));
             }
             else {
-              $span.css('text-shadow', c.shadow);
+              span.style.textShadow = c.shadow;
             }
           }
           if (c.verticalAlign) {
             if (stream.isStream(c.verticalAlign)) {
               spanStreams.push(stream.map(c.verticalAlign, function (x) {
-                $span.css('vertical-align', x);
+                span.style.verticalAlign = x;
               }));
             }
             else {
-              $span.css('vertical-align', c.verticalAlign);
+              span.style.verticalAlign = c.verticalAlign;
             }
           }
           if (c.spanCSS) {
             c.spanCSS.map(function (css) {
-              $span.css(css.name, css.value);
+              span.style[css.name] = css.value;
             });
           }
           if (c.lineHeight) {
             if (stream.isStream(c.lineHeight)) {
               spanStreams.push(stream.map(c.lineHeight, function (x) {
-                $span.css('line-height', x);
+                span.style.lineHeight = x;
               }));
             }
             else {
-              $span.css('line-height', c.lineHeight);
+              span.style.lineHeight = c.lineHeight;
             }
           }
           if (c.linkTo) {
-            var $a = $(document.createElement('a'));
-            $a.prop('href', c.linkTo).appendTo($el);
-            $span.appendTo($a);
+            var a = document.createElement('a');
+            a.href = c.linkTo;
+            el.appendChild(a);
+            a.appendChild(span);
           }
           else {
-            $span.appendTo($el);
+            el.appendChild(span);
           }
         });
         var firstPush = true;
@@ -1616,10 +1601,11 @@
               //   var width = measureTextWidth(c.str, c.font);
               //   return a + width;
               // }, 0);
-              mw = measureWidth($el);
+              mw = measureWidth(el);
             }
-            var lineHeightCss = $el.css('line-height')
-            var fontSize = config.size || parseInt($el.css('font-size'));
+            var elStyle = getComputedStyle(el);
+            var lineHeightCss = elStyle.lineHeight;
+            var fontSize = config.size || parseInt(elStyle.fontSize);
             var lineHeightPx = config.lineHeight && config.lineHeight * fontSize || (lineHeightCss.indexOf('px') !== -1 && parseFloat(lineHeightCss));
             var mh;
             if (config.oneLine) {
@@ -1628,14 +1614,14 @@
             else if (config.approximateHeight) {
               mh = function (w) {
                 // TODO: loop over spans
-                var str = $el.text();
+                var str = el.textContent;
                 return Math.ceil(lineHeightPx * str.length * 0.5 / w) * lineHeightPx;
               };
             }
             if (!config.oneLine) {
               stream.defer(function () {
                 var mh = (config.minHeight && constant(config.minHeight)) ||
-                      measureHeight($el);
+                      measureHeight(el);
                 // measureTextHeight(strs.map(function (c) {
                 //   return {
                 //     words: c.words.slice(0),
@@ -1663,92 +1649,92 @@
         if (config.size) {
           if (stream.isStream(config.size)) {
             stream.map(config.size, function (size) {
-              $el.css('font-size', size);
+              el.style.fontSize = size;
               pushDimensions();
             });
           }
           else {
-            $el.css('font-size', config.size);
+            el.style.fontSize = config.size;
           }
         }
         if (config.weight) {
           if (stream.isStream(config.weight)) {
             stream.map(config.weight, function (weight) {
-              $el.css('font-weight', weight);
+              el.style.fontWeight = weight;
               pushDimensions();
             });
           }
           else {
-            $el.css('font-weight', config.weight);
+            el.style.fontWeight = config.weight;
           }
         }
         if (config.family) {
           if (stream.isStream(config.family)) {
             stream.map(config.family, function (family) {
-              $el.css('font-family', family);
+              el.style.fontFamily = family;
               pushDimensions();
             });
           }
           else {
-            $el.css('font-family', config.family);
+            el.style.fontFamily = config.family;
           }
         }
         if (config.color) {
           if (stream.isStream(config.color)) {
             stream.map(config.color, function (color) {
-              $el.css('color', colorString(color));
+              el.style.color = colorString(color);
               pushDimensions();
             });
           }
           else {
-            $el.css('color', colorString(config.color));
+            el.style.color = colorString(config.color);
           }
         }
         if (config.shadow) {
           if (stream.isStream(config.shadow)) {
             stream.map(config.shadow, function (shadow) {
-              $el.css('text-shadow', shadow);
+              el.style.textShadow = shadow;
               pushDimensions();
             });
           }
           else {
-            $el.css('text-shadow', config.shadow);
+            el.style.textShadow = config.shadow;
           }
         }
         if (config.align) {
           if (stream.isStream(config.align)) {
             stream.map(config.align, function (align) {
-              $el.css('text-align', align);
+              el.style.textAlign = align;
               pushDimensions();
             });
           }
           else {
-            $el.css('text-align', config.align);
+            el.style.textAlign = config.align;
           }
         }
         if (config.verticalAlign) {
           if (stream.isStream(config.verticalAlign)) {
             spanStreams.push(stream.map(config.verticalAlign, function (x) {
-              $el.css('vertical-align', x);
+              el.style.verticalAlign = x;
             }));
           }
           else {
-            $el.css('vertical-align', config.verticalAlign);
+            el.style.verticalAlign = config.verticalAlign;
           }
         }
         if (config.spanCSS) {
           config.spanCSS.map(function (css) {
-            $el.css(css.name, css.value);
+            el.style[css.name] = css.value;
           });
         }
         if (config.lineHeight) {
           if (stream.isStream(config.lineHeight)) {
             spanStreams.push(stream.map(c.lineHeight, function (x) {
-              $el.css('line-height', x);
+              el.style.lineHeight = x;
             }));
           }
           else {
-            $el.css('line-height', config.lineHeight);
+            el.style.lineHeight = config.lineHeight;
           }
         }
 
@@ -1761,10 +1747,10 @@
       });
     };
   }, function (obj) {
-    if ($.isArray(obj)) {
+    if (Array.isArray(obj)) {
       obj = obj[0];
     }
-    return $.type(obj) === 'string' || (obj && obj.hasOwnProperty('str'));
+    return typeof obj === 'string' || (obj && obj.hasOwnProperty('str'));
   });
 
   var mapSurplusWidthFunc = function (f) {
@@ -2013,8 +1999,8 @@
   var slideshow = uncurryConfig(function (config) {
     config.padding = config.padding || 0;
     config.transitionTime = config.transitionTime || 0;
-    return layout(function ($el, ctx, cs) {
-      $el.addClass('slideshow');
+    return layout(function (el, ctx, cs) {
+      el.classList.add('slideshow');
 
       var contexts = cs.concat(cs).concat(cs).map(function () {
         return {
@@ -2050,7 +2036,7 @@
       var moveSlideshow = function (positions, selectedIndex, teleport, cb) {
         positions.map(function (position, index) {
           var ctx = contexts[index];
-          is[index].$el.css('transition', position.warp ? '' : 'left ease ' + config.transitionTime + 's');
+          is[index].el.style.transition = position.warp ? '' : 'left ease ' + config.transitionTime + 's';
           stream.push(ctx.left, position.left);
         });
         cb && setTimeout(function () {
@@ -2193,8 +2179,8 @@
     config = config || {};
     config.padding = config.padding || 0;
     config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
-    return layout(function ($el, ctx, cs) {
-      $el.addClass('sideBySide');
+    return layout(function (el, ctx, cs) {
+      el.classList.add('sideBySide');
       if (cs.length === 0) {
         return {
           minWidth: onceZeroS,
@@ -2269,12 +2255,12 @@
     config = config || {};
     config.top = config.top || 50;
     config.transition = config.transition || '1s';
-    return layout(function ($el, ctx, c) {
+    return layout(function (el, ctx, c) {
       var context = {
         top: stream.create(),
       };
       var i = c(context);
-      i.$el.css('transition', 'top ' + config.transition);
+      i.el.style.transition = 'top ' + config.transition;
       var pushed = false;
       stream.push(context.top, config.top);
       stream.combine([
@@ -2303,12 +2289,12 @@
     config = config || {};
     config.transition = config.transition || '1s';
     config.margin = config.margin || 0;
-    return layout(function ($el, ctx, c) {
+    return layout(function (el, ctx, c) {
       var i = c();
       var pushed = false;
-      i.$el.css('opacity', 0);
+      i.el.style.opacity = 0;
       setTimeout(function () {
-        i.$el.css('transition', 'opacity ' + config.transition);
+        i.el.style.transition = 'opacity ' + config.transition;
       });
       stream.combine([
         ctx.topOffset,
@@ -2321,7 +2307,7 @@
           var top = ta + t;
           var visibleUntil = ws + wh;
           if (top + config.margin <= visibleUntil) {
-            i.$el.css('opacity', 1);
+            i.el.style.opacity = 1;
             pushed = true;
           }
         }
@@ -2346,10 +2332,10 @@
       edge: 'left',
     });
     var xCoord = 0;
-    return layout(function ($el, ctx, cs) {
-      $el.addClass('slider')
-        .css('overflow-x', 'hidden')
-        .css('cursor', 'move');
+    return layout(function (el, ctx, cs) {
+      el.classList.add('slider')
+      el.style.overflowX = hidden;
+      el.style.cursor = 'move';
 
       var allMinWidths = stream.create();
       var allMinHeights = stream.create();
@@ -2412,18 +2398,18 @@
         return mws.reduce(add, 0);
       });
 
-      $el.css('user-select', 'none');
-      $el.on('mousedown', function (ev) {
+      el.style.userSelect = 'none';
+      el.addEventListener('mousedown', function (ev) {
         ev.preventDefault();
         stream.push(grabbedS, 0);
         is.map(function (i) {
-          i.$el.css('transition', 'left 0s');
+          i.el.style.transition = 'left 0s';
         });
       });
 
       var release = function (ev) {
         is.map(function (i) {
-          i.$el.css('transition', 'left ' + config.leftTransition);
+          i.el.style.transition = 'left ' + config.leftTransition;
         });
         var mws = allMinWidths.lastValue;
         var width = ctx.width.lastValue;
@@ -2476,9 +2462,9 @@
         stream.push(grabbedS, false);
         ev.preventDefault();
       };
-      $el.on('mouseup', release);
-      $el.on('mouseout', release);
-      $el.on('mousemove', function (ev) {
+      el.addEventListener('mouseup', release);
+      el.addEventListener('mouseout', release);
+      el.addEventListener('mousemove', function (ev) {
         var grabbed = grabbedS.lastValue;
         var totalMinWidth = totalMinWidthS.lastValue;
         var width = ctx.width.lastValue;
@@ -2519,8 +2505,8 @@
     config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
     config.collapsePadding = config.collapsePadding || false;
     config.transition = config.transition || 0;
-    return layout(function ($el, ctx, cs) {
-      $el.addClass('stack');
+    return layout(function (el, ctx, cs) {
+      el.classList.add('stack');
       if (cs.length === 0) {
         return {
           minWidth: onceZeroS,
@@ -2540,7 +2526,7 @@
       if (config.transition) {
         var transition = config.transition + 's';
         is.map(function (i) {
-          i.$el.css('transition', 'height ' + transition + ', top ' + transition);
+          i.el.style.transition = 'height ' + transition + ', top ' + transition;
         });
       }
       var allMinWidths = mapMinWidths(is);
@@ -2596,7 +2582,7 @@
     config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
     config.transition = config.transition || 0;
     return function (actionS) {
-      return container(function ($el, ctx, append) {
+      return container(function (el, ctx, append) {
         var mw = stream.once(0);
         var mh = stream.once(constant(0));
         var contexts = [];
@@ -2735,9 +2721,9 @@
 
   var overflowHorizontal = uncurryConfig(function (config) {
     config = config || {};
-    return layout(function ($el, ctx, c) {
-      $el.css('overflow-x', 'auto')
-        .css('pointer-events', 'initial');
+    return layout(function (el, ctx, c) {
+      el.style.overflowX = 'auto';
+      el.style.pointerEvents = 'initial';
       var widthS = stream.create();
       var heightS = stream.create();
       var i = c({
@@ -2746,10 +2732,10 @@
       });
       var minWidth;
       if (config.minWidth) {
-        if ($.type(config.minWidth) === 'number') {
+        if (typeof config.minWidth === 'number') {
           minWidth = stream.once(config.minWidth);
         }
-        if ($.type(config.minWidth) === 'function') {
+        if (typeof config.minWidth === 'function') {
           minWidth = stream.map(i.minWidth, config.minWidth);
         }
       }
@@ -2791,7 +2777,7 @@
         right = amount.all || 0;
 
     // amount may be a single number
-    if ($.isNumeric(amount)) {
+    if (typeof amount === 'number') {
       top = bottom = left = right = amount;
     }
     // or an object with properties containing 'top', 'bottom', 'left', and 'right'
@@ -2814,8 +2800,8 @@
         }
       }
     }
-    return layout(function ($el, ctx, c) {
-      $el.addClass('margin');
+    return layout(function (el, ctx, c) {
+      el.classList.add('margin');
       var i = c({
         top: stream.once(top),
         left: stream.once(left),
@@ -2855,7 +2841,7 @@
           right = amount.all || 0;
 
       // amount may be a single number
-      if ($.isNumeric(amount)) {
+      if (typeof amount === 'number') {
         top = bottom = left = right = amount;
       }
       // or an object with properties containing 'top', 'bottom', 'left', and 'right'
@@ -2883,7 +2869,7 @@
       stream.push(leftS, left);
       stream.push(rightS, right);
     });
-    return layout(function ($el, ctx, c) {
+    return layout(function (el, ctx, c) {
       var i = c({
         top: topS,
         left: leftS,
@@ -2925,8 +2911,8 @@
 
   var alignLRM = function (lrm) {
     lrm = lrm || {};
-    return layout(function ($el, ctx, l, r, m) {
-      $el.addClass('alignLRM');
+    return layout(function (el, ctx, l, r, m) {
+      el.classList.add('alignLRM');
       var lCtx = {
         width: stream.create(),
       };
@@ -2999,8 +2985,8 @@
 
   var alignTBM = function (tbm) {
     tbm = tbm || {};
-    return layout(function ($el, ctx, t, b, m) {
-      $el.addClass('alignTBM');
+    return layout(function (el, ctx, t, b, m) {
+      el.classList.add('alignTBM');
       var tCtx = {
         height: stream.create(),
       };
@@ -3129,7 +3115,7 @@
     var top = amount.top || amount.all || 0;
     var bottom = amount.bottom || amount.all || 0;
     var radius = amount.radius || 0;
-    if ($.isNumeric(amount)) {
+    if (typeof amount === 'number') {
       top = bottom = left = right = amount;
     }
     style = style || 'solid';
@@ -3140,17 +3126,17 @@
 
     var colorStringS = stream.map(colorS, colorString);
 
-    var borderLayout = layout(function ($el, ctx, c) {
-      $el.addClass('border');
+    var borderLayout = layout(function (el, ctx, c) {
+      el.classList.add('border');
       // overflow hidden is necessary to prevent cutting off corners
       // of border if there is a border radius
       var i = c();
-      $el.css('border-radius', px(radius));
-      stream.map(colorStringS, function (colorstring) {
-        $el.css('border-left', px(left) + ' ' + style + ' ' + colorstring)
-          .css('border-right', px(right) + ' ' + style + ' ' + colorstring)
-          .css('border-top', px(top) + ' ' + style + ' ' + colorstring)
-          .css('border-bottom', px(bottom) + ' ' + style + ' ' + colorstring);
+      el.style.borderRadius = px(radius);
+      stream.map(colorStringS, function (colorString) {
+        el.style.borderLeft = px(left) + ' ' + style + ' ' + colorString;
+        el.style.borderRight = px(right) + ' ' + style + ' ' + colorString;
+        el.style.borderTop = px(top) + ' ' + style + ' ' + colorString;
+        el.style.borderBottom = px(bottom) + ' ' + style + ' ' + colorString;
       });
       return {
         minWidth: stream.map(i.minWidth, function (mw) {
@@ -3166,16 +3152,16 @@
     return function (c) {
       return all([
         adjustPosition({}, {
-          width: function (w, $el) {
+          width: function (w, el) {
             return w - left - right;
           },
-          height: function (h, $el) {
+          height: function (h, el) {
             return h - top - bottom;
           },
-          widthCalc: function (calc, $el) {
+          widthCalc: function (calc, el) {
             return calc + " - " + (left + right);
           },
-          heightCalc: function (calc, $el) {
+          heightCalc: function (calc, el) {
             return calc + " - " + (top + bottom);
           },
         }),
@@ -3185,8 +3171,8 @@
 
   var componentStream = function (cStream) {
     var error = new Error();
-    return container(function ($el, ctx, append) {
-      $el.addClass('componentStream');
+    return container(function (el, ctx, append) {
+      el.classList.add('componentStream');
       var i;
       var unpushMW;
       var unpushMH;
@@ -3232,13 +3218,8 @@
   var componentStreamWithExit = function (cStream, exit, entrance) {
     var i;
     var ctx;
-    exit = exit || function () {
-      var d = $.Deferred();
-      d.resolve();
-      return d.promise();
-    };
-    return container(function ($el, context, append) {
-      $el.addClass('component-stream-with-exit');
+    return container(function (el, context, append) {
+      el.classList.add('component-stream-with-exit');
       var localCStream = stream.create();
       stream.pushAll(cStream, localCStream);
       var minWidthS = stream.create();
@@ -3258,13 +3239,13 @@
           heightCalc: stream.once('100%'),
         };
         i = append(c, ctx, true);
-        i.$el.css('transition', 'inherit');
-        i.$el.css('display', 'none');
-        i.$el.prependTo($el);
+        i.el.style.transition = 'inherit';
+        i.el.style.display = 'none';
+        el.prepend(i.el);
         stream.pushAll(i.minWidth, minWidthS);
         stream.pushAll(i.minHeight, minHeightS);
         stream.defer(function () {
-          i.$el.css('display', '');
+          i.el.style.display = '';
           if (entrance) {
             entrance(i, ctx);
           }
@@ -3315,8 +3296,8 @@
 
       transition = transition || 0;
 
-      return layout(function ($el, context, c) {
-        $el.addClass('modalDialog');
+      return layout(function (el, context, c) {
+        el.classList.add('modalDialog');
 
         var i = c({
           top: onceZeroS,
@@ -3327,25 +3308,26 @@
           height: windowHeight,
         });
 
-        $el = i.$el;
-        $el.css('z-index', 100);
-        $el.appendTo($('body'));
-        $el.css('position', 'fixed');
-        $el.css('transition', $el.css('transition') + ', opacity ' + transition + 's');
-        $el.css('display', 'none');
-        $el.css('pointer-events', 'initial'); // TODO: is this necessary?
+        el = i.el;
+        el.style.zIndex = 100;
+        document.body.appendChild(el);
+        el.style.position = 'fixed';
+        var elStyle = getComputedStyle(el);
+        el.style.transition = elStyle.transition + ', opacity ' + transition + 's';
+        el.style.display = 'none';
+        el.style.pointerEvents = 'initial'; // TODO: is this necessary?
 
         stream.onValue(open, function (on) {
           if (on) {
-            $el.css('display', '');
+            el.style.display = '';
             setTimeout(function () {
-              $el.css('opacity', 1);
+              el.style.opacity = 1;
             }, 100);
           }
           else {
-            $el.css('opacity', 0);
+            el.style.opacity = 0;
             setTimeout(function () {
-              $el.css('display', 'none');
+              el.style.display = 'none';
             }, transition * 1000);
           }
         });
@@ -3359,8 +3341,8 @@
   };
 
   var toggleHeight = function (open) {
-    return layout(function ($el, ctx, c) {
-      $el.addClass('toggle-height');
+    return layout(function (el, ctx, c) {
+      el.classList.add('toggle-height');
       var i = c();
       return {
         minWidth: i.minWidth,
@@ -3379,9 +3361,9 @@
   var dropdownPanel = function (source, panel, onOffS, config) {
     config = config || {};
     config.transition = config.transition || "0.5s";
-    return layout(function ($el, ctx, source, panel) {
-      $el.addClass('dropdown-panel');
-      $el.css('overflow', 'visible');
+    return layout(function (el, ctx, source, panel) {
+      el.classList.add('dropdown-panel');
+      el.style.overflow = 'visible';
       var panelCtx = {
         height: stream.create(),
         top: stream.create(),
@@ -3399,7 +3381,7 @@
         }),
         minHeight: sourceI.minHeight,
       };
-    })(source, layout(function ($el, ctx, panel) {
+    })(source, layout(function (el, ctx, panel) {
       var context = {
         top: stream.combine([
           onOffS,
@@ -3412,8 +3394,8 @@
         stream.pushAll(context.height, config.panelHeightS);
       }
       var i = panel(context);
-      i.$el.css('transition', 'top ' + config.transition)
-        .css('z-index', 1000);
+      i.el.style.transition = 'top ' + config.transition;
+      i.el.style.zIndex = 1000;
       return i;
     })(panel));
   };
@@ -3422,10 +3404,10 @@
   var sideSlidingPanel = function (source, panel, onOffS, config) {
     config = config || {};
     config.transition = config.transition || "0.5s";
-    return layout(function ($el, ctx, source, panel) {
-      $el.addClass('side-sliding-panel');
+    return layout(function (el, ctx, source, panel) {
+      el.classList.add('side-sliding-panel');
       setTimeout(function () {
-        $el.css('overflow', 'visible');
+        el.style.overflow = 'visible';
       });
       var panelCtx = {
         width: stream.create(),
@@ -3460,7 +3442,7 @@
         }),
         minHeight: sourceI.minHeight,
       };
-    })(source, layout(function ($el, ctx, panel) {
+    })(source, layout(function (el, ctx, panel) {
       var i = panel({
         left: stream.combine([
           onOffS,
@@ -3469,15 +3451,15 @@
           return on ? 0 : w;
         }),
       });
-      i.$el.css('transition', 'left ' + config.transition)
-        .css('z-index', 1000);
+      i.el.style.transition = 'left ' + config.transition;
+      i.el.style.zIndex = 1000;
       return i;
     })(panel));
   };
 
   var fixedHeaderBody = uncurryConfig(function (config) {
     config.transition = config.transition || "0.5s";
-    return layout(function ($el, ctx, bodyC, headerC) {
+    return layout(function (el, ctx, bodyC, headerC) {
       var headerHeightS = stream.create();
       var headerI = headerC({
         width: ctx.width,
@@ -3502,11 +3484,11 @@
         return mh(w);
       }), bodyHeightS);
 
-      headerI.$el.css('position', 'fixed');
+      headerI.el.style.position = 'fixed';
 
       setTimeout(function () {
-        headerI.$el.css('transition', 'height ' + config.transition);
-        bodyI.$el.css('transition', 'top ' + config.transition);
+        headerI.el.style.transition = 'height ' + config.transition;
+        bodyI.el.style.transition = 'top ' + config.transition;
       });
 
       return {
@@ -3527,13 +3509,13 @@
   });
 
   var makeSticky = uncurryConfig(function (str) {
-    return layout(function ($el, context, c) {
-      if ($.type(str) === 'number') {
+    return layout(function (el, context, c) {
+      if (typeof str === 'number') {
         str = stream.once(str);
       }
       str = str || onceZeroS;
 
-      $el.addClass('makeSticky');
+      el.classList.add('makeSticky');
 
       var ctx = {
         widthCalc: stream.once('100%'),
@@ -3550,18 +3532,18 @@
       ], function (scroll, diffAmount, top, topOffset, left, leftOffset) {
         stream.defer(function () {
           if (top + topOffset > scroll + diffAmount) {
-            i.$el.css('position', 'absolute');
-            i.$el.css('transition', '');
-            i.$el.css('top', px(0));
-            i.$el.css('left', px(0));
+            i.el.style.position = 'absolute';
+            i.el.style.transition = '';
+            i.el.style.top = px(0);
+            i.el.style.left = px(0);
           }
           else if (top + topOffset < scroll + diffAmount) {
             var leftPosition = left + leftOffset;
-            i.$el.css('position', 'fixed');
-            i.$el.css('left', px(leftPosition));
-            i.$el.css('top', px(diffAmount));
+            i.el.style.position = 'fixed';
+            i.el.style.left = px(leftPosition);
+            i.el.style.top = px(diffAmount);
             setTimeout(function () {
-              i.$el.css('transition', 'inherit');
+              i.el.style.transition = 'inherit';
             }, 20);
           }
         });
@@ -3569,7 +3551,7 @@
       return i;
     });
   }, function (c) {
-    return !($.type(c) === 'number') && !stream.isStream(c);
+    return !(typeof c === 'number') && !stream.isStream(c);
   });
 
   // // var stickyHeaderBody = function (body1, header, body2) {
@@ -3653,8 +3635,8 @@
     config.rowOrColumn = config.rowOrColumn || false;
 
     return function (cs) {
-      return layout(function ($el, ctx, cs) {
-        $el.addClass('grid');
+      return layout(function (el, ctx, cs) {
+        el.classList.add('grid');
         var minWidth = stream.create();
         var minHeight = stream.create();
         if (cs.length === 0) {
@@ -3832,7 +3814,7 @@
   });
 
   var basicFloat = uncurryConfig(function (config) {
-    return layout(function ($el, ctx, c, cs) {
+    return layout(function (el, ctx, c, cs) {
       // first context belongs to floating element c, rest to cs
       var ccs = [c].concat(cs);
       var contexts = ccs.map(function () {
@@ -3930,14 +3912,14 @@
   });
 
   var withMinWidthStream = function (getMinWidthStream) {
-    if ($.type(getMinWidthStream) === 'number') {
+    if (typeof getMinWidthStream === 'number') {
       return minWidth(getMinWidthStream);
     }
-    return layout(function ($el, ctx, c) {
-      $el.addClass('withMinWidthStream');
+    return layout(function (el, ctx, c) {
+      el.classList.add('withMinWidthStream');
       var i = c();
       return {
-        minWidth: $.isFunction(getMinWidthStream) ? getMinWidthStream(i, ctx) : getMinWidthStream,
+        minWidth: typeof getMinWidthStream === 'function' ? getMinWidthStream(i, ctx) : getMinWidthStream,
         minHeight: i.minHeight,
       };
     });
@@ -3954,13 +3936,13 @@
     });
   };
   var withMinHeightStream = function (getMinHeightStream) {
-    if ($.type(getMinHeightStream) === 'number') {
+    if (typeof getMinHeightStream === 'number') {
       return minHeight(getMinHeightStream);
     }
-    return layout(function ($el, ctx, c) {
-      $el.addClass('withMinHeightStream');
+    return layout(function (el, ctx, c) {
+      el.classList.add('withMinHeightStream');
       var i = c();
-      var minHeightS = $.isFunction(getMinHeightStream) ? getMinHeightStream(i, ctx) : getMinHeightStream;
+      var minHeightS = typeof getMinHeightStream === 'function' ? getMinHeightStream(i, ctx) : getMinHeightStream;
       return {
         minWidth: i.minWidth,
         minHeight: minHeightS,
@@ -3983,8 +3965,8 @@
     });
   };
   var withMaxHeightStream = function (heightS) {
-    return layout(function ($el, ctx, c) {
-      $el.addClass('maxHeightStream');
+    return layout(function (el, ctx, c) {
+      el.classList.add('maxHeightStream');
       var context = {
         height: stream.create(),
         top: stream.create(),
@@ -4046,8 +4028,8 @@
   // // };
 
   var largestWidthThatFits = uncurryConfig(function (config) {
-    return layout(function ($el, ctx, cs) {
-      $el.addClass('largest-width-that-fits');
+    return layout(function (el, ctx, cs) {
+      el.classList.add('largest-width-that-fits');
       var is = cs.map(function (c) {
         return c();
       });
@@ -4071,7 +4053,7 @@
       ], function (w, mws) {
         var i = chooseIndex(w, mws);
         is.map(function (instance, index) {
-          instance.$el.css('display', (index === i) ? '' : 'none');
+          instance.el.style.display = index === i ? '' : 'none';
         });
       });
       return {
@@ -4092,8 +4074,8 @@
   });
 
   var overlays = uncurryConfig(function (config) {
-    return layout(function ($el, ctx, cs) {
-      $el.addClass('overlays');
+    return layout(function (el, ctx, cs) {
+      el.classList.add('overlays');
       var is = cs.map(function (c) {
         return c();
       });
@@ -4209,9 +4191,9 @@
     return stack({})([
       all([
         minWidth(0),
-        $css('overflow-x', 'scroll'),
-        $css('overflow-y', 'hidden'),
-        $css('pointer-events', 'initial'),
+        css('overflow-x', 'scroll'),
+        css('overflow-y', 'hidden'),
+        css('pointer-events', 'initial'),
       ])(stack()([
         sideBySide({
           surplusWidthFunc: centerSurplusWidth,
@@ -4380,80 +4362,84 @@
     }
     return year + '-' + month + '-' + day;
   };
-  var getFormElementMarginTop = function ($el) {
-    return parseFloat($el.css('margin-top')) +
-      parseFloat($el.css('padding-top')) +
-      parseFloat($el.css('border-top'));
+  var getFormElementMarginTop = function (el) {
+    var style = window.getComputedStyle(el);
+    return parseFloat(style.marginTop) +
+      parseFloat(style.paddingTop) +
+      parseFloat(style.borderTop);
   };
-  var getFormElementMarginBottom = function ($el) {
-    return parseFloat($el.css('margin-bottom')) +
-      parseFloat($el.css('padding-bottom')) +
-      parseFloat($el.css('border-bottom'));
+  var getFormElementMarginBottom = function (el) {
+    var style = window.getComputedStyle(el);
+    return parseFloat(style.marginBottom) +
+      parseFloat(style.paddingBottom) +
+      parseFloat(style.borderBottom);
   };
-  var getFormElementMarginLeft = function ($el) {
-    return parseFloat($el.css('margin-left')) +
-      parseFloat($el.css('padding-left')) +
-      parseFloat($el.css('border-left'));
+  var getFormElementMarginLeft = function (el) {
+    var style = window.getComputedStyle(el);
+    return parseFloat(style.marginLeft) +
+      parseFloat(style.paddingLeft) +
+      parseFloat(style.borderLeft);
   };
-  var getFormElementMarginRight = function ($el) {
-    return parseFloat($el.css('margin-right')) +
-      parseFloat($el.css('padding-right')) +
-      parseFloat($el.css('border-right'));
+  var getFormElementMarginRight = function (el) {
+    var style = window.getComputedStyle(el);
+    return parseFloat(style.marginRight) +
+      parseFloat(style.paddingRight) +
+      parseFloat(style.borderRight);
   };
   var applyFormBorder = adjustPosition({}, {
-    width: function (w, $el) {
-      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
+    width: function (w, el) {
+      return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
-    height: function (h, $el) {
-      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
+    height: function (h, el) {
+      return h - getFormElementMarginTop(el) - getFormElementMarginBottom(el);
     },
-    widthCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
+    widthCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginLeft(el) + getFormElementMarginRight(el));
     },
-    heightCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
+    heightCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
   });
   var applyTextareaBorder = adjustPosition({}, {
-    width: function (w, $el) {
-      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
+    width: function (w, el) {
+      return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
-    height: function (h, $el) {
-      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
+    height: function (h, el) {
+      return h - getFormElementMarginTop(el) - getFormElementMarginBottom(el);
     },
-    widthCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
+    widthCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginLeft(el) + getFormElementMarginRight(el));
     },
-    heightCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
+    heightCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
   });
   var applyCheckboxBorder = adjustPosition({}, {
-    width: function (w, $el) {
-      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
+    width: function (w, el) {
+      return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
-    height: function (h, $el) {
-      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
+    height: function (h, el) {
+      return h - getFormElementMarginTop(el) - getFormElementMarginBottom(el);
     },
-    widthCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
+    widthCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginLeft(el) + getFormElementMarginRight(el));
     },
-    heightCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
+    heightCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
   });
   var applyRadioBorder = adjustPosition({}, {
-    width: function (w, $el) {
-      return w - getFormElementMarginLeft($el) - getFormElementMarginRight($el);
+    width: function (w, el) {
+      return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
-    height: function (h, $el) {
-      return h - getFormElementMarginTop($el) - getFormElementMarginBottom($el);
+    height: function (h, el) {
+      return h - getFormElementMarginTop(el) - getFormElementMarginBottom(el);
     },
-    widthCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginLeft($el) + getFormElementMarginRight($el));
+    widthCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginLeft(el) + getFormElementMarginRight(el));
     },
-    heightCalc: function (calc, $el) {
-      return calc + " - " + (getFormElementMarginTop($el) + getFormElementMarginBottom($el));
+    heightCalc: function (calc, el) {
+      return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
   });
   var formComponentObj = {
@@ -4463,7 +4449,7 @@
       return all([
         and(function (i) {
           stream.map(t.enabledS, function (enabled) {
-            i.$el.prop('disabled', !enabled);
+            i.el.disabled = !enabled;
           });
         }),
         clickThis(function (ev) {
@@ -4490,19 +4476,19 @@
       var s = def.stream || stream.create();
       return all([
         applyCheckboxBorder,
-      ])(input(function ($el, ctx, mw, mh) {
-        $el.prop('id', k);
-        $el.prop('name', k);
-        $el.prop('type', 'checkbox');
+      ])(input(function (el, ctx, mw, mh) {
+        el.id = k;
+        el.name = k;
+        el.type = 'checkbox';
         stream.onValue(s, function (v) {
-          $el.prop('checked', v ? 'checked' : '');
+          el.checked = v ? 'checked' : '';
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.prop('checked'));
+          stream.push(s, el.checked);
         });
-        $el.on('change', function () {
-          stream.push(s, $el.prop('checked'));
+        el.addEventListener('change', function () {
+          stream.push(s, el.checked);
         });
         mw();
         mh();
@@ -4513,23 +4499,23 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function ($el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw, mh) {
         mw();
         mh();
-        $el.prop('name', k);
-        $el.prop('type', 'date');
+        el.name = k;
+        el.type = 'date';
         stream.onValue(s, function (v) {
           // this if-statement not tested
-          if ((v && v.getTime()) !== ($el.val() && parseDateInputValue($el.val()).getTime())) {
-            $el.val(stringifyDateInputValue(v));
+          if ((v && v.getTime()) !== (el.value && parseDateInputValue(el.value).getTime())) {
+            el.value = stringifyDateInputValue(v);
           }
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, parseDateInputValue($el.val()));
+          stream.push(s, parseDateInputValue(el.value));
         });
-        $el.on('change', function () {
-          stream.push(s, parseDateInputValue($el.val()));
+        el.addEventListener('change', function () {
+          stream.push(s, parseDateInputValue(el.value));
         });
       }));
     },
@@ -4537,34 +4523,34 @@
       var k = def.name;
       var type = def.type;
       var s = def.stream || stream.create();
-      return select(function ($el, ctx, mw, mh) {
-        $el.prop('name', k);
+      return select(function (el, ctx, mw, mh) {
+        el.name = k;
         type.options.map(function (option) {
-          if ('string' === $.type(option)) {
+          if ('string' === typeof option) {
             option = {
               name: option,
               value: option,
             };
           }
-          $(document.createElement('option'))
-            .html(option.name)
-            .prop('value', option.value)
-            .appendTo($el);
+          var optionEl = document.createElement('option');
+          optionEl.innerHTML = option.name;
+          optionEl.value = option.value;
+          el.appendChild(optionEl);
         });
         if (!s.lastValue) {
-          stream.push(s, $el.val());
+          stream.push(s, el.value);
         }
         stream.onValue(s, function (v) {
-          if (v !== $el.val()) {
-            $el.val(v);
+          if (v !== el.value) {
+            el.value = v;
           }
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, el.value);
         });
-        $el.on('change', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('change', function () {
+          stream.push(s, el.value);
         });
         mw();
         mh();
@@ -4573,12 +4559,12 @@
     file: function (def) {
       var k = def.name;
       var s = def.stream || stream.create();
-      return input(function ($el, ctx, mw, mh) {
-        $el.prop('name', k);
-        $el.prop('type', 'file');
+      return input(function (el, ctx, mw, mh) {
+        el.name = k;
+        el.type = 'file';
         mw();
         mh();
-        $el.on('change', function (ev) {
+        el.addEventListener('change', function (ev) {
           mw();
           stream.push(s, ev.target.files);
         });
@@ -4587,11 +4573,11 @@
     hidden: function (def) {
       var k = def.name;
       var s = def.stream || stream.create();
-      return input(function ($el) {
-        $el.prop('name', k);
-        $el.prop('type', 'hidden');
+      return input(function (el) {
+        el.name = k;
+        el.type = 'hidden';
         stream.onValue(s, function (v) {
-          $el.val(v);
+          el.value = v;
         });
         return {
           minWidth: onceZeroS,
@@ -4602,13 +4588,13 @@
     image: function (def) {
       var k = def.name;
       var s = def.stream || stream.create();
-      return input(function ($el, ctx, mw, mh) {
-        $el.prop('name', k);
-        $el.prop('type', 'file');
-        $el.prop('accept', 'image/*');
+      return input(function (el, ctx, mw, mh) {
+        el.name = k;
+        el.type = 'file';
+        el.accept = 'image/*';
         mw();
         mh();
-        $el.on('change', function (ev) {
+        el.addEventListener('change', function (ev) {
           mw();
           var file = ev.target.files.length > 0 && ev.target.files[0];
           if (file) {
@@ -4626,22 +4612,22 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function ($el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw, mh) {
         mw();
         mh();
-        $el.prop('name', k);
-        $el.prop('type', 'number');
+        el.name = k;
+        el.type = 'number';
         stream.onValue(s, function (v) {
-          if (v !== $el.val()) {
-            $el.val(v);
+          if (v !== el.value) {
+            el.value = v;
           }
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, el.value);
         });
-        $el.on('change', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('change', function () {
+          stream.push(s, el.value);
         });
       }));
     },
@@ -4650,25 +4636,25 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function ($el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw, mh) {
         mw();
         mh();
-        $el.prop('name', k);
-        $el.prop('type', 'password');
+        el.name = k;
+        el.type = 'password';
         stream.onValue(s, function (v) {
-          if (v !== $el.val()) {
-            $el.val(v);
+          if (v !== el.value) {
+            el.value = v;
           }
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, el.value);
         });
-        $el.on('change', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('change', function () {
+          stream.push(s, el.value);
         });
-        $el.on('keyup', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('keyup', function () {
+          stream.push(s, el.value);
         });
       }));
     },
@@ -4679,16 +4665,16 @@
       return type.options.map(function (option) {
         return all([
           applyRadioBorder,
-        ])(input(function ($el, ctx, mw, mh) {
-          $el.prop('id', option);
-          $el.prop('value', option);
-          $el.prop('name', k);
-          $el.prop('type', 'radio');
+        ])(input(function (el, ctx, mw, mh) {
+          el.id = option;
+          el.value = option;
+          el.name = k;
+          el.type = 'radio';
           stream.onValue(s, function (v) {
-            $el.prop('checked', (v === option) ? 'checked' : '');
+            el.checked = v === option ? 'checked' : '';
           });
-          $el.on('change', function () {
-            if ($el.prop('checked')) {
+          el.addEventListener('change', function () {
+            if (el.checked) {
               stream.push(s, option);
             }
           });
@@ -4702,24 +4688,24 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function ($el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw, mh) {
         mw();
         mh();
-        $el.prop('name', k);
+        el.name = k;
         stream.onValue(s, function (v) {
-          if (v !== $el.val()) {
-            $el.val(v);
+          if (v !== el.value) {
+            el.value = v;
           }
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, el.value);
         });
-        $el.on('change', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('change', function () {
+          stream.push(s, el.value);
         });
-        $el.on('keyup', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('keyup', function () {
+          stream.push(s, el.value);
         });
       }));
     },
@@ -4728,31 +4714,31 @@
       var s = def.stream || stream.create();
       return all([
         applyTextareaBorder,
-      ])(textarea(function ($el, ctx) {
-        $el.prop('name', k);
+      ])(textarea(function (el, ctx) {
+        el.name = k;
         stream.onValue(s, function (v) {
-          if (v !== $el.val()) {
-            $el.val(v);
+          if (v !== el.value) {
+            el.value = v;
           }
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, el.value);
         });
-        $el.on('change', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('change', function () {
+          stream.push(s, el.value);
         });
-        $el.on('keyup', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('keyup', function () {
+          stream.push(s, el.value);
         });
-        var lastOuterWidth = $el.outerWidth(true);
-        var lastOuterHeight = $el.outerHeight(true);
+        var lastOuterWidth = outerWidth(el);
+        var lastOuterHeight = outerHeight(el);
         var mw = stream.once(lastOuterWidth);
         var mh = stream.once(constant(lastOuterHeight));
-        $('body').on('mousemove', function () {
+        document.body.addEventListener('mousemove', function () {
           // this handler is a memory leak, should unbind it on remove
-          var currentOuterWidth = $el.outerWidth(true);
-          var currentOuterHeight = $el.outerHeight(true);
+          var currentOuterWidth = outerWidth(el);
+          var currentOuterHeight = outerHeight(el);
           if (lastOuterWidth !== currentOuterWidth) {
             stream.push(mw, currentOuterWidth);
             lastOuterWidth = currentOuterWidth;
@@ -4762,9 +4748,9 @@
             lastOuterHeight = currentOuterHeight;
           }
         });
-        $el.on('click', function () {
-          var currentOuterWidth = $el.outerWidth(true);
-          var currentOuterHeight = $el.outerHeight(true);
+        el.addEventListener('click', function () {
+          var currentOuterWidth = outerWidth(el);
+          var currentOuterHeight = outerHeight(el);
           if (lastOuterWidth !== currentOuterWidth) {
             stream.push(mw, currentOuterWidth);
             lastOuterWidth = currentOuterWidth;
@@ -4785,22 +4771,22 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function ($el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw, mh) {
         mw();
         mh();
-        $el.prop('name', k);
-        $el.prop('type', 'time');
+        el.name = k;
+        el.type = 'time';
         stream.onValue(s, function (v) {
-          if (v !== $el.val()) {
-            $el.val(v);
+          if (v !== el.value) {
+            el.value = v;
           }
         });
-        $el.on('blur', function () {
+        el.addEventListener('blur', function () {
           // added blur as a trigger after autocomplete
-          stream.push(s, $el.val());
+          stream.push(s, el.value);
         });
-        $el.on('change', function () {
-          stream.push(s, $el.val());
+        el.addEventListener('change', function () {
+          stream.push(s, el.value);
         });
       }));
     },
@@ -4904,8 +4890,8 @@
                     stream.push(disabledS, false);
                   };
                 });
-                var setupFormSubmit = function ($el) {
-                  $el.on('submit', function (ev) {
+                var setupFormSubmit = function (el) {
+                  el.addEventListener('submit', function (ev) {
                     if (disabledS.lastValue) {
                       ev.preventDefault();
                       return;
@@ -4915,13 +4901,13 @@
                 };
               }
               else {
-                var setupFormSubmit = function ($el) {
-                  $el.prop('method', mkOnSubmit.method)
-                    .prop('action', mkOnSubmit.action);
+                var setupFormSubmit = function (el) {
+                  el.method = mkOnSubmit.method;
+                  el.action = mkOnSubmit.action;
                 };
               }
-              return layout('form', function ($el, ctx, c) {
-                setupFormSubmit($el);
+              return layout('form', function (el, ctx, c) {
+                setupFormSubmit(el);
                 return c();
               })(f(fieldInputs, submit, fieldStreams, onSubmit && onSubmit.resultS));
             };
@@ -4932,7 +4918,7 @@
   };
 
   var formFor = function (formComponent, style, customSubmitComponentF) {
-    if ($.type(style) !== 'function') {
+    if (typeof style !== 'function') {
       return formForOld(formComponent, style);
     }
     return function (mkOnSubmit, fields, labels, defaults) {
@@ -4956,9 +4942,9 @@
           return customSubmitComponentF(name, disabledS);
         } :  function (name) {
           return all([
-            $$(function ($el) {
+            and(function (i) {
               stream.map(disabledS, function (disabled) {
-                $el.prop('disabled', disabled);
+                i.el.disabled = disabled;
               });
             }),
           ])(text({
@@ -4975,8 +4961,8 @@
               stream.push(disabledS, false);
             };
           });
-          var setupFormSubmit = function ($el) {
-            $el.on('submit', function (ev) {
+          var setupFormSubmit = function (el) {
+            el.addEventListener('submit', function (ev) {
               if (disabledS.lastValue) {
                 ev.preventDefault();
                 return;
@@ -4986,13 +4972,13 @@
           };
         }
         else {
-          var setupFormSubmit = function ($el) {
-            $el.prop('method', mkOnSubmit.method)
-              .prop('action', mkOnSubmit.action);
+          var setupFormSubmit = function (el) {
+            el.method = mkOnSubmit.method;
+            el.action = mkOnSubmit.action;
           };
         }
-        return layout('form', function ($el, ctx, c) {
-          setupFormSubmit($el);
+        return layout('form', function (el, ctx, c) {
+          setupFormSubmit(el);
           return c();
         })(f(fieldInputs, submitComponentF, fieldStreams, onSubmit && onSubmit.resultS));
       };
@@ -5006,12 +4992,6 @@
       toString: colorString,
     },
     component: {
-      $$: $$,
-      $addClass: $addClass,
-      $attr: $attr,
-      $css: $css,
-      $on: $on,
-      $prop: $prop,
       adjustPosition: adjustPosition,
       alignH: alignLRM,
       alignHorizontal: alignLRM,
@@ -5042,6 +5022,7 @@
       compose: all,
       container: container,
       crop: crop,
+      css: css,
       cssStream: cssStream,
       dimensions: withDimensions,
       dropdownPanel: dropdownPanel,
