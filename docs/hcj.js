@@ -164,15 +164,68 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return Math.min(a, b);
   };
 
+  // Creates a "meta-setTimeout" function for ordering
+  // semi-synchronous execution.  Problem statement: Suppose you are
+  // using setTimeout to defer execution of a function, and the
+  // deferred function itself passes another function to setTimeout,
+  // and so on up to some unknown stopping point.  Further suppose
+  // that you ALSO want to run some code after all of this is
+  // complete, "as if" these recursive setTimeout calls WERE
+  // synchronous code.  (If you knew how many recursive setTimeout
+  // calls were going to be made, you could wrap your final function
+  // in one plus that many setTimeout calls, but if you do not know,
+  // that solution does not work.)  To solve the problem statement,
+  // create a context `context` as described below.  Then, instead of
+  // recursively calling setTimeout, call `context.next`.  To run a
+  // function after all such calls are completed, pass it to
+  // `context.defer`.
+
+  // The following function returns an object with three properties:
+
+  // "next" is roughly equivalent to setTimeout.  Functions passed to
+  // "next" are run in the order they are passed in, after all
+  // synchronous code is finished executing.
+
+  // "createChildContext" returns an object with the same three
+  // properties.  However, all functions passed to the "next" function
+  // of the child context are run *after* all functions passed to the
+  // "next" function of this context are run.  This includes functions
+  // passed to the "next" function from inside of a function
+  // previously passed to the "next" function.
+
+  // "defer" is just syntactic sugar.  It runs a function in the child
+  // context of this context, and also returns that child context.
+  // One way to implement is as `defer: function (f) { var ctx =
+  // this.createChildContext(); ctx.next(f); return ctx; }`.
+
+  // Example:
+  /*
+    var context = createDeferFuncContext();
+    context.next(() => {
+      context.next(() => console.log('Third'));
+      console.log('Second');
+    });
+    context.defer(() => {
+      console.log('Fourth');
+    });
+    console.log('First');
+   */
+
+  // For the mathematically inclined, the "setTimeout" hierarchy looks
+  // rather like the countable ordinals; it has the same kind of
+  // ordering relation.  You can imagine a set of infinite ascending
+  // chains, that are also mutually placed in an order with respect to
+  // one another.  All functions passed to "next" of a fresh context
+  // correspond to the ordinal 0, i.e. they are run first.  If any of
+  // those functions themselves call "next", those functions then
+  // belong to 1, and so on.  A function passed to "defer" immediately
+  // belongs to "omega_0", greater than any natural number, meaning it
+  // is run after any "next" function and after any "next" function
+  // signed up by another "next" function.  If this function passes
+  // another function to "defer" on its parent context, or
+  // equivalently "next" on its own context, this assigns a function
+  // to "omega_0 + 1" - and so on.
   var createDeferFuncContext = function (runASAP) {
-    /*
-
-      This is a hacky implementation of something that already exists.
-      Do not use this little function.  When I find out what it is that
-      this function crudely implements, I will find and use an existing
-      library for it.
-
-    */
     runASAP = runASAP || setTimeout;
     var nextFuncs = [];
     var running = false;
