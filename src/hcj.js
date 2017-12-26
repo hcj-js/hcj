@@ -2387,7 +2387,7 @@
     var xCoord = 0;
     return layout(function (el, ctx, cs) {
       el.classList.add('slider')
-      el.style.overflowX = hidden;
+      el.style.overflowX = 'hidden';
       el.style.cursor = 'move';
 
       var allMinWidths = stream.create();
@@ -2441,7 +2441,7 @@
       });
       var is = cs.map(function (c, index) {
         var i = c(ctxs[index]);
-        stream.pushAll(i.minWidth, ctx.width);
+        stream.pushAll(i.minWidth, ctxs[index].width);
         return i;
       });
       stream.pushAll(mapMinWidths(is, ctx), allMinWidths);
