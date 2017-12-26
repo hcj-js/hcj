@@ -167,12 +167,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var createDeferFuncContext = function (runASAP) {
     /*
 
-     This is a hacky implementation of something that already exists.
-     Do not use this little function.  When I find out what it is that
-     this function crudely implements, I will find and use an existing
-     library for it.
+      This is a hacky implementation of something that already exists.
+      Do not use this little function.  When I find out what it is that
+      this function crudely implements, I will find and use an existing
+      library for it.
 
-     */
+    */
     runASAP = runASAP || setTimeout;
     var nextFuncs = [];
     var running = false;
@@ -225,7 +225,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         }
       }
     }
-  return dest;
+    return dest;
   };
 
   var streamDeferFunc = createDeferFuncContext();
@@ -1469,8 +1469,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       el.addEventListener('load', function () {
         var aspectRatio = el.naturalWidth / el.naturalHeight;
         var mw = (config.hasOwnProperty('minWidth') && config.minWidth) ||
-              (config.hasOwnProperty('minHeight') && config.minHeight && config.minHeight * aspectRatio) ||
-              el.naturalWidth;
+            (config.hasOwnProperty('minHeight') && config.minHeight && config.minHeight * aspectRatio) ||
+            el.naturalWidth;
         if (config.minWidth === 0 || config.minHeight === 0) {
           mw = 0;
         }
@@ -1538,8 +1538,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         var didMH = false;
         var mwS = (config.minWidth ||
                    (config.measureWidth))
-              ? stream.create()
-              : once300S;
+            ? stream.create()
+            : once300S;
         var mhS = stream.create();
         var spanStreams = [];
         el.classList.add('text');
@@ -1699,7 +1699,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
             if (!config.oneLine) {
               stream.defer(function () {
                 var mh = (config.minHeight && constant(config.minHeight)) ||
-                      measureHeight(el);
+                    measureHeight(el);
                 // measureTextHeight(strs.map(function (c) {
                 //   return {
                 //     words: c.words.slice(0),
