@@ -1229,6 +1229,18 @@ $(function () {
       h2('SplitObject'),
       p('`splitObject : {x: a, y: b, ...} -> {x: Stream a, y: Stream a, ...}`'),
       p('Takes an object, and returns an object whose values are a streams initialized with the values from the input object.'),
+
+      h1('Defined Streams'),
+      p('HCJ defines some streams that may be useful in application code.  These streams are all properties of `hcj.viewport`.'),
+
+      h2('WindowHeight'),
+      p('`hcj.viewport.windowHeight` gives the current height of the window in pixels.'),
+
+      h2('WindowScroll'),
+      p('`hcj.viewport.windowScroll` gives the current Y scroll position.'),
+
+      h2('WindowWidth'),
+      p('`hcj.viewport.windowWidth` gives the width of the window in pixels.  This number includes any scrollbars that may be present; this stream does not check whether there is a scrollbar and subtract its width.'),
     ];
   };
 
