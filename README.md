@@ -6,6 +6,9 @@ It could be worse.
 
 `git clone https://github.com/hcj-js/hcj.git`
 
+From the `dist` folder, copy `hcj.css` and `hcj.js` into your project.
+See [hello world example](https://hcj-js.github.io/hcj/index.html#1).
+
 ## Docs ##
 
 Latest docs are located at http://hcj-js.github.io/hcj/index.html
@@ -18,12 +21,12 @@ To build HCJ from the sources in the `src` directory, run `make`.  You
 will need the following software installed (in addition to `make`, of
 course):
 
-* uglifyjs
+* uglify-js
 
 To rebuild the docs' SEO content, run `make docs`.  For this you will
 additionally need:
 
-* node
+* node.js
 * npm
 * phantomjs
 
@@ -40,4 +43,4 @@ between 0.2.1 and 0.2.1.1.
 
 * [http://anarchyinteractive.com](http://anarchyinteractive.com)
 * [http://tedxmadison.com](http://tedxmadison.com)
-* [https://www.holibirthday.com](https://www.holibirthday.com)
+* [https://www.aoeu2code.com](https://www.aoeu2code.com)
