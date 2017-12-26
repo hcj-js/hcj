@@ -335,12 +335,11 @@ $(function () {
 
   var renderingComponents = function () {
     return [
-      p('Here is a minimal HCJ page:'),
+      p('Minimal HCJ page:'),
       codeBlock([
         "&lt;!DOCTYPE HTML&gt;",
         "&lt;html&gt;",
         "    &lt;head&gt;",
-        "        &lt;title&gt;Hcj Demo&lt;/title&gt;",
         "        &lt;link rel=\"stylesheet\" type=\"text/css\" href=\"hcj.css\"&gt;",
         "    &lt;/head&gt;",
         "    &lt;body&gt;",
@@ -354,9 +353,8 @@ $(function () {
         "&lt;/html&gt;",
       ]),
       p("This page includes two files, `hcj.css` and `hcj.js`, along with your user script.  The hcj.css file contains a CSS reset, along with some other settings needed by the HCJ framework.  The hcj.js file, of course, contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it needs the body element to be present for some internal initialization."),
-      p("To render a component, pass it to the `hcj.rootComponent` function.  Rendering components inside any smaller region of the page is not currently supported.  Multiple root components may be used if you wish, to display some modal dialogs."),
-      p("Font loading is a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must set their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded."),
-      p("This `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
+      p("To render a component, pass it to the `hcj.rootComponent` function.  This function places it in the top-left corner of the window and gives it the window\'s height and width, and returns the instance.  Rendering into a smaller region is not currently supported.  Multiple root components can be used, e.g. to display full-window modal dialogs if you wish."),
+      p("Fonts are a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must set their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded.  The `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
     ];
   };
 
