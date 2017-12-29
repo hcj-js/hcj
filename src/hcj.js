@@ -746,14 +746,17 @@
   var layoutAppend = function (childInstances, el, context, c, ctx, noRemove) {
     ctx = ctx || {};
     try {
-      ctx.el = ctx.el || el;
-      ctx.width = ctx.width || context.width;
-      ctx.height = ctx.height || context.height;
-      ctx.top = ctx.top || onceZeroS;
-      ctx.left = ctx.left || onceZeroS;
-      ctx.topOffset = stream.combine([context.topOffset, context.top], add);
-      ctx.leftOffset = stream.combine([context.leftOffset, context.left], add);
-      var i = c(ctx);
+      var childWidth = ctx.width || context.width;
+      var childHeight = ctx.height || context.height;
+      var childTop = ctx.top || onceZeroS;
+      var childLeft = ctx.left || onceZeroS;
+      var i = c({
+        el: ctx.el || el,
+        width: childWidth,
+        height: childHeight,
+        top: stream.combine([childTop, context.top], add),
+        left: stream.combine([childLeft, context.left], add),
+      });
       if (noRemove !== true) {
         childInstances.push(i);
       }
@@ -763,16 +766,16 @@
         debugger;
       }
       i.el.style.position = 'absolute';
-      stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
+      stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(childWidth), function (w) {
         updateDomStyle(i.el, 'width', w);
       });
-      stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
+      stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(childHeight), function (h) {
         updateDomStyle(i.el, 'height', h);
       });
-      stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
+      stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(childTop), function (t) {
         updateDomStyle(i.el, 'top', t);
       });
-      stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
+      stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(childLeft), function (l) {
         updateDomStyle(i.el, 'left', l);
       });
       return i;
@@ -922,8 +925,6 @@
       height: height,
       top: onceZeroS,
       left: onceZeroS,
-      topOffset: onceZeroS,
-      leftOffset: onceZeroS,
     });
     i.el.style.position = 'relative';
     i.el.style.top = '0px';
@@ -2317,16 +2318,14 @@
       var pushed = false;
       stream.push(context.top, config.top);
       stream.combine([
-        ctx.topOffset,
         ctx.top,
         windowHeight,
         windowScroll,
         displayedS,
-      ], function (ta, t, wh, ws, d) {
+      ], function (t, wh, ws, d) {
         if (!pushed && d) {
-          var top = ta + t;
           var visibleUntil = ws + wh;
-          if (top <= visibleUntil) {
+          if (t <= visibleUntil) {
             stream.push(context.top, 0);
             pushed = true;
           }
@@ -2350,16 +2349,14 @@
         i.el.style.transition = 'opacity ' + config.transition;
       });
       stream.combine([
-        ctx.topOffset,
         ctx.top,
         windowHeight,
         windowScroll,
         displayedS,
-      ], function (ta, t, wh, ws, d) {
+      ], function (t, wh, ws, d) {
         if (!pushed && d) {
-          var top = ta + t;
           var visibleUntil = ws + wh;
-          if (top + config.margin <= visibleUntil) {
+          if (t + config.margin <= visibleUntil) {
             i.el.style.opacity = 1;
             pushed = true;
           }
@@ -2989,7 +2986,6 @@
         stream.push(lCtx.width, Math.min(w, lmw));
         stream.push(rCtx.width, Math.min(w, rmw));
         stream.push(mCtx.width, Math.min(w, mmw));
-        stream.push(lCtx.left, 0);
         stream.push(rCtx.left, w - Math.min(w, rmw));
         stream.push(mCtx.left, (w - Math.min(w, mmw)) / 2);
       });
@@ -3064,7 +3060,6 @@
         stream.push(tCtx.height, Math.min(h, lmh(w)));
         stream.push(bCtx.height, Math.min(h, rmh(w)));
         stream.push(mCtx.height, Math.min(h, mmh(w)));
-        stream.push(tCtx.top, 0);
         stream.push(bCtx.top, Math.max(0, h - Math.min(h, rmh(w))));
         stream.push(mCtx.top, Math.max(0, (h - Math.min(h, mmh(w))) / 2));
       });
@@ -3579,19 +3574,17 @@
         windowScroll,
         str,
         context.top,
-        context.topOffset,
         context.left,
-        context.leftOffset,
-      ], function (scroll, diffAmount, top, topOffset, left, leftOffset) {
+      ], function (scroll, diffAmount, top, left) {
         stream.defer(function () {
-          if (top + topOffset > scroll + diffAmount) {
+          if (top > scroll + diffAmount) {
             i.el.style.position = 'absolute';
             i.el.style.transition = '';
             i.el.style.top = px(0);
             i.el.style.left = px(0);
           }
-          else if (top + topOffset < scroll + diffAmount) {
-            var leftPosition = left + leftOffset;
+          else if (top < scroll + diffAmount) {
+            var leftPosition = left;
             i.el.style.position = 'fixed';
             i.el.style.left = px(leftPosition);
             i.el.style.top = px(diffAmount);

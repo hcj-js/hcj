@@ -233,19 +233,11 @@ $(function () {
         }, {
           name: 'left',
           type: 'Stream Number',
-          description: 'Left position of the instance.',
+          description: 'Left position of the instance relative to the page.',
         }, {
           name: 'top',
           type: 'Stream Number',
-          description: 'Top position of the instance.',
-        }, {
-          name: 'leftOffset',
-          type: 'Stream Number',
-          description: 'Left position of "el" relative to the page.',
-        }, {
-          name: 'topOffset',
-          type: 'Stream Number',
-          description: 'Top position of "el" relative to the page.',
+          description: 'Top position of the instance relative to the page.',
         }]),
       ]),
       p('When a component is rendered, it must create an element and append it to the context\'s `el` property.  The component does not need to size and position itself within its parent; that is done by its parent layout.  The reason the `context` passed to it has `width` and `height` properties and so on is so that it can size and position its children.'),
