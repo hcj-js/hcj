@@ -172,7 +172,7 @@ $(function () {
           ])(c.sideBySide({
             surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
           }, [
-            pm('`' + (commentString || '&nbsp;--&nbsp;') + '`'),
+            pm('`' + (commentString || '&nbsp;&nbsp;') + '`'),
             p0(prop.description),
           ])),
         ]);
@@ -206,18 +206,22 @@ $(function () {
 
   var introduction = function () {
     return [
-      p("HCJ.JS's purpose is element positioning.  Many website frameworks control <i>what</i> is displayed, but they do not let you specify <i>how</i> it is displayed."),
-      p("A pure Javascript framework, HCJ does not require you to write any CSS or more than 15 lines of HTML.  HCJ websites are fast, easy to compose, mobile-responsive, and do the 'right thing' for absolutely free."),
-      p("Components, HCJ's building block, are extraordinarily composable.  Any component at any level can be rendered as a web page, making debugging very simple.  They respond to the size and shape of the page region they are rendered into, so rearranging your page is as easy as copy and paste."),
+      p("HCJ is a whole new way to write programs for the browser.  The browser is essentially a virtual machine, just like the JVM - it just has HTML, CSS, and Javascript bytecode instead of Java bytecode."),
+      p("Like any language or runtime, the browser has good parts and bad parts.  HTML declares the static content on the site for search engines to index and text-only browsers to display.  Javascript is a full, turing-complete programming language, which can make pages snazzy and interactive.  CSS is like the red-headed stepchild.  Like HTML, it is total, however search engines generally have no need to index it, since it does not change the semantic content of the page, only how the content is displayed on-screen."),
+      p("Because CSS is total, it can be difficult to write CSS programs that caues your page to be displayed just how you want.  CSS provides an enormous zoo of styles that place elements in various ways, including `position` styles, `float` styles, and `display` styles including `block`, `inline-block`, `table`, `grid`, and `flexbox` - in addition to styles that modify the box-sizing properties of individual elements, such as `margin`, `padding`, and `border`.  Each of these styles has a certain set of capabilities.  With css3 flexbox and grid, the capabilities are clearly improving.  However there are always layouts that cannot be expressed without Javascript.  Generally speaking, as a CSS programmer one learns a set of incantations to create whatever display mode your designer asks for, and then in 5 years a new feature comes out, invalidating your spellbook, at which point you must begin to write a new one."),
+      p("HCJ breaks this cycle.  An HCJ website does not contain any CSS at all.  All styling and positioning is done through javascript.  An interface is specified wherein children report their \"minimum dimensions\" to parents, and then parents report \"actual dimensions\" to their children.  Any function implementing this interface can be used with HCJ.  Almost all current CSS styles have corresponding HCJ layouts in our standard library, and if you need a layout that is not implemented, you can simply write a function implementing the proper interface, and use that as your style."),
+      p("Imagine if you could <i>implement</i> flexbox, grid, or even your own display styles, and use them in your websites right now, without waiting for browser support to come along and without worrying about fallbacks or polyfills.  This is exactly what HCJ is for.  Basically, HCJ is a \"polyfill\" for all current and future CSS styles.  More fundamentally, HCJ is not a library at all - hcj.js is totally superfluous - but merely a interface.  Equivalently, HCJ is a set of display styles that work together seamlessly, will never and can never be deprecated, and generally do the \"right thing\" out of the box, for absolutely free."),
+      p("The framework's building blocks, \"HCJ components\", are extraordinarily composable, compared to standard CSS.  Any component at any level can be rendered as a web page, making debugging and testing very simple.  Components respond to the size and shape of the page region they are rendered into, making mobile-responsive design trivially easy as \"media queries\" are embedded into each and every component as needed, and rearranging your page as easy as copy and paste."),
     ];
   };
 
   var aLittleVocab = function () {
     return [
-      p("The `component` is the building block of the HCJ framework.  Components can be composed to create new components, or rendered as web pages."),
-      p("A component technically is a function taking a `context` and returning an `instance`.  The `context` specifies the page area that a component is rendered into, and the `instance` the minimum dimensions of the component."),
+      p("The building block of the HCJ framework is the `component`.  Components can be rendered as web pages, or combined together to create new components."),
+      p("A `component` is any function taking a `context` and returning an `instance`.  To `render` a component is to pass it a context."),
+      p("Additionally, in HCJ terminology, a `layout` is a function that takes one or more components, and returns a new component.  A `style` is a function that takes exactly one component and returns a component.  Therefore, all styles are layouts."),
       docStack2([
-        p("Specifically, a `context` is an object that has all of the following properties.  Here, `el` is a DOM node, and the rest are HCJ streams:"),
+        p("Specifically, a `context` has all of the following properties:"),
         objectDefinition([{
           name: 'el',
           type: 'Node',
@@ -225,11 +229,11 @@ $(function () {
         }, {
           name: 'width',
           type: 'Stream Number',
-          description: 'Width available to the instance.',
+          description: 'Width of the instance.',
         }, {
           name: 'height',
           type: 'Stream Number',
-          description: 'Height available to the instance.',
+          description: 'Height of the instance.',
         }, {
           name: 'left',
           type: 'Stream Number',
@@ -240,13 +244,12 @@ $(function () {
           description: 'Top position of the instance relative to the page.',
         }]),
       ]),
-      p('When a component is rendered, it must create an element and append it to the context\'s `el` property.  The component does not need to size and position itself within its parent; that is done by its parent layout.  The reason the `context` passed to it has `width` and `height` properties and so on is so that it can size and position its children.'),
       docStack2([
-        p('An `instance` is an object with the following properties:'),
+        p('An `instance` is an object with all of the following properties:'),
         objectDefinition([{
           name: 'el',
           type: 'Node',
-          description: 'Root element of the instance.',
+          description: 'Root element of the instance, appended to the `el` node of the context.',
         }, {
           name: 'minWidth',
           type: 'Stream Number',
@@ -258,23 +261,14 @@ $(function () {
         }, {
           name: 'remove',
           type: 'Function',
-          description: 'Removes the instance.',
+          description: 'Removes the instance from the page.',
         }]),
       ]),
-      p('`el` is always given a non-static `position`, and sized and located to match the `context` passed into the component.'),
-      p('`minWidth` is a stream of numbers giving the minimum width required by the instance to display sanely.  Likewise, `minHeight` is a stream of functions that, given a hypothetical width, return the height required by the instance at that width.'),
-      p('The `remove` property is a function that removes `el` from the DOM and performs any other cleanup required by the instance, such as closing open connections.'),
-      p("In HCJ terminology, a `layout` is a function that takes one or more components and returns a component.  A `style` is a function that takes exactly one component and returns a component.  Therefore, all styles are layouts."),
-      c.all([
-        c.alignHLeft,
-        c.minWidth(300),
-      ])(c.image({
-        src: './context.png',
-        alt: 'Graphic depicting HCJ context attributes',
-        minWidth: 600,
-      })),
-      p("Figure 1: Red arrows depict the context belonging to the blue component inside the green layout."),
-      p("In most cases, the `width` and `height` streams are all that are needed.  The other streams are provided so that layouts can position children relative to their overall on-screen location if need be."),
+      p('A component, when rendered, must create an element, append it to the `el` node of the passed-in context, and return it as the `el` property of the instance.'),
+      p('Whenever you render a component, you must inform it of its width, height, page-relative top, and page-relative left positions via the context it is passed.  This way, it can display itself in a mobile- (and more generally container-) responsive manner.'),
+      p('To position the instance, you may set the `width`, `height`, `top`, `left`, and `position` styles of its `el` property; the instance itself owns all other styles.  The `position` style may not be set to `static`: it must be set to `absolute`, `relative`, or `fixed`, so that the instance can reliably position its own children.'),
+      p('The instance\'s `minWidth` property is a stream of numbers giving the minimum width that the instance reports it needs to display sanely.  This is used by its rendering code to give it as much space as it needs.  Likewise, `minHeight` is a stream of functions that, given a hypothetical width, return the height required by the instance at that width.'),
+      p('The `remove` property of the instance is a function that removes its `el` node from the DOM and performs any other cleanup required by the instance, such as closing open connections.'),
     ];
   };
 
@@ -292,44 +286,42 @@ $(function () {
 
   var definingComponents = function () {
     return [
-      p("We provide a handy `hcj.component.component` function for defining components.  It takes two arguments, an optional tag name (which defaults to 'div') and a `build` method, and returns a component."),
+      p("One of the core tenents of HCJ is that it should be easy to define new kinds of components and layouts, with their own specific configuration settings.  Again, HCJ is fundamentally just an interface: any functions that implement this interface can interoperate together.  There are some tasks that virtually all components perform the same way, so we provide a helper method, `hcj.component.component`, for defining new components."),
       p("`component : (String? , BuildComponent) -> Component`"),
-      stack([
-        p("`type BuildComponent = (Node, Context) -> {minWidth, minHeight, onRemove}`"),
-      ]),
-      p("The build method initializes the component and indicates its minimum dimensions.  It is passed two arguments: `el`, the created root element of the component, and `context`, the context as it was passed into the component."),
-      p("It returns an object with `minWidth` and `minHeight` properties, and an optional `onRemove` property.  The `minWidth` and `minHeight` properties are streams of numbers, and streams of functions from numbers to numbers, respectively.  Any returned `onRemove` function will be called when the instance's `remove` function is called."),
-      p("To measure elements' minimum sizes, HCJ provides `hcj.measure.width` and `hcj.measure.height`.  These functions take DOM nodes, and return numbers and functions from numbers to numbers, respectively.  They clone the element, attach the clone to a sandbox, set a couple CSS properties, measure it, remove the clone, and return the size."),
+      p('Where `BuildComponent` is defined as:'),
+      p("`type BuildComponent = (Node, Context, MeasureWidth, MeasureHeight) -> {minWidth :: Stream Number?, minHeight :: Stream (Number -> Number)?, remove :: Function?}`"),
+      p('The `component` function takes two arguments: an optional tag name, followed by a `build` method.  If the tag name is not specified, it defaults to `div`.  The build method initializes the component, and provides its minimum dimensions.  It is passed four arguments: first `el`, the created root node of the component, and `context`, the context as it was passed into the component.  The remaining two arguments are a `MeasureWidth` function and a `MeasureHeight` function, as explained below.  It returns a "pre-instance", which the `component` function upgrades to a full `instance`.'),
+      p("The build method can provide the minimum dimensions one of two ways.  It can either call the `MeasureWidth` and `MeasureHeight` functions that it is passed, or (perhaps more commonly) return an object with `minWidth` and `minHeight` properties.  If it calls `MeasureWidth`, its width is measured by cloning the root element, appending it to an invisible sandbox, and reading off various computed DOM styles, and this number is pushed into its `minWidth` stream.  Similarly, if it calls `MeasureHeight`, a function is pushed into its `minHeight` stream that clones the element, appends it to an invisible sandbox, sets its width, measures its height at that width, and returns that height."),
       h3("Example:"),
       codeBlock([
-        "// component for the imaginary SomeCaptcha",
+        "// SomeCaptcha component",
         "&nbsp;",
-        "var c = window.hcj.component;",
-        "var stream = window.hcj.stream;",
+        "var c = hcj.component;",
+        "var stream = hcj.stream;",
         "&nbsp;",
-        "var captcha = c.component(function (el, context) {",
-        "  var minWidthS = stream.once(hcj.measure.width(el));",
-        "  var minHeightS = stream.once(hcj.measure.height(el));",
-        "  var someCaptcha = SomeCaptcha.render(el).then(function () {",
-        "    stream.push(minWidthS, hcj.measure.width(el));",
-        "    context.onRemove(function () {",
-        "      someCaptcha.remove();",
-        "    });",
+        "var captcha = c.component(function (el, context, mw, mh) {",
+        "  mw();",
+        "  mh();",
+        "  var someCaptcha = SomeCaptcha.render(el);",
+        "  someCaptcha.promise.then(function () {",
+        "    mw();",
+        "    mh();",
         "  });",
         "  return {",
-        "    minWidth: minWidthS,",
-        "    minHeight: minHeightS,",
+        "    remove: function () {",
+        "      someCaptcha.remove();",
+        "    },",
         "  };",
         "});",
       ]),
+      p('The width and height are measured when the captcha component is first rendered, yielding 0 for each.  The 3rd party captcha is rendered into the component\'s root element.  Once the captcha is fully rendered, the width and height are measured again.  Whenever the instance is removed, the captcha is removed first.'),
     ];
   };
 
   var renderingComponents = function () {
     return [
-      p('Minimal HCJ page:'),
+      p('To help you get started, here is an absolutely minimal HCJ page, which you can modify with the components and layouts described in the next sections:'),
       codeBlock([
-        "&lt;!DOCTYPE HTML&gt;",
         "&lt;html&gt;",
         "    &lt;head&gt;",
         "        &lt;link rel=\"stylesheet\" type=\"text/css\" href=\"hcj.css\"&gt;",
@@ -344,44 +336,70 @@ $(function () {
         "    &lt;/body&gt;",
         "&lt;/html&gt;",
       ]),
-      p("This page includes two files, `hcj.css` and `hcj.js`, along with your user script.  The hcj.css file contains a CSS reset, along with some other settings needed by the HCJ framework.  The hcj.js file, of course, contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it needs the body element to be present for some internal initialization."),
-      p("To render a component, pass it to the `hcj.rootComponent` function.  This function places it in the top-left corner of the window and gives it the window\'s height and width, and returns the instance.  Rendering into a smaller region is not currently supported.  Multiple root components can be used, e.g. to display full-window modal dialogs if you wish."),
+      p("The page includes two external files, `hcj.css` and `hcj.js`.  The hcj.css file contains a CSS reset.  The hcj.js file contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it depends on the body element being present for some internal initialization.  Then, inside a `script` tag section, it defines a component and renders it."),
+      p("To render a component that you have defined, you must pass it to the `hcj.rootComponent` function.  This function places your component in the top-left corner of the window and gives it the window\'s height and width, and returns the instance.  Rendering into a smaller region is not currently supported.  Multiple root components can be used, e.g. to display full-window modal dialogs if you wish."),
       p("Fonts are a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must set their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded.  The `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
     ];
   };
 
   var definingLayouts = function () {
     return [
-      p("The `hcj.component.container` method is for defining layouts and other containers.  It takes an optional string argument giving its tag name, followed by a build method."),
+      p("The `hcj.component.container` method is for defining layouts.  It takes an optional string argument giving tag name of the container, followed by a build method."),
       p("`container : (String? , BuildContainer) -> Component`"),
-      p("`type BuildContainer = (JQuery, Context, Append) -> {minWidth, minHeight, onRemove}`"),
-      p("`type Append = (Component, Viewport, Bool) -> Instance`"),
-      p("The build method takes three arguments.  The first two, `el` and `context`, are passed through from the `component` call that is made internally.  The third argument, `append`, is a function used to append child components to the container."),
-      p("The `append` function takes three arguments: the `component` to append, a `viewport`, and a `noPositionChildren` flag."),
-      p("The append function's `viewport` argument is an object that is enriched into a `context` and then passed into the append function's `component` argument.  It has the following optional properties:"),
-      stack([
-        p("&#8226; `el`: Element to append instance to.  Defaults to the container's root element."),
-        p("&#8226; `width`: Stream giving the width of the viewport.  Defaults to container width."),
-        p("&#8226; `height`: Stream giving the height of the viewport.  Defaults to container height."),
-        p("&#8226; `left`: Stream giving the left coordinate of the viewport.  Defaults to 0."),
-        p("&#8226; `top`: Stream giving the top coordinate of the viewport.  Defaults to 0."),
-        p("&#8226; `widthCss`: Stream of string values to use to the 'width' property.  Needed for CSS transitions to work correctly.  Defaults to mapping (+ 'px') over the viewport's `width`, or '100%'."),
-        p("&#8226; `heightCss`: Stream of string values to use to the 'height' property.  Needed for CSS transitions to work correctly.  Defaults to mapping (+ 'px') over the viewport's `height`, or '100%'."),
-        p("&#8226; `topCss`: Stream of string values to use to the 'top' property.  Needed for CSS transitions to work correctly.  Defaults to mapping (+ 'px') over the viewport's `top`, or '0px'."),
-        p("&#8226; `leftCss`: Stream of string values to use to the 'left' property.  Needed for CSS transitions to work correctly.  Defaults to mapping (+ 'px') over the viewport's `left`, or '0px'."),
-      ]),
-      p("If the `noPositionChildren` flag is not undefined, then the child component's `top`, `width`, `left`, and `height` properties will not be set to the CSS values described above.  Indeed, you can write an HCJ container that positions elements using flexbox, as long as it correctly indicates their contexts given its context, as well as its minimum dimensions given theirs."),
+      p("`type BuildContainer = (JQuery, Context, Append) -> {minWidth :: Number, minHeight :: Stream (Number -> Number), remove :: Function?}`"),
+      p("`type Append = (Component, Viewport?, Bool?) -> Instance`"),
+      p("The build method takes three arguments.  The first two, `el` and `context`, are the root element of the container and the context that it is rendered into.  The third argument, `append`, is used to append child components to the container."),
+      p("The `append` function takes three arguments: the `Component` to append, a `Viewport`, and a `noRemove` flag."),
+      p("The first argument is self-explanatory.  The second argument, `viewport`, is an object that is upgraded to a `context` and then passed into the component being appended.  The `noRemove` flag causes the `remove` function of the returned `instance` not to be run when the container itself is removed.  This should be set to true if you intend the remove the instance yourself, typically at an earlier time than when the container is removed."),
+      p('A `Viewport` is an object with the following properties:'),
+      objectDefinition([{
+        name: 'el',
+        type: 'Node',
+        description: 'Element to append instance to.  Defaults to the container\'s own root element.',
+      }, {
+        name: 'width',
+        type: 'Stream Number',
+        description: 'Stream giving the width of the rendered instance.  Defaults to container width.',
+      }, {
+        name: 'height',
+        type: 'Stream Number',
+        description: 'Stream giving the height of the rendered instance.  Defaults to container width.',
+      }, {
+        name: 'top',
+        type: 'Stream Number',
+        description: 'Stream giving the top coordinate of the rendered instance, relative to the container.  Defaults to 0.',
+      }, {
+        name: 'left',
+        type: 'Stream Number',
+        description: 'Stream giving the left coordinate of the rendered instance.  Defaults to 0.',
+      }, {
+        name: 'widthCalc',
+        type: 'Stream String',
+        description: 'CSS calc string to use for the width property of the instance.  This is a "calc-sum" - the "calc(" and ")" are added by `container`.  If not provided, then "px" is appended to the values of the viewport\'s `width` stream.',
+      }, {
+        name: 'heightCalc',
+        type: 'Stream String',
+        description: 'CSS calc string to use for the height property of the instance.  This is a "calc-sum" - the "calc(" and ")" are added by `container`.  If not provided, then "px" is appended to the values of the viewport\'s `height` stream.',
+      }, {
+        name: 'topCalc',
+        type: 'Stream String',
+        description: 'CSS calc string to use for the top property of the instance.  This is a "calc-sum" - the "calc(" and ")" are added by `container`.  If not provided, then "px" is appended to the values of the viewport\'s `top` stream.',
+      }, {
+        name: 'leftCalc',
+        type: 'Stream String',
+        description: 'CSS calc string to use for the left property of the instance.  This is a "calc-sum" - the "calc(" and ")" are added by `container`.  If not provided, then "px" is appended to the values of the viewport\'s `left` stream.',
+      }]),
 
       h2('Example - Top Margin'),
-      p('`someLayout :: Component -> Component`'),
-      p("Here is an example of a layout that pushes its content down by five pixels.  To do this, it creates a viewport with a `top` stream, and returns a min size with a `minHeight` that is increased by five pixels."),
+      p('`topMargin :: Component -> Component`'),
+      p("Here is an example of a layout that pushes its content down by five pixels.  To do this, it creates a viewport with a `top` stream, and returns a `minHeight` that is increased by five pixels."),
       codeBlock([
         "var c = hcj.component",
         "&nbsp;",
-        "var someLayout = function (c) {",
+        "var topMargin = function (c) {",
         "  return c.container(function (el, ctx, append) {",
         "    var instance = append(c, {",
-        "      top: stream.create(5),",
+        "      top: stream.once(5),",
         "    });",
         "    return {",
         "      minWidth: instance.minWidth,",
@@ -397,7 +415,7 @@ $(function () {
 
       h2('Example - Purple Background'),
       p('`purpleBackground :: Component -> Component`'),
-      p("Imagine we want to define a layout that adds a 10px margin and gives a component a purple background.  Here's how we can do it:"),
+      p("Imagine we want to define a layout that adds a 10px margin and gives a component a purple background.  Here's how we can do it.  Note that there is no use of CSS `margin` or `padding` properties - the child instance is explicitly positioned in a sub-region of the container, and the container's minimum width and minimum height are increased correspondingly.  For completeness, we include `widthCalc` and `heightCalc` streams, which are required in order for any CSS transitions to work properly."),
       codeBlock([
         "var purpleBackground = function (c) {",
         "  return c.container(function (el, context, append) {",
@@ -412,6 +430,8 @@ $(function () {
         "      }),",
         "      top: stream.once(10),",
         "      left: stream.once(10),",
+        "      widthCalc: stream.once('100% - 20px'),",
+        "      heightCalc: stream.once('100% - 20px'),",
         "    });",
         "  &nbsp;",
         "    return {",
@@ -431,7 +451,7 @@ $(function () {
       h2('Example - Simple Stack'),
       p("`stack :: [Component] -> Component`"),
       p("Say we want to put components into a vertical stack."),
-      p("In this code, first we map over the components argument to initialize an array of viewports, and an array of instances.  Next, we use the HCJ stream library to combine some streams together so that every time the stack's context changes or an appended component's min size changes, positions are recalculated and pushed into the viewports.  Last, we let the min width of the stack be the max of the min widths of the child components, and the min height be the sum of the min heights of the child components."),
+      p("First we map over the components provided to initialize an array of viewports and an array of instances.  Next, we use the HCJ stream library to combine some streams together so that every time the stack's context changes, positions are recalculated and pushed into the components' viewports.  Last, we assign the minimum width and minimum height of the stack by combining together the minimum widths and minimum heights of the stacked instances."),
       codeBlock([
         "var stack = function (cs) {",
         "  return c.container(function (el, context, append) {",
@@ -445,13 +465,6 @@ $(function () {
         "      viewports.push(viewport);",
         "      instances.push(append(c, viewport));",
         "    });",
-        "  &nbsp;",
-        "    var minWidthsS = stream.all(instances.map(function (i) {",
-        "      return i.minWidth;",
-        "    }));",
-        "    var minHeightsS = stream.all(instances.map(function (i) {",
-        "      return i.minHeight;",
-        "    }));",
         "  &nbsp;",
         "    stream.combine([",
         "      context.width,",
@@ -468,13 +481,20 @@ $(function () {
         "      });",
         "    });",
         "  &nbsp;",
+        "    var allMinWidthsS = stream.all(instances.map(function (i) {",
+        "      return i.minWidth;",
+        "    }));",
+        "    var allMinHeightsS = stream.all(instances.map(function (i) {",
+        "      return i.minHeight;",
+        "    }));",
+        "  &nbsp;",
         "    return {",
-        "      minWidth: stream.map(minWidthsS, function (mws) {",
+        "      minWidth: stream.map(allMinWidthsS, function (mws) {",
         "        return mws.reduce(function (a, b) {",
         "          return Math.max(a, b);",
         "        }, 0);",
         "      }),",
-        "      minHeight: stream.map(minHeightsS, function (mhs) {",
+        "      minHeight: stream.map(allMinHeightsS, function (mhs) {",
         "        return function (w) {",
         "          return mhs.map(function (mh) {",
         "            return mh(w);",
@@ -497,9 +517,9 @@ $(function () {
 
   var standardLibraryComponents = function () {
     return [
-      p('Here are the basic components that ship with hcj.js.'),
-      p('Each is a property of the `window.hcj.component` object.'),
-      p('Below each function, there is a Haskell-esque "type signature" showing the parameters that each function can take, followed by an English description.  This "type signature" borrows syntax from Haskell and C#, and uses some of its own shorthand.  The function arrow `->` is borrowed from Haskell; `a -> b` is a function taking a parameter of type `a` and returning type `b`.  Additionally, `(a , b) -> c` denotes a two-argument function, while `(a ; b) -> c` denotes a two-argument function that can be curried, i.e. `f :: (a ; b) -> c` can be called either as `f(x, y)` or as `f(x)(y)`.  The type `a?`, is shorthand for `Maybe a`, denoting "Either an `a` or the value `undefined`".  And `a | b` denotes a variable that can have type `a` or type `b`.'),
+      p('These are the basic components that ship with hcj.js.'),
+      p('Each of these is a property of `window.hcj.component`.'),
+      p('There is a Haskell-esque "type signature" below each, showing the parameters that each function can take, followed by a description.  This "type signature" borrows syntax from Haskell and C#, and uses some new shorthand specifically for Javascript.  The function arrow `->` is borrowed from Haskell; `a -> b` is a function taking a parameter of type `a` and returning type `b`.  Additionally, `(a , b) -> c` denotes a two-argument function, while `(a ; b) -> c` denotes a two-argument function that can be curried, i.e. `f :: (a ; b) -> c` can be called either as `f(x, y)` or as `f(x)(y)`.  The type `a?`, is shorthand for `Maybe a`, denoting "Either an `a` or the value `undefined`".  And `a | b` denotes a variable that can have type `a` or type `b`.'),
 
       h2('Text'),
       p('`text :: (TextConfig? ; SpanConfig | [SpanConfig]) -> Component`'),
@@ -514,19 +534,19 @@ $(function () {
         }, {
           name: 'minWidth',
           type: 'Number?',
-          description: 'Specifies the min width of the text component, overriding 300px default.',
+          description: 'Specifies the minimum width of the text component, overriding 300px default.',
         }, {
           name: 'measureWidth',
           type: 'Bool?',
-          description: 'If set, the text element is measured and its measurement becomes its min width, overriding 300px default.',
+          description: 'If set, the text element is measured and its measurement becomes its minimum width, overriding 300px default.',
         }, {
           name: 'minHeight',
           type: 'Number?',
-          description: 'Specifies the min height of the text component as a constant number, overriding `measureHeight` default.',
+          description: 'Specifies the minimum height of the text component as a constant number, overriding `measureHeight` default.',
         }, {
           name: 'oneLine',
           type: 'Bool?',
-          description: 'Declares that the text component is always one line tall.  Its min height is calculated from its font size and line height, overriding `measureHeight` default.',
+          description: 'Declares that the text component is always one line tall.  Its minimum height is calculated from its font size and line height, overriding `measureHeight` default.',
         }]),
       ]),
       docStack2([
@@ -612,11 +632,11 @@ $(function () {
       }, {
         name: 'minWidth',
         type: 'Number?',
-        description: 'If present, min width is set to this number instead of the image\'s natural width.',
+        description: 'If present, minimum width is set to this number instead of the image\'s natural width.',
       }, {
         name: 'minHegiht',
         type: 'Number?',
-        description: 'If present, min width of image is set to the quotient of this number and the image\'s aspect ratio.',
+        description: 'If present, minimum width of image is set to the quotient of this number and the image\'s aspect ratio.',
       }]),
       p('Note: When an image is placed into a context whose proportions are not the image\'s aspect ratio, it will stretch.  The most common solution is to wrap images with the `hcj.component.keepAspectRatio` layout.'),
 
@@ -650,21 +670,23 @@ $(function () {
     return [
       p('These are the layouts that ship with hcj.js.  All are properties of the `window.hcj.component` object.'),
 
-      h2('AlignHorizontal / AlignH / AlignLRM'),
+      h2('AlignHorizontal'),
       typeSignatures([{
         name: 'alignHorizontal',
         type: '{l: Component?, r: Component?, m: Component?} -> Component',
       }, {
         name: 'alignHLeft',
-        type: 'Component -> Component',
+        type: 'Style',
       }, {
         name: 'alignHRight',
-        type: 'Component -> Component',
+        type: 'Style',
       }, {
         name: 'alignHMiddle',
-        type: 'Component -> Component',
+        type: 'Style',
       }]),
       p('Takes an object with optional `l`, `r`, and `m` properties.  Aligns elements left, right, and middle.'),
+      p('The minimum width of an `alignHorizontal` layout is the sum of the minimum widths of the components it is passed.  Its minimum height is the max of the components it is passed, at their respective minimum widths.'),
+      p('`alignH` and `alignLRM` are both aliases for `alignHorizontal`.'),
       docStack2([
         p('Example:'),
         codeBlock([
@@ -678,21 +700,23 @@ $(function () {
         ]),
       ]),
 
-      h2('AlignVertical / AlignV / AlignTBM'),
+      h2('AlignVertical'),
       typeSignatures([{
         name: 'alignVertical',
         type: '{t: Component?, b: Component?, m: Component?} -> Component',
       }, {
         name: 'alignVTop',
-        type: 'Component -> Component',
+        type: 'Style',
       }, {
         name: 'alignVBottom',
-        type: 'Component -> Component',
+        type: 'Style',
       }, {
         name: 'alignVMiddle',
-        type: 'Component -> Component',
+        type: 'Style',
       }]),
       p('Takes an object with optional `t`, `b`, and `m` properties.  Aligns elements top, bottom, and middle.'),
+      p('The minimum width of an `alignVertical` layout is the max of the minimum widths of the components it is passed.  Its minimum height is the sum of the minimum heights of the components it is passed.'),
+      p('`alignV` and `alignTBM` are both aliases for `alignVertical`.'),
       docStack2([
         p('Example:'),
         codeBlock([
@@ -726,7 +750,7 @@ $(function () {
       
       h2('ComponentStream'),
       p('`componentStream :: Stream Component -> Component`'),
-      p('Takes an hcj stream of components and returns a component that displays latest one in the stream.'),
+      p('Takes an hcj stream of components and displays latest one in the stream.'),
       docStack2([
         p('Example:'),
         codeBlock([
@@ -756,7 +780,7 @@ $(function () {
       }, {
         name: 'useFullWidth',
         type: 'Bool?',
-        description: 'If set, the grid\'s min width is computued as the sum of the min widths of the child components, rather than as the largest of the min widths of the child components.',
+        description: 'If set, the grid\'s minimum width is computued as the sum of the minimum widths of the child components, rather than as the largest of the minimum widths of the child components.',
       }, {
         name: 'bottomToTop',
         type: 'Bool?',
@@ -788,32 +812,33 @@ $(function () {
       h2('SideBySide'),
       p('`sideBySide :: (SideBySideConfig ; [Component]) -> Component`'),
       p('Places components directly side by side.'),
+      p('The minimum width of a `sideBySide` is the sum of the minimum widths of its children, plus any padding.  Its minimum height is the max of the minimum heights of its children at their respective minimum widths.'),
       p('A `SideBySideConfig` may have the following properties:'),
       objectDefinition([{
-        name: 'Padding',
+        name: 'padding',
         type: 'Number?',
         description: 'Padding amount between components.',
       }, {
         name: 'surplusWidthFunc',
         type: 'SurplusWidthFunc?',
-        description: 'Distribute surplus width among the stacked items.  Surplus width function is always called with a single row.',
+        description: 'Distribute surplus width among the instances.',
       }]),
-      p('When the width of a row is greater than its minimum width, it has surplus width.  A `SurplusWidthFunc` takes two parameters: the total width available, and an array of "rows", each an array of "columns".  Each column is an object with a `left` and a `width` property initialized with its left position and width.  The function returns an array of rows (possibly by mutating the input array) giving new left and width values for each column.'),
-      h3('surplusWidthFunc'),
-      p('`SurplusWidthFunc :: (Number , [[{left: Number, width: Number}]]) -> [[{left: Number, width: Number}]]`'),
-      p('HCJ comes with a small number of `SurplusWidthFunc`s for you to use.  These are all members of the `window.hcj.funcs.surplusWidth` object:'),
+      h3('SurplusWidthFunc'),
+      p('`type SurplusWidthFunc = (Number , [[{left: Number, width: Number}]]) -> [[{left: Number, width: Number}]]`'),
+      p('Whenever the width of a row is greater than its minimum width, it has surplus width.  A `SurplusWidthFunc` takes two parameters: the total width available, and an array of "rows" - each an array of "columns".  (The `sideBySide` layout always passes in exactly one "row", but other layouts may pass in more.)  Each column is an object with `left` and `width` properties giving the initial left position and width of the column.  The function returns an array of rows (possibly by mutating the input array) giving each column new left and width values.'),
+      p('HCJ comes with a number of `SurplusWidthFuncs` for you to use.  These are all members of the `window.hcj.funcs.surplusWidth` object:'),
       objectDefinition([{
         name: 'ignore',
         type: 'SurplusWidthFunc',
-        description: 'Ignores surplus width.',
+        description: 'Returns input columns.',
       }, {
         name: 'center',
         type: 'SurplusWidthFunc',
-        description: 'Centers rows horizontally.',
+        description: 'Centers columns horizontally.',
       }, {
         name: 'evenSplit',
         type: 'SurplusWidthFunc',
-        description: 'Evenly splits each row\'s surplus width among its columns, increasing their widths.',
+        description: 'Evenly splits each row\'s surplus width among its columns, increasing their widths each by the same amount.',
       }, {
         name: 'justify',
         type: 'SurplusWidthFunc',
@@ -825,13 +850,13 @@ $(function () {
       }, {
         name: 'centerLargestRowThenAlignLeft',
         type: 'SurplusWidthFunc',
-        description: 'Centers the largest row.  All rows are then left-aligned together.',
+        description: 'Centers the largest row.  All other rows are left-aligned to it.',
       }]),
       p('Note that unlike a `SurplusHeightFunc`, which only operates on a single column of elements, a `SurplusWidthFunc` operates on multiple rows at once.'),
 
       h2('Stack'),
       p('`stack :: (StackConfig? ; [Component]) -> Component`'),
-      p('Positions components one on top of another.  The minimum width of a stack is the largest of the minimum widths of its children.  The minimum height of a stack is the sum of the minimum heights of its children.'),
+      p('Positions components one on top of another.  The minimum width of a stack is the max of the minimum widths of its children.  The minimum height of a stack is the sum of the minimum heights of its children.'),
       p('A `StackConfig` is an object with the following properties:'),
       objectDefinition([{
         name: 'padding',
@@ -842,14 +867,14 @@ $(function () {
         type: 'SurplusHeightFunc?',
         description: 'Distribute surplus height among the stacked items.',
       }]),
-      p('When the height of a stack is greater than its minimum height, it has surplus height.  A `SurplusHeightFunc` takes two parameters: the total height available, and an array of "rows", each an object with a `top` and a `height` property initialized with its top position and height.  It returns an array of rows (possibly by mutating the input array) giving new top and height values for each row.'),
-      h3('surplusHeightFunc'),
-      p('`SurplusHeightFunc :: (Number , [{top: Number, height: Number}]) -> [{top: Number, height: Number}]`'),
+      h3('SurplusHeightFunc'),
+      p('Whenever the height given to a column of components is greater than the sum of their minimum heights, the column has surplus height.  A `SurplusHeightFunc` takes two parameters: the total height available, and an array of "rows", each an object with a `top` and a `height` property initialized with its top position and height.  It returns an array of rows (possibly by mutating the input array) giving new top and height values for each row.'),
+      p('`type SurplusHeightFunc = (Number , [{top: Number, height: Number}]) -> [{top: Number, height: Number}]`'),
       p('HCJ comes with a small number of `SurplusHeightFunc`s for you to use.  These are all members of the `window.hcj.funcs.surplusHeight` object:'),
       objectDefinition([{
         name: 'ignore',
         type: 'SurplusHeightFunc',
-        description: 'Ignores surplus height.',
+        description: 'Returns input column.',
       }, {
         name: 'center',
         type: 'SurplusHeightFunc',
@@ -868,9 +893,9 @@ $(function () {
 
   var standardLibraryComponentModifiers = function () {
     return [
-      p('While the layouts in the previous section take multiple components and return a component, layouts that take exactly one component and return a component, sometimes called `styles`, can add much customization and functionality.'),
+      p('While the layouts in the previous section place multiple components together in various arrangements, the styles in this section apply to a single component, generally glitzing it up.'),
       p('These styles are all properties of the `window.hcj.component` object.'),
-      p('A style again is a function that takes one component and returns a component, so the type `Style` is equivalent to the type `(Component -> Component)`.'),
+      p('Again, a style is a function that takes one component and returns a component, so the type `Style` is equivalent to the type `Component -> Component`.'),
 
       h2('All'),
       p('`all :: [Style] -> Style`'),
@@ -884,12 +909,12 @@ $(function () {
         "  border(color.white, {",
         "    all: 1,",
         "  }),",
-        "])(text('Text'));",
+        "])(text('Title'));",
       ]),
 
       h2('And'),
-      p('`and :: ((Instance , Context) -> ()) -> Component -> Component`'),
-      p('The `hcj.component.and` function lets you arbitrarily operate on an instance while reading from its context.  It takes a function that takes an instance and a context, and returns a style.'),
+      p('`and :: ((Instance , Context) -> ()) -> Style`'),
+      p('The `hcj.component.and` style lets you arbitrarily operate on an instance and read from its context.  It takes a function that takes an instance and a context, and returns a style.  This function may modify or re-assign any properties of the instance object.'),
       p('Example:'),
       codeBlock([
         "var turnBlue = and(function (i) {",
@@ -1012,10 +1037,10 @@ $(function () {
       p('Sets the `pointer: cursor` CSS style.'),
 
       h2('LinkTo'),
-      p('`linkTo :: LinkConfig -> Style`'),
+      p('`linkTo :: LinkToConfig -> Style`'),
       p('Wraps component it in an `a` tag with the given href.'),
       docStack2([
-        p('A `LinkConfig` is an object with the following properties:'),
+        p('A `LinkToConfig` is an object with the following properties:'),
         objectDefinition([{
           name: 'href',
           type: 'String',
@@ -1024,24 +1049,25 @@ $(function () {
           name: 'target',
           type: 'String?',
           description: 'Link target.',
+        }, {
+          name: 'defaultStyle',
+          type: 'Bool?',
+          description: 'If set, uses browser\'s default color and text decoration for the link instead of leaving the link completely unstyled.',
         }]),
       ]),
 
       c.makeSticky(h2('MakeSticky')),
       p('`makeSticky :: (Number | Stream Number)? -> Style`'),
       p('Causes a component to stick to the top of the screen instead of scrolling off.'),
-      p('A number or a stream of numbers can be optionally passed in before applying `makeSticky` to a component.  The component will then become sticky before it scrolls off the screen, at a distance from the top of the screen equal to the number you pass in.'),
+      p('A number, or a stream of numbers, can be optionally passed in before applying `makeSticky` to a component.  The component will then become sticky before it scrolls off the screen, at a distance from the top of the screen equal to the number you pass in.  (This can be useful for layering sticky items on top of one another, by passing the context height of the first into the makeSticky style of the second.)'),
 
-      h2('Margin, Padding'),
+      h2('Margin'),
       typeSignatures([{
         name: 'margin',
         type: 'MarginConfig -> Style',
-      }, {
-        name: 'padding',
-        type: 'MarginConfig -> Style',
       }]),
       p('Adds some space around a component.'),
-      p('In HCJ, there is no difference between the concepts of padding and margin.'),
+      p('`padding` is an alias for `margin`.'),
       docStack2([
         p('A `MarginConfig` is an object with the following properties:'),
         objectDefinition([{
@@ -1068,13 +1094,25 @@ $(function () {
       ]),
 
       h2('MinHeight'),
-      p('`minHeight :: (Number -> Number) -> Style`'),
-      p('`minHeightAtLeast :: (Number | Stream Number) -> Style`'),
+      typeSignatures([{
+        name: 'minHeight',
+        type: '(Number -> Number) -> Style',
+      }, {
+        name: 'minHeightAtLeast',
+        type: '(Number | Stream Number) -> Style',
+      }]),
       p('Overrides the minimum height of a component.'),
-      p('The `minHeight` function takes a function from numbers to numbers and sets the component\'s min height to that function.'),
-      p('The `minHeightAtLeast` function takes a number or a stream of numbers, and sets the minimum height of a component to be at least that amount.'),
+      p('The `minHeight` function takes a minimum height function and sets the component\'s minimum height to that function.'),
+      p('The `minHeightAtLeast` function takes a number or a stream of numbers and ensures that the minimum height of a component is at least that amount.'),
 
       h2('MinWidth'),
+      typeSignatures([{
+        name: 'minWidth',
+        type: 'Number -> Style',
+      }, {
+        name: 'minWidthAtLeast',
+        type: '(Number | Stream Number) -> Style',
+      }]),
       p('`minWidth :: MinWidth -> Style`'),
       p('`minWidthAtLeast :: (Number | Stream Number) -> Style`'),
       p('Overrides the minimum width of a component.'),
@@ -1114,11 +1152,11 @@ $(function () {
         name: 'mouseupThis',
         type: '(Event -> ()) -> Style',
       }]),
-      p('`changeThis` is defined as `onThis("change")`, etc.'),
+      p('`changeThis` is defined as `onThis("change")`, and so on.'),
 
       h2('OverflowHorizontal'),
       p('`overflowHorizontal :: OverflowHorizontalConfig -> Style`'),
-      p('Overrides the minimum width of a component, and displays a horizontal scrollbar if necessary.'),
+      p('Displays a horizontal scrollbar beneath a component, if its width is less than its minimum width.  Overrides the component\'s minimum width.'),
       objectDefinition([{
         name: 'minWidth',
         type: 'Number',
@@ -1133,8 +1171,8 @@ $(function () {
 
   var standardLibraryStreams = function () {
     return [
-      p("HCJ provides a stream library that components use to communicate with their parents and children."),
-      p("An hcj stream is defined as an object with two properties:"),
+      p("HCJ provides a stream library used to pass dimensions from parents to children and minimum dimensions from children to parents."),
+      p("A `Stream T` is defined as an object with two properties:"),
       objectDefinition([{
         name: 'lastValue',
         type: 'T',
@@ -1142,23 +1180,23 @@ $(function () {
       }, {
         name: 'listeners',
         type: '[T -> ()]',
-        description: 'Array of functions that are run whenever there is a new data point.',
+        description: 'Functions that are run whenever there is a new data point.',
       }]),
-      p('Broadly, there are two ways to define HCJ streams.  The first is with `stream.create` or `stream.once`.  Streams created with these methods receive new data points whenever you push to them (see `stream.push` and `stream.pushAll`).'),
-      p('The second way is to apply an operation to another stream or streams.  `stream.map` and `stream.reduce` are the most common operations.  Streams defined this way generally receive new values whenever their input streams receive new values.'),
-      p('HCJ streams are optimized for communicating dimensions between parents and children, not for aggregating data.  If you push a value through a stream multiple times, it will only be handled the first time.  If you push multiple values through a stream synchronously, only the last one is guaranteed to be handled.'),
-      p('To guarantee that an action is run after all stream operations have "settled", use `hcj.stream.defer` instead of `setTimeout`.  To run actions synchronously and push to a stream after they are complete, use `hcj.stream.next` instead of `setTimeout`.'),
+      p('Broadly speaking, there are two ways to define HCJ streams.  The first is with `stream.create` or `stream.once`.  Streams created with these methods receive new data points whenever you push to them (see `stream.push` and `stream.pushAll`).'),
+      p('The second way is to apply an operation to existing streams.  `stream.map` and `stream.reduce` are the most common such operations.  Streams defined this way generally receive new values whenever their input streams receive new values.'),
+      p('HCJ streams are optimized for communicating dimensions between parents and children, not for aggregating data.  If you push a value through a stream multiple times, it is only guaranteed to be handled the first time.  If you push multiple values through a stream synchronously, only the last one is guaranteed to be handled.'),
+      p('To run an action after all stream operations have settled, use `hcj.stream.defer` instead of `setTimeout`.  To push to a stream after all synchronous actions are complete, use `hcj.stream.next` instead of `setTimeout` so that `hcj.stream.defer` knows to wait for your pushes.'),
 
       h1('Stream Methods'),
-      p('Here are the stream functions.  These are all properties of the `window.hcj.stream` object:'),
+      p('These are the stream functions included with HCJ.  All are properties of the `window.hcj.stream` object:'),
 
       h2('Combine'),
       p('`combine :: ([Stream a, Stream b, ...] , (a, b, ...) -> x) -> Stream x`'),
-      p('Takes an array of streams and a function.  Applies the function to the latest values from all input streams, updating output stream whenever any input changes.'),
+      p('Takes an array of streams, and a function.  Applies the function to the latest values from all input streams, updating output stream whenever any input changes.'),
 
       h2('CombineInto'),
       p('`combineInto :: ([Stream a, Stream b, ...] , (a, b, ...) -> x , Stream x) -> ()`'),
-      p('Like `combine`, but instead of returning a stream, pushes all values into a stream created with `create` or `once`.'),
+      p('Like `combine`, but instead of returning a stream, pushes all values into an existing stream created with `create` or `once`.'),
 
       h2('CombineObject'),
       p('`combineObject :: {x: Stream a, y: Stream b, ...} -> Stream {x: a, y: b, ...}`'),
@@ -1170,11 +1208,11 @@ $(function () {
 
       h2('Debounce'),
       p('`debounce :: (Stream a , Number) -> Stream a`'),
-      p('Pushes values from input stream directly to output stream, no more frequently than the given number of milliseconds.'),
+      p('Pushes values from its input stream unmodified to its output stream, no more frequently than the given number of milliseconds.'),
 
       h2('Delay'),
       p('`delay :: Stream a -> Number -> Stream a`'),
-      p('Pushes values directly to the output stream after waiting the given number of milliseconds.'),
+      p('Pushes values unmodified to its output stream after waiting the given number of milliseconds.'),
 
       h2('Filter'),
       p('`filter :: (Stream a , a -> Bool) -> Stream a`'),
@@ -1196,21 +1234,17 @@ $(function () {
       p('`onValue :: (Stream a , a -> ()) -> ()'),
       p('Like `map` but does not return a stream.'),
 
-      h2('Promise'),
-      p('`promise :: Stream a -> Promise a`'),
-      p('Returns a promise that resolves as soon as there is a data point in the stream.'),
-
       h2('Prop'),
       p('`prop :: (Stream {x: a, ...} , "x") -> Stream a`'),
       p('Maps over a stream of objects, accessing the specified key.'),
 
       h2('Push'),
       p('`push : (Stream a , a) -> ()`'),
-      p('Pushes a value onto a stream created with `create` or `once`.'),
+      p('Pushes a value into an existing stream created with `create` or `once`.'),
 
       h2('PushAll'),
       p('`pushAll : (Stream a , Stream a) -> ()`'),
-      p('Pushes all values from one stream onto another stream.  Source stream is first, target second.'),
+      p('Pushes all values from one stream onto an existing stream.  Source stream is first, target second.'),
 
       h2('Reduce'),
       p('`reduce : (Stream a , b -> a -> b , b) -> Stream b'),
@@ -1221,7 +1255,7 @@ $(function () {
       p('Takes an object, and returns an object whose values are a streams initialized with the values from the input object.'),
 
       h1('Defined Streams'),
-      p('HCJ defines some streams that may be useful in application code.  These streams are all properties of `hcj.viewport`.'),
+      p('HCJ defines some streams that may be useful in application code.  These streams are all properties of the `hcj.viewport` object.'),
 
       h2('WindowHeight'),
       p('`hcj.viewport.windowHeight` gives the current height of the window in pixels.'),
@@ -1230,7 +1264,7 @@ $(function () {
       p('`hcj.viewport.windowScroll` gives the current Y scroll position.'),
 
       h2('WindowWidth'),
-      p('`hcj.viewport.windowWidth` gives the width of the window in pixels.  This number includes any scrollbars that may be present; this stream does not check whether there is a scrollbar and subtract its width.'),
+      p('`hcj.viewport.windowWidth` gives the width of the window in pixels.  This number includes any scrollbars that may be present; it is not checked whether there is a scrollbar.'),
     ];
   };
 
@@ -1989,29 +2023,32 @@ $(function () {
 
   var standardLibraryColors = function () {
     return [
-      p('HCJ has a standard notation for colors.  A `Color` is an object with all of the following properties:'),
-      p('These functions are found in `window.hcj.color'),
-      stack([
-        p("&#8226; r: red value from 0 to 255"),
-        p("&#8226; g: green value from 0 to 255"),
-        p("&#8226; b: blue value from 0 to 255"),
-        p("&#8226; a: alpha value from 0 to 1"),
-      ]),
+      p('HCJ has a standard schema for colors.  A `Color` is an object with all of the following properties:'),
+      objectDefinition([{
+        name: 'r',
+        type: 'Number',
+        description: 'Value from 0 to 255.',
+      }, {
+        name: 'g',
+        type: 'Number',
+        description: 'Value from 0 to 255.',
+      }, {
+        name: 'b',
+        type: 'Number',
+        description: 'Value from 0 to 255.',
+      }, {
+        name: 'a',
+        type: 'Number',
+        description: 'Value from 0 to 1.',
+      }]),
 
-      h2('color'),
-      p('`Color` constructor.  Easier than describing further, is pasting the code:'),
-      codeBlock([
-        "var color = function (c) {",
-        "  return {",
-        "    r: c.r || 0,",
-        "    g: c.g || 0,",
-        "    b: c.b || 0,",
-        "    a: c.a || 1,",
-        "  };",
-        "};",
-      ]),
+      p('The following functions are found in `window.hcj.color`:'),
+      h2('Color'),
+      p('`color :: {r: Number?, g: Number?, b: Number?, a: Number?} -> Color`'),
+      p('`Color` constructor.  `r`, `g`, and `b` values default to 0, and `a` value defaults to 1.'),
 
-      h2('colorString'),
+      h2('ColorString'),
+      p('`colorString :: Color -> String`'),
       p('`Color` destructor.  Takes a color, returns string using rgba format.'),
     ];
   };
@@ -2068,7 +2105,7 @@ $(function () {
 
   var support = function () {
     return [
-      p("Join #hcj on Freenode, or leave a message on the Github repository.  We can't promise that HCJ is the best implementation of what we're going for, nor that we will be the best maintainers of it, but if you should submit an issue or make a pull request we will make some kind of effort to address it properly."),
+      p("Join #hcj on Freenode, or leave a message on the Github repository."),
       p('<iframe src="https://kiwiirc.com/client/irc.freenode.net/?&theme=basic#hcj" style="border:0; width:100%; height:450px;"></iframe>'),
     ];
   };
@@ -2076,9 +2113,9 @@ $(function () {
   var testPage = function () {
     return [
       p("Demo of some of the components that come with hcj."),
-      p("Conventions used in these examples:"),
+      p("Conventions used in these examples' code:"),
       codeBlock([
-        'var c = window.hcj.component;',
+        'var c = hcj.component;',
         'var p = c.text;',
         'var pm = c.text({measureWidth: true});',
         'var h1 = c.text({size: \'40px\'});',
@@ -2550,15 +2587,15 @@ $(function () {
         '  h1(\'Some text\'),',
         '  h1(\'Hello\'),',
         '  c.stack([',
-        '    c.text(\'hi\', [font.p, {',
+        '    p({',
         '      color: color.red,',
-        '    }]),',
-        '    c.text(\'hi\', [font.p, {',
+        '    }, \'hi\'),',
+        '    p({',
         '      color: color.red,',
-        '    }]),',
-        '    c.text(\'hi\', [font.p, {',
+        '    }, \'hi\'),',
+        '    p({',
         '      color: color.red,',
-        '    }]),',
+        '    }, \'hi\'),',
         '  ]),',
         ']);',
       ]),
@@ -2585,9 +2622,10 @@ $(function () {
             }),
             c.alignHLeft,
           ])(c.text({
-            str: buttonTextS,
             el: el.button,
             measureWidth: true,
+          }, {
+            str: buttonTextS,
           })),
           c.componentStream(stuffS),
         ]);
@@ -2614,9 +2652,10 @@ $(function () {
         '    }),',
         '    c.alignHLeft,',
         '  ])(c.text({',
-        '    str: buttonTextS,',
         '    el: el.button,',
         '    measureWidth: true,',
+        '  }, {',
+        '    str: buttonTextS,',
         '  })),',
         '  c.componentStream(stuffS),',
         ']);',
@@ -2818,7 +2857,7 @@ $(function () {
     title: 'Examples',
     components: testPage,
   }, {
-    title: 'Defining Componentss',
+    title: 'Defining Components',
     components: definingComponents,
   }, {
     title: 'Defining Layouts',
