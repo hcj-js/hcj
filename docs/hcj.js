@@ -3296,7 +3296,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
 
   var componentStream = function (cStream) {
-    var error = new Error();
     return container(function (el, ctx, append) {
       el.classList.add('componentStream');
       var i;
