@@ -548,11 +548,11 @@
 
   var outerWidth = function (el) {
     var style = window.getComputedStyle(el);
-    return el.offsetWidth + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+    return el.getBoundingClientRect().width + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
   }
   var outerHeight = function (el) {
     var style = window.getComputedStyle(el);
-    return el.offsetHeight + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+    return el.getBoundingClientRect().height + parseFloat(style.marginTop) + parseFloat(style.marginBottom);
   }
 
   var measureWidth = function (el) {
