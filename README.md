@@ -11,9 +11,9 @@ See [hello world example](https://hcj-js.github.io/hcj/index.html#1).
 
 ## Docs ##
 
-Latest docs are located at http://hcj-js.github.io/hcj/index.html
+Latest docs are located at http://hcj-js.org/index.html
 
-v0.2 docs: http://hcj-js.github.io/hcj/docs-0.2/index.html
+v0.2 docs: http://hcj-js.org/docs-0.2/index.html
 
 ## Building from Source ##
 
