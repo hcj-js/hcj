@@ -206,11 +206,11 @@ $(function () {
 
   var introduction = function () {
     return [
-      p("HCJ is a whole new way to write programs for the browser.  The browser is essentially a virtual machine, just like the JVM - it just has HTML, CSS, and Javascript bytecode instead of Java bytecode."),
-      p("Like any language or runtime, the browser has good parts and bad parts.  HTML declares the static content on the site for search engines to index and text-only browsers to display.  Javascript is a full, turing-complete programming language, which can make pages snazzy and interactive.  CSS is like the red-headed stepchild.  Like HTML, it is total, however search engines generally have no need to index it, since it does not change the semantic content of the page, only how the content is displayed on-screen."),
-      p("Because CSS is total, it can be difficult to write CSS programs that caues your page to be displayed just how you want.  CSS provides an enormous zoo of styles that place elements in various ways, including `position` styles, `float` styles, and `display` styles including `block`, `inline-block`, `table`, `grid`, and `flexbox` - in addition to styles that modify the box-sizing properties of individual elements, such as `margin`, `padding`, and `border`.  Each of these styles has a certain set of capabilities.  With css3 flexbox and grid, the capabilities are clearly improving.  However there are always layouts that cannot be expressed without Javascript.  Generally speaking, as a CSS programmer one learns a set of incantations to create whatever display mode your designer asks for, and then in 5 years a new feature comes out, invalidating your spellbook, at which point you must begin to write a new one."),
+      p("HCJ is a whole new way to write programs for the browser.  The browser is essentially a virtual machine, just like the JVM.  It just has HTML, CSS, and Javascript bytecode instead of Java bytecode."),
+      p("Like any language or runtime, the browser has good parts and bad parts.  HTML declares the static content on the site for search engines to index and text-only browsers to display.  Javascript is a full, turing-complete programming language, which can make pages snazzy and interactive.  CSS, by comparison, the red-headed stepchild.  Like HTML, it is total, however search engines generally have no need to index it, since affects how the content is displayed, but does not change the content that is on the page."),
+      p("Because CSS is total, it can be difficult to write CSS programs that caues your page to be displayed just how you want.  CSS provides an enormous zoo of styles that place elements in various ways, including `position` styles, `float` styles, and `display` styles including `block`, `inline-block`, `table`, `grid`, and `flexbox` - in addition to styles that modify the box-sizing properties of individual elements, such as `margin`, `padding`, and `border`.  Each of these styles has a certain set of capabilities.  With css3 flexbox and grid, the capabilities are clearly improving, however there are always layouts that cannot be expressed without Javascript.  Generally speaking, as a CSS programmer one learns a set of incantations to create whatever display mode your designer asks for, and then in 5 years a new feature comes out, invalidating your spellbook, at which point you must begin to write a new one."),
       p("HCJ breaks this cycle.  An HCJ website does not contain any CSS at all.  All styling and positioning is done through javascript.  An interface is specified wherein children report their \"minimum dimensions\" to parents, and then parents report \"actual dimensions\" to their children.  Any function implementing this interface can be used with HCJ.  Almost all current CSS styles have corresponding HCJ layouts in our standard library, and if you need a layout that is not implemented, you can simply write a function implementing the proper interface, and use that as your style."),
-      p("Imagine if you could <i>implement</i> flexbox, grid, or even your own display styles, and use them in your websites right now, without waiting for browser support to come along and without worrying about fallbacks or polyfills.  This is exactly what HCJ is for.  Basically, HCJ is a \"polyfill\" for all current and future CSS styles.  More fundamentally, HCJ is not a library at all - hcj.js is totally superfluous - but merely a interface.  Equivalently, HCJ is a set of display styles that work together seamlessly, will never and can never be deprecated, and generally do the \"right thing\" out of the box, for absolutely free."),
+      p("Imagine if you could <i>implement</i> flexbox, grid, or even your own display styles, and use them in your websites right now, without waiting for browser support to come along and without worrying about fallbacks or polyfills.  This is exactly what HCJ is for.  Basically, HCJ is a \"polyfill\" for all current and future CSS styles.  More fundamentally, HCJ is not a library at all, but simply an interface.  Any functions implementing this interface can mutually interoperate."),
       p("The framework's building blocks, \"HCJ components\", are extraordinarily composable, compared to standard CSS.  Any component at any level can be rendered as a web page, making debugging and testing very simple.  Components respond to the size and shape of the page region they are rendered into, making mobile-responsive design trivially easy as \"media queries\" are embedded into each and every component as needed, and rearranging your page as easy as copy and paste."),
     ];
   };
@@ -264,9 +264,9 @@ $(function () {
           description: 'Removes the instance from the page.',
         }]),
       ]),
-      p('A component, when rendered, must create an element, append it to the `el` node of the passed-in context, and return it as the `el` property of the instance.'),
-      p('Whenever you render a component, you must inform it of its width, height, page-relative top, and page-relative left positions via the context it is passed.  This way, it can display itself in a mobile- (and more generally container-) responsive manner.'),
-      p('To position the instance, you may set the `width`, `height`, `top`, `left`, and `position` styles of its `el` property; the instance itself owns all other styles.  The `position` style may not be set to `static`: it must be set to `absolute`, `relative`, or `fixed`, so that the instance can reliably position its own children.'),
+      p('A component must create a DOM node, append it to the `el` node of the passed-in context, and return it as the `el` property of the instance, each time it is rendered.'),
+      p('Whenever you render a component, you must inform it of its width, height, page-relative top, and page-relative left positions via the context it is passed.  This way, it can display itself in a mobile- (and more generally container-) responsive way.'),
+      p('To position the instance, you may set its node\'s `width`, `height`, `top`, `left`, and `position` styles; the instance itself owns all other styles.  The `position` style may not be set to `static`: it must be set to `absolute`, `relative`, or `fixed`, so that the instance can reliably position its own children.'),
       p('The instance\'s `minWidth` property is a stream of numbers giving the minimum width that the instance reports it needs to display sanely.  This is used by its rendering code to give it as much space as it needs.  Likewise, `minHeight` is a stream of functions that, given a hypothetical width, return the height required by the instance at that width.'),
       p('The `remove` property of the instance is a function that removes its `el` node from the DOM and performs any other cleanup required by the instance, such as closing open connections.'),
     ];
@@ -336,9 +336,9 @@ $(function () {
         "    &lt;/body&gt;",
         "&lt;/html&gt;",
       ]),
-      p("The page includes two external files, `hcj.css` and `hcj.js`.  The hcj.css file contains a CSS reset.  The hcj.js file contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it depends on the body element being present for some internal initialization.  Then, inside a `script` tag section, it defines a component and renders it."),
-      p("To render a component that you have defined, you must pass it to the `hcj.rootComponent` function.  This function places your component in the top-left corner of the window and gives it the window\'s height and width, and returns the instance.  Rendering into a smaller region is not currently supported.  Multiple root components can be used, e.g. to display full-window modal dialogs if you wish."),
-      p("Fonts are a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must set their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your user script after webfonts are loaded.  The `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
+      p("The page includes two external files, `hcj.css` and `hcj.js`.  The hcj.css file contains a CSS reset.  The hcj.js file contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it depends on the body element being present for some internal initialization.  Then, inside a `script` tag section, the page defines a component and renders it."),
+      p("To render a component, you must pass it to the `hcj.rootComponent` function.  This function places your component in the top-left corner of the window and gives it the window\'s height and width, and returns the instance.  Rendering into a smaller region is not currently supported.  Multiple root components can be used, e.g. to display full-window modal dialogs if you wish."),
+      p("Fonts are a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must set their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your page after all fonts are loaded.  The `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
     ];
   };
 
@@ -634,7 +634,7 @@ $(function () {
         type: 'Number?',
         description: 'If present, minimum width is set to this number instead of the image\'s natural width.',
       }, {
-        name: 'minHegiht',
+        name: 'minHeight',
         type: 'Number?',
         description: 'If present, minimum width of image is set to the quotient of this number and the image\'s aspect ratio.',
       }]),
@@ -685,7 +685,6 @@ $(function () {
         type: 'Style',
       }]),
       p('Takes an object with optional `l`, `r`, and `m` properties.  Aligns elements left, right, and middle.'),
-      p('The minimum width of an `alignHorizontal` layout is the sum of the minimum widths of the components it is passed.  Its minimum height is the max of the components it is passed, at their respective minimum widths.'),
       p('`alignH` and `alignLRM` are both aliases for `alignHorizontal`.'),
       docStack2([
         p('Example:'),
@@ -715,7 +714,6 @@ $(function () {
         type: 'Style',
       }]),
       p('Takes an object with optional `t`, `b`, and `m` properties.  Aligns elements top, bottom, and middle.'),
-      p('The minimum width of an `alignVertical` layout is the max of the minimum widths of the components it is passed.  Its minimum height is the sum of the minimum heights of the components it is passed.'),
       p('`alignV` and `alignTBM` are both aliases for `alignVertical`.'),
       docStack2([
         p('Example:'),
@@ -725,7 +723,7 @@ $(function () {
           "&nbsp;",
           "var header = hcj.component.alignV({",
           "  t: logo,",
-          "  m: menu,",
+          "  b: menu,",
           "});",
         ]),
       ]),
