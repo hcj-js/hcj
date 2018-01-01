@@ -13,6 +13,7 @@ while ! grep -m1 'up' < ./nodelog; do
 done
 
 # use phantomjs to get page content
+echo Running phantomjs...
 phantomjs -platform offscreen build.js > output
 
 kill $pid

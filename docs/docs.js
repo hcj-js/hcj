@@ -152,6 +152,14 @@ $(function () {
     return target.replace(new RegExp(search, 'g'), replacement);
   };
 
+  String.prototype.repeat = String.prototype.repeat || function (n) {
+    var result = '';
+    for (var i = 0; i < n; i++) {
+      result += this;
+    }
+    return result;
+  };
+
   var objectDefinition = function (props, noBullet, commentString, noGray, noBottomToTop) {
     var maxPropLength = 0;
     var maxTypeLength = 0;
@@ -2891,7 +2899,11 @@ $(function () {
       alt: 'HCJ Logo',
     })),
     c.bar.h(20),
-    stack(pages.map(function (p, i) {
+    c.all([
+      c.and(function (i) {
+        $(i.el).addClass('sidebar');
+      }),
+    ])(stack(pages.map(function (p, i) {
       return c.all([
         c.margin(2),
         c.linkTo(window.location.origin + window.location.pathname + '#' + i),
@@ -2902,7 +2914,7 @@ $(function () {
           backgroundHover: color.lightGray,
         }),
       ])(c.text(p.title, font.p0));
-    })),
+    }))),
   ]));
 
   var docs = c.all([
