@@ -171,19 +171,19 @@ $(function () {
     });
     return stack(props.map(function (prop) {
       return c.grid({
-          bottomToTop: !noBottomToTop,
+        bottomToTop: !noBottomToTop,
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp;'.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.typeLength) + '`'),
+        c.all([
+          noGray ? hcj.funcs.id : c.backgroundColor({font: color.gray}),
+        ])(c.sideBySide({
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp;'.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.typeLength) + '`'),
-          c.all([
-            noGray ? hcj.funcs.id : c.backgroundColor({font: color.gray}),
-          ])(c.sideBySide({
-            surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
-          }, [
-            pm('`' + (commentString || '&nbsp;&nbsp;') + '`'),
-            p0(prop.description),
-          ])),
-        ]);
+          pm('`' + (commentString || '&nbsp;&nbsp;') + '`'),
+          p0(prop.description),
+        ])),
+      ]);
     }));
   };
 
@@ -194,16 +194,16 @@ $(function () {
     });
     return stack(sigs.map(function (sig) {
       return c.grid({
+        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      }, [
+        pm((noBullet ? '`' : '&#8226;&nbsp;`') + sig.name + '&nbsp;'.repeat(maxPropLength - sig.name.length) + '`'),
+        c.sideBySide({
           surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
-          pm((noBullet ? '`' : '&#8226;&nbsp;`') + sig.name + '&nbsp;'.repeat(maxPropLength - sig.name.length) + '`'),
-          c.sideBySide({
-            surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
-          }, [
-            pm(typeofString || '`&nbsp;::&nbsp;`'),
-            p0('`' + sig.type + '`'),
-          ]),
-        ]);
+          pm(typeofString || '`&nbsp;::&nbsp;`'),
+          p0('`' + sig.type + '`'),
+        ]),
+      ]);
     }));
   };
 
@@ -294,8 +294,8 @@ $(function () {
 
   var definingComponents = function () {
     return [
-      p("One of the core tenents of HCJ is that it should be easy to define new kinds of components and layouts, with their own specific configuration settings.  Again, HCJ is fundamentally just an interface: any functions that implement this interface can interoperate together.  There are some tasks that virtually all components perform the same way, so we provide a helper method, `hcj.component.component`, for defining new components."),
-      p("`component : (String? , BuildComponent) -> Component`"),
+      p("One of the core tenents of HCJ is that it should be easy to define new and custom components and layouts.  Again, HCJ is fundamentally just an interface: any functions that implement this interface can interoperate together.  There are some things that virtually all components will do exactly the same way, so we provide a helper method, `hcj.component.component`, for defining new components."),
+      p("`component :: (String? , BuildComponent) -> Component`"),
       p('Where `BuildComponent` is defined as:'),
       p("`type BuildComponent = (Node, Context, MeasureWidth, MeasureHeight) -> {minWidth :: Stream Number?, minHeight :: Stream (Number -> Number)?, remove :: Function?}`"),
       p('The `component` function takes two arguments: an optional tag name, followed by a `build` method.  If the tag name is not specified, it defaults to `div`.  The build method initializes the component, and provides its minimum dimensions.  It is passed four arguments: first `el`, the created root node of the component, and `context`, the context as it was passed into the component.  The remaining two arguments are a `MeasureWidth` function and a `MeasureHeight` function, as explained below.  It returns a "pre-instance", which the `component` function upgrades to a full `instance`.'),
@@ -352,8 +352,8 @@ $(function () {
 
   var definingLayouts = function () {
     return [
-      p("The `hcj.component.container` method is for defining layouts.  It takes an optional string argument giving tag name of the container, followed by a build method."),
-      p("`container : (String? , BuildContainer) -> Component`"),
+      p("The `hcj.component.container` method is a helper method for defining layouts.  It takes an optional string argument giving tag name of the container, followed by a build method."),
+      p("`container :: (String? , BuildContainer) -> Component`"),
       p("`type BuildContainer = (JQuery, Context, Append) -> {minWidth :: Number, minHeight :: Stream (Number -> Number), remove :: Function?}`"),
       p("`type Append = (Component, Viewport?, Bool?) -> Instance`"),
       p("The build method takes three arguments.  The first two, `el` and `context`, are the root element of the container and the context that it is rendered into.  The third argument, `append`, is used to append child components to the container."),
@@ -459,7 +459,7 @@ $(function () {
       h2('Example - Simple Stack'),
       p("`stack :: [Component] -> Component`"),
       p("Say we want to put components into a vertical stack."),
-      p("First we map over the components provided to initialize an array of viewports and an array of instances.  Next, we use the HCJ stream library to combine some streams together so that every time the stack's context changes, positions are recalculated and pushed into the components' viewports.  Last, we assign the minimum width and minimum height of the stack by combining together the minimum widths and minimum heights of the stacked instances."),
+      p("First we map over the components provided, initializing an array of viewports and an array of instances.  Next, we use the HCJ stream library to change the components' viewports every time the stack's context changes.  Last, we assign the minimum width and minimum height of the stack by combining together the minimum widths and minimum heights of the stacked instances."),
       codeBlock([
         "var stack = function (cs) {",
         "  return c.container(function (el, context, append) {",
@@ -474,10 +474,17 @@ $(function () {
         "      instances.push(append(c, viewport));",
         "    });",
         "  &nbsp;",
+        "    var instanceMinWidthsS = stream.all(instances.map(function (i) {",
+        "      return i.minWidth;",
+        "    }));",
+        "    var instanceMinHeightsS = stream.all(instances.map(function (i) {",
+        "      return i.minHeight;",
+        "    }));",
+        "  &nbsp;",
         "    stream.combine([",
         "      context.width,",
         "      context.height,",
-        "      minHeightsS,",
+        "      instanceMinHeightsS,",
         "    ], function (w, h, mhs) {",
         "      var top = 0;",
         "      mhs.map(function (mh, index) {",
@@ -485,24 +492,17 @@ $(function () {
         "        var height = mh(w);",
         "        stream.push(viewport.top, top);",
         "        stream.push(viewport.height, height);",
-        "        top += h;",
+        "        top += height;",
         "      });",
         "    });",
         "  &nbsp;",
-        "    var allMinWidthsS = stream.all(instances.map(function (i) {",
-        "      return i.minWidth;",
-        "    }));",
-        "    var allMinHeightsS = stream.all(instances.map(function (i) {",
-        "      return i.minHeight;",
-        "    }));",
-        "  &nbsp;",
         "    return {",
-        "      minWidth: stream.map(allMinWidthsS, function (mws) {",
+        "      minWidth: stream.map(instanceMinWidthsS, function (mws) {",
         "        return mws.reduce(function (a, b) {",
         "          return Math.max(a, b);",
         "        }, 0);",
         "      }),",
-        "      minHeight: stream.map(allMinHeightsS, function (mhs) {",
+        "      minHeight: stream.map(instanceMinHeightsS, function (mhs) {",
         "        return function (w) {",
         "          return mhs.map(function (mh) {",
         "            return mh(w);",
