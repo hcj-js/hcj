@@ -2884,38 +2884,38 @@ $(function () {
   //   window.location.hash = index;
   // });
 
-  var sidebar = c.all([
-    c.margin(10),
-    c.border(color.lightGray, {
-      right: 1,
-      bottom: 1,
-    }),
-  ])(docStack([
-    c.all([
-      c.alignHLeft,
-    ])(c.image({
-      src: './demo.png',
-      minWidth: 240,
-      alt: 'HCJ Logo',
-    })),
-    c.bar.h(20),
-    c.all([
-      c.and(function (i) {
-        $(i.el).addClass('sidebar');
-      }),
-    ])(stack(pages.map(function (p, i) {
-      return c.all([
-        c.margin(2),
-        c.linkTo(window.location.origin + window.location.pathname + '#' + i),
-        c.backgroundColor({
-          background: stream.map(currentPageS, function (index) {
-            return index === i ? color.lightGray : color.lighterGray;
-          }),
-          backgroundHover: color.lightGray,
-        }),
-      ])(c.text(p.title, font.p0));
-    }))),
-  ]));
+  // var sidebar = c.all([
+  //   c.margin(10),
+  //   c.border(color.lightGray, {
+  //     right: 1,
+  //     bottom: 1,
+  //   }),
+  // ])(docStack([
+  //   c.all([
+  //     c.alignHLeft,
+  //   ])(c.image({
+  //     src: './demo.png',
+  //     minWidth: 240,
+  //     alt: 'HCJ Logo',
+  //   })),
+  //   c.bar.h(20),
+  //   c.all([
+  //     c.and(function (i) {
+  //       $(i.el).addClass('sidebar');
+  //     }),
+  //   ])(stack(pages.map(function (p, i) {
+  //     return c.all([
+  //       c.margin(2),
+  //       c.linkTo(window.location.origin + window.location.pathname + '#' + i),
+  //       c.backgroundColor({
+  //         background: stream.map(currentPageS, function (index) {
+  //           return index === i ? color.lightGray : color.lighterGray;
+  //         }),
+  //         backgroundHover: color.lightGray,
+  //       }),
+  //     ])(c.text(p.title, font.p0));
+  //   }))),
+  // ]));
 
   var docs = c.all([
     c.minHeightAtLeast(stream.windowHeight),
