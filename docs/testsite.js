@@ -2917,24 +2917,24 @@ $(function () {
   //   }))),
   // ]));
 
-  var docs = c.all([
-    c.minHeightAtLeast(stream.windowHeight),
-    c.backgroundColor({
-      background: color.lighterGray,
-      font: color.notBlack,
-    }),
-  ])(c.componentStream(stream.map(currentPageS, function (index) {
-    var page = pages[index];
-    return c.basicFloat({
-      padding: 10,
-      // clearHanging: true,
-    }, sidebar, [
-      h1m('hcj.js'),
-      pm('v0.3 (development)'),
-      pm('It could be worse.'),
-      h1m(page.title),
-    ].concat(page.components()));
-  })));
+  // var docs = c.all([
+  //   c.minHeightAtLeast(stream.windowHeight),
+  //   c.backgroundColor({
+  //     background: color.lighterGray,
+  //     font: color.notBlack,
+  //   }),
+  // ])(c.componentStream(stream.map(currentPageS, function (index) {
+  //   var page = pages[index];
+  //   return c.basicFloat({
+  //     padding: 10,
+  //     // clearHanging: true,
+  //   }, sidebar, [
+  //     h1m('hcj.js'),
+  //     pm('v0.3 (development)'),
+  //     pm('It could be worse.'),
+  //     h1m(page.title),
+  //   ].concat(page.components()));
+  // })));
 
 
   var page = c.all([
