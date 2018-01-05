@@ -979,23 +979,25 @@ function waitForWebfonts(fonts, callback, maxTime) {
     ], function (ww, wh, mh) {
       var mhAtWW = mh(ww);
       var mhAtScrollbarWW = mh(ww - scrollbarWidth);
+      var componentMinWidth;
+      var componentMinHeight;
       if (mhAtWW > wh) {
+        componentMinWidth = ww - scrollbarWidth;
+        componentMinHeight = mhAtScrollbarWW;
         if (mhAtScrollbarWW > wh) {
           document.body.style.overflowY = 'initial';
-          stream.push(width, ww - scrollbarWidth);
-          stream.push(height, mhAtScrollbarWW);
         }
         else {
           document.body.style.overflowY = 'scroll';
-          stream.push(width, ww - scrollbarWidth);
-          stream.push(height, mhAtScrollbarWW);
         }
       }
       else {
+        componentMinWidth = ww;
+        componentMinHeight = mhAtWW;
         document.body.style.overflowY = 'initial';
-        stream.push(width, ww);
-        stream.push(height, mhAtWW);
       }
+      stream.push(width, Math.max(ww, componentMinWidth));
+      stream.push(height, Math.max(wh, componentMinHeight));
     });
     var i = rootLayout(c)({
       el: document.body,
