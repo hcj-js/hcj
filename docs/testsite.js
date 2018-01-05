@@ -2873,16 +2873,16 @@ $(function () {
     components: support,
   }];
 
-  var initialIndex = window.location.hash && parseInt(window.location.hash.substring(1));
-  var currentPageS = stream.once(initialIndex || 0);
-  $(window).on('hashchange', function () {
-    var index = window.location.hash && parseInt(window.location.hash.substring(1));
-    stream.push(currentPageS, index);
-  });
+  // var initialIndex = window.location.hash && parseInt(window.location.hash.substring(1));
+  // var currentPageS = stream.once(initialIndex || 0);
+  // $(window).on('hashchange', function () {
+  //   var index = window.location.hash && parseInt(window.location.hash.substring(1));
+  //   stream.push(currentPageS, index);
+  // });
 
-  stream.map(currentPageS, function (index) {
-    window.location.hash = index;
-  });
+  // stream.map(currentPageS, function (index) {
+  //   window.location.hash = index;
+  // });
 
   var sidebar = c.all([
     c.margin(10),
