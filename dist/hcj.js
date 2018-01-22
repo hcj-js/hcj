@@ -996,7 +996,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         componentMinHeight = mhAtWW;
         document.body.style.overflowY = 'initial';
       }
-      stream.push(width, Math.max(ww, componentMinWidth));
+      stream.push(width, componentMinWidth);
       stream.push(height, Math.max(wh, componentMinHeight));
     });
     var i = rootLayout(c)({
