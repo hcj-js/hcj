@@ -3861,6 +3861,8 @@
   });
 
   var basicFloat = uncurryConfig(function (config) {
+    config = config || {};
+    config.padding = config.padding || 0;
     return layout(function (el, ctx, c, cs) {
       // first context belongs to floating element c, rest to cs
       var ccs = [c].concat(cs);
