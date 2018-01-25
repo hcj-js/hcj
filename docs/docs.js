@@ -1945,15 +1945,15 @@ $(function () {
         "var labeledText = forms.formStyle('Field Name')(text);",
       ]),
 
-      hcj.forms.formFor(hcj.forms.formComponent, hcj.forms.defaultStyle)({
-        action: 'test.html',
-        method: 'get',
-      }, {
-        name: {
-          type: hcj.forms.fieldType.text,
-          // default: ,
-        },
-      }),
+      // hcj.forms.formFor(hcj.forms.formComponent, hcj.forms.defaultStyle)({
+      //   action: 'test.html',
+      //   method: 'get',
+      // }, {
+      //   name: {
+      //     type: hcj.forms.fieldType.text,
+      //     // default: ,
+      //   },
+      // }),
 
       h2('formFor'),
       p("The `formFor` is a large curried function for generating forms.  It takes multiple parameters, and then returns a component."),
@@ -2844,15 +2844,15 @@ $(function () {
   }, {
     title: 'API - Styles',
     components: standardLibraryComponentModifiers,
-  // }, {
-  //   title: 'API - Forms',
-  //   components: standardLibraryForms,
-  // }, {
-  //   title: 'API - Forms Examples',
-  //   components: standardLibraryFormExamples,
-  // }, {
-  //   title: 'API - FormFor',
-  //   components: standardLibraryFormFor,
+  }, {
+    title: 'API - Forms',
+    components: standardLibraryForms,
+  }, {
+    title: 'API - Forms Examples',
+    components: standardLibraryFormExamples,
+  }, {
+    title: 'API - FormFor',
+    components: standardLibraryFormFor,
   }, {
     title: 'API - Colors',
     components: standardLibraryColors,
