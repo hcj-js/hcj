@@ -823,44 +823,39 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
   var layoutAppend = function (childInstances, el, context, c, ctx, noRemove) {
     ctx = ctx || {};
-    try {
-      var childWidth = ctx.width || context.width;
-      var childHeight = ctx.height || context.height;
-      var childTop = ctx.top || onceZeroS;
-      var childLeft = ctx.left || onceZeroS;
-      var i = c({
-        el: ctx.el || el,
-        width: childWidth,
-        height: childHeight,
-        top: stream.combine([childTop, context.top], add),
-        left: stream.combine([childLeft, context.left], add),
-      });
-      if (noRemove !== true) {
-        childInstances.push(i);
-      }
-      // todo: replace with some isInstance function
-      if (!i || !i.minWidth || !i.minHeight) {
-        console.log('not a component');
-        debugger;
-      }
-      i.el.style.position = 'absolute';
-      stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(childWidth), function (w) {
-        updateDomStyle(i.el, 'width', w);
-      });
-      stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(childHeight), function (h) {
-        updateDomStyle(i.el, 'height', h);
-      });
-      stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(childTop), function (t) {
-        updateDomStyle(i.el, 'top', t);
-      });
-      stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(childLeft), function (l) {
-        updateDomStyle(i.el, 'left', l);
-      });
-      return i;
+    var childWidth = ctx.width || context.width;
+    var childHeight = ctx.height || context.height;
+    var childTop = ctx.top || onceZeroS;
+    var childLeft = ctx.left || onceZeroS;
+    var i = c({
+      el: ctx.el || el,
+      width: childWidth,
+      height: childHeight,
+      top: stream.combine([childTop, context.top], add),
+      left: stream.combine([childLeft, context.left], add),
+    });
+    if (noRemove !== true) {
+      childInstances.push(i);
     }
-    catch (e) {
+    // todo: replace with some isInstance function
+    if (!i || !i.minWidth || !i.minHeight) {
+      console.log('not a component');
       debugger;
     }
+    i.el.style.position = 'absolute';
+    stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(childWidth), function (w) {
+      updateDomStyle(i.el, 'width', w);
+    });
+    stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(childHeight), function (h) {
+      updateDomStyle(i.el, 'height', h);
+    });
+    stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(childTop), function (t) {
+      updateDomStyle(i.el, 'top', t);
+    });
+    stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(childLeft), function (l) {
+      updateDomStyle(i.el, 'left', l);
+    });
+    return i;
   };
   var layoutRecurse = function (childInstances, el, context, cs) {
     if (Array.isArray(cs)) {
