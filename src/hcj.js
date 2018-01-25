@@ -3507,31 +3507,31 @@
   };
 
   var fixedHeaderBody = uncurryConfig(function (config) {
+    config = config || {};
     config.transition = config.transition || "0.5s";
-    return layout(function (el, ctx, bodyC, headerC) {
+    return layout(function (el, ctx, headerC, bodyC) {
       var headerHeightS = stream.create();
+      var bodyHeightS = stream.create();
+
       var headerI = headerC({
         width: ctx.width,
         height: headerHeightS,
       });
-      stream.pushAll(stream.combine([
-        ctx.width,
-        headerI.minHeight,
-      ], function (w, mh) {
-        return mh(w);
-      }), headerHeightS);
-      var bodyHeightS = stream.create();
       var bodyI = bodyC({
         top: headerHeightS,
         width: ctx.width,
         height: bodyHeightS,
       });
-      stream.pushAll(stream.combine([
+
+      stream.combine([
         ctx.width,
-        bodyI.minHeight,
-      ], function (w, mh) {
-        return mh(w);
-      }), bodyHeightS);
+        ctx.height,
+        headerI.minHeight,
+      ], function (w, h, mh) {
+        var headerHeight = mh(w);
+        stream.push(headerHeightS, headerHeight);
+        stream.push(bodyHeightS, h - headerHeight);
+      });
 
       headerI.el.style.position = 'fixed';
 
@@ -3541,14 +3541,14 @@
       });
 
       return {
-        minWidth: stream.map(stream.combine([bodyI, headerI].map(function (i) {
+        minWidth: stream.combine([bodyI, headerI].map(function (i) {
           return i.minWidth;
-        })), function (hw, bw) {
+        }), function (hw, bw) {
           return hw + bw;
         }),
-        minHeight: stream.map(stream.combine([bodyI, headerI].map(function (i) {
+        minHeight: stream.combine([bodyI, headerI].map(function (i) {
           return i.minHeight;
-        })), function (hh, bh) {
+        }), function (hh, bh) {
           return function (w) {
             return hh(w) + bh(w);
           };
@@ -5077,6 +5077,7 @@
       dropdownPanel: dropdownPanel,
       empty: empty,
       fadeIn: fadeIn,
+      fixedHeaderBody: fixedHeaderBody,
       grid: grid,
       hoverThis: hoverThis,
       keepAspectRatio: keepAspectRatio,
