@@ -832,7 +832,7 @@
         return layoutAppend(childInstances, el, context, c, ctx, noRemove);
       });
       return {
-        el: i.el,
+        el: el,
         minWidth: i.minWidth,
         minHeight: i.minHeight,
         remove: function () {
