@@ -2827,57 +2827,81 @@ $(function () {
   };
 
   var pages = [{
+    name: 'home',
     title: "Home",
     components: introduction,
   }, {
+    name: 'hello-world',
     title: 'Hello World',
     components: renderingComponents,
   }, {
+    name: 'introduction',
     title: 'Introduction',
     components: aLittleVocab,
   }, {
+    name: 'api-components',
     title: 'API - Components',
     components: standardLibraryComponents,
   }, {
+    name: 'api-layouts',
     title: 'API - Layouts',
     components: standardLibraryLayouts,
   }, {
+    name: 'api-styles',
     title: 'API - Styles',
     components: standardLibraryComponentModifiers,
   }, {
+    name: 'api-forms',
     title: 'API - Forms',
     components: standardLibraryForms,
   }, {
+    name: 'api-forms-examples',
     title: 'API - Forms Examples',
     components: standardLibraryFormExamples,
   }, {
+    name: 'api-formfor',
     title: 'API - FormFor',
     components: standardLibraryFormFor,
   }, {
+    name: 'api-colors',
     title: 'API - Colors',
     components: standardLibraryColors,
   }, {
+    name: 'api-streams',
     title: 'API - Streams',
     components: standardLibraryStreams,
   }, {
+    name: 'api-examples',
     title: 'Examples',
     components: testPage,
   }, {
+    name: 'api-defining-components',
     title: 'Defining Components',
     components: definingComponents,
   }, {
+    name: 'api-defining-layouts',
     title: 'Defining Layouts',
     components: definingLayouts,
   }, {
+    name: 'api-community',
     title: 'Community',
     components: support,
   }];
 
-  var initialIndex = window.location.hash && parseInt(window.location.hash.substring(1));
-  var currentPageS = stream.once(initialIndex || 0);
+  var initialPage = window.location.hash && window.location.hash.substring(1);
+  var currentPageS = stream.once(initialPage);
   $(window).on('hashchange', function () {
-    var index = window.location.hash && parseInt(window.location.hash.substring(1));
-    stream.push(currentPageS, index);
+    var page = window.location.hash && window.location.hash.substring(1);
+    stream.push(currentPageS, page);
+  });
+  var currentPageIndexS = stream.map(currentPageS, function (currentPage) {
+    var index = pages.findIndex(function (page) {
+      return page.name === currentPage;
+    });
+    if (index === -1) {
+      index = 0;
+    }
+    return index;
   });
 
   stream.map(currentPageS, function (index) {
@@ -2906,9 +2930,9 @@ $(function () {
     ])(stack(pages.map(function (p, i) {
       return c.all([
         c.margin(2),
-        c.linkTo(window.location.origin + window.location.pathname + '#' + i),
+        c.linkTo(window.location.origin + window.location.pathname + '#' + p.name),
         c.backgroundColor({
-          background: stream.map(currentPageS, function (index) {
+          background: stream.map(currentPageIndexS, function (index) {
             return index === i ? color.lightGray : color.lighterGray;
           }),
           backgroundHover: color.lightGray,
@@ -2923,7 +2947,7 @@ $(function () {
       background: color.lighterGray,
       font: color.notBlack,
     }),
-  ])(c.componentStream(stream.map(currentPageS, function (index) {
+  ])(c.componentStream(stream.map(currentPageIndexS, function (index) {
     var page = pages[index];
     return c.basicFloat({
       padding: 10,
