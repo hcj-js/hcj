@@ -806,7 +806,7 @@
         el.style.overflow = 'hidden';
         var i = buildLayout.apply(null, [el, ctx].concat(layoutRecurse(childInstances, el, ctx, args)));
         return {
-          el: i.el,
+          el: el,
           minWidth: i.minWidth,
           minHeight: i.minHeight,
           remove: function () {
