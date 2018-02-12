@@ -2229,7 +2229,7 @@
   var sideBySide = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
+    config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
     return layout(function (el, ctx, cs) {
       el.classList.add('sideBySide');
       if (cs.length === 0) {
@@ -2549,7 +2549,7 @@
   var stack = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.collapsePadding = config.collapsePadding || false;
     config.transition = config.transition || 0;
     return layout(function (el, ctx, cs) {
@@ -2626,7 +2626,7 @@
   var stackStream = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.transition = config.transition || 0;
     return function (actionS) {
       return container(function (el, ctx, append) {
@@ -3672,8 +3672,8 @@
   var grid = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
-    config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
+    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.rowHeight = config.rowHeight || useMaxHeight;
     config.maxPerRow = config.maxPerRow || 0;
     config.rowOrColumn = config.rowOrColumn || false;

@@ -2307,7 +2307,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var sideBySide = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
+    config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
     return layout(function (el, ctx, cs) {
       el.classList.add('sideBySide');
       if (cs.length === 0) {
@@ -2627,7 +2627,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var stack = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.collapsePadding = config.collapsePadding || false;
     config.transition = config.transition || 0;
     return layout(function (el, ctx, cs) {
@@ -2704,7 +2704,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var stackStream = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.transition = config.transition || 0;
     return function (actionS) {
       return container(function (el, ctx, append) {
@@ -3750,8 +3750,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var grid = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    config.surplusWidthFunc = config.surplusWidthFunc || ignoreSurplusWidth;
-    config.surplusHeightFunc = config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
+    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.rowHeight = config.rowHeight || useMaxHeight;
     config.maxPerRow = config.maxPerRow || 0;
     config.rowOrColumn = config.rowOrColumn || false;
