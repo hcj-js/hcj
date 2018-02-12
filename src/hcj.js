@@ -2849,6 +2849,7 @@
     }
     return layout(function (el, ctx, c) {
       el.classList.add('margin');
+      el.style.pointerEvents = 'initial';
       var i = c({
         top: stream.once(top),
         left: stream.once(left),
@@ -3173,6 +3174,7 @@
 
     var borderLayout = layout(function (el, ctx, c) {
       el.classList.add('border');
+      el.style.pointerEvents = 'initial';
       // overflow hidden is necessary to prevent cutting off corners
       // of border if there is a border radius
       var i = c();
