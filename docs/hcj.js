@@ -718,6 +718,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
     var instance = {
       el: el,
+      transitions: {},
     };
     var buildResult = build(el, context, function (config) {
       var w = measureWidth(el, config);
@@ -797,6 +798,26 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var select = curryComponent('select');
   var textarea = curryComponent('textarea');
   var ul = curryComponent('ul');
+
+  // Sets a CSS property transition on an instance.
+  var transition = function (i, prop, transition) {
+    if (transition) {
+      i.transitions[prop] = transition;
+    }
+    else {
+      delete i.transitions[prop];
+    }
+    var transitionString = '';
+    for (var p in i.transitions) {
+      if (i.transitions.hasOwnProperty(p)) {
+        if (transitionString) {
+          transitionString += ', ';
+        }
+        transitionString += p + ' ' + i.transitions[p];
+      }
+    }
+    i.el.style.transition = transitionString;
+  };
 
   var _scrollbarWidth = function () {
     var parent = document.createElement('div');
@@ -2165,7 +2186,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var moveSlideshow = function (positions, selectedIndex, teleport, cb) {
         positions.map(function (position, index) {
           var ctx = contexts[index];
-          is[index].el.style.transition = position.warp ? '' : 'left ease ' + config.transitionTime + 's';
+          transition(is[index], 'left', position.warp ? '' : 'ease ' + config.transitionTime + 's');
           stream.push(ctx.left, position.left);
         });
         cb && setTimeout(function () {
@@ -2389,7 +2410,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         top: stream.create(),
       };
       var i = c(context);
-      i.el.style.transition = 'top ' + config.transition;
+      transition(i, 'top', config.transition);
       var pushed = false;
       stream.push(context.top, config.top);
       stream.combine([
@@ -2421,7 +2442,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var pushed = false;
       i.el.style.opacity = 0;
       setTimeout(function () {
-        i.el.style.transition = 'opacity ' + config.transition;
+        transition(i, 'opacity ', config.transition);
       });
       stream.combine([
         ctx.top,
@@ -2528,13 +2549,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
         ev.preventDefault();
         stream.push(grabbedS, 0);
         is.map(function (i) {
-          i.el.style.transition = 'left 0s';
+          transition(i, 'left', '0s');
         });
       });
 
       var release = function (ev) {
         is.map(function (i) {
-          i.el.style.transition = 'left ' + config.leftTransition;
+          transition(i, 'left ', config.leftTransition);
         });
         var mws = allMinWidths.lastValue;
         var width = ctx.width.lastValue;
@@ -2649,9 +2670,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         return c(context);
       });
       if (config.transition) {
-        var transition = config.transition + 's';
         is.map(function (i) {
-          i.el.style.transition = 'height ' + transition + ', top ' + transition;
+          transition(i, 'height', config.transition + 's');
+          transition(i, 'top', config.transition + 's');
         });
       }
       var allMinWidths = mapMinWidths(is);
@@ -3414,11 +3435,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
 
   var modalDialog = function (c) {
-    return function (s, transition) {
+    return function (s, transitionTime) {
       var open = stream.once(false);
       stream.pushAll(s, open);
 
-      transition = transition || 0;
+      transitionTime = transitionTime || 0;
 
       return layout(function (el, context, c) {
         el.classList.add('modalDialog');
@@ -3436,8 +3457,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         el.style.zIndex = 100;
         document.body.appendChild(el);
         el.style.position = 'fixed';
-        var elStyle = getComputedStyle(el);
-        el.style.transition = elStyle.transition + ', opacity ' + transition + 's';
+        transition(i, 'opacity', transitionTime + 's');
         el.style.display = 'none';
         el.style.pointerEvents = 'initial'; // TODO: is this necessary?
 
@@ -3452,7 +3472,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
             el.style.opacity = 0;
             setTimeout(function () {
               el.style.display = 'none';
-            }, transition * 1000);
+            }, transitionTime * 1000);
           }
         });
 
@@ -3518,7 +3538,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         stream.pushAll(context.height, config.panelHeightS);
       }
       var i = panel(context);
-      i.el.style.transition = 'top ' + config.transition;
+      transition(i, 'top ', config.transition);
       i.el.style.zIndex = 1000;
       return i;
     })(panel));
@@ -3575,7 +3595,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           return on ? 0 : w;
         }),
       });
-      i.el.style.transition = 'left ' + config.transition;
+      transition(i, 'left ', config.transition);
       i.el.style.zIndex = 1000;
       return i;
     })(panel));
@@ -3611,8 +3631,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       headerI.el.style.position = 'fixed';
 
       setTimeout(function () {
-        headerI.el.style.transition = 'height ' + config.transition;
-        bodyI.el.style.transition = 'top ' + config.transition;
+        transition(headerI, 'height', config.transition);
+        transition(bodyI, 'top', config.transition);
       });
 
       return {
@@ -5273,6 +5293,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       routeToFirst: routeToFirst,
     },
     stream: stream,
+    transition: transition,
     unit: {
       px: px,
     },
