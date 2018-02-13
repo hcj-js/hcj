@@ -5259,6 +5259,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     funcs: {
       constant: constant,
+      extend: extend,
       id: id,
       rowHeight: {
         useMaxHeight: useMaxHeight,

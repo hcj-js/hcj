@@ -5181,6 +5181,7 @@
     },
     funcs: {
       constant: constant,
+      extend: extend,
       id: id,
       rowHeight: {
         useMaxHeight: useMaxHeight,
