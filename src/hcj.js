@@ -1,4 +1,7 @@
 (function () {
+  var deprecate = function (message) {
+    console.warn('Deprecated: ' + message);
+  };
   var uncurryConfig = function (f, valueIsNotConfig) {
     valueIsNotConfig = valueIsNotConfig || function (obj) {
       return Array.isArray(obj) || typeof(obj) === 'function';
@@ -1238,6 +1241,7 @@
         stream.isStream(s.font) ||
         stream.isStream(s.backgroundHover) ||
         stream.isStream(s.fontHover)) {
+      deprecate("BackgroundColorConfig 'background', 'font', 'backgroundHover', and 'fontHover' properties as streams.  Your BackgroundColorConfig must instead be a stream of objects.");
       if (s.background && !stream.isStream(s.background)) {
         s.background = stream.once(s.background);
       }
