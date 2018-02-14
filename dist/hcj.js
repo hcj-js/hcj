@@ -1020,7 +1020,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       top: onceZeroS,
       left: onceZeroS,
     });
-    i.el.style.position = 'relative';
+    i.el.style.position = 'absolute';
     i.el.style.top = '0px';
     i.el.style.left = '0px';
     i.el.classList.add('root-component');
