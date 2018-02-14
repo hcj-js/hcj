@@ -1523,6 +1523,9 @@
       if (!Array.isArray(strs)) {
         strs = [strs];
       }
+      if (config2) {
+        deprecate('hcj.component.text taking TextConfig second.  TextConfig is now an optional first argument.');
+      }
       config = config || config2 || {};
       if (Array.isArray(config)) {
         config = config.reduce(extend, {});
