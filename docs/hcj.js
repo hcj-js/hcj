@@ -847,17 +847,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
   var layoutAppend = function (childInstances, el, context, c, ctx, noRemove) {
     ctx = ctx || {};
-    var childWidth = ctx.width || context.width;
-    var childHeight = ctx.height || context.height;
-    var childTop = ctx.top || onceZeroS;
-    var childLeft = ctx.left || onceZeroS;
-    var i = c({
-      el: ctx.el || el,
-      width: childWidth,
-      height: childHeight,
-      top: stream.combine([childTop, context.top], add),
-      left: stream.combine([childLeft, context.left], add),
-    });
+    ctx.el = ctx.el || el;
+    ctx.width = ctx.width || context.width;
+    ctx.height = ctx.height || context.height;
+    ctx.top = ctx.top || onceZeroS;
+    ctx.left = ctx.left || onceZeroS;
+    var i = c(ctx);
     if (noRemove !== true) {
       childInstances.push(i);
     }
@@ -867,16 +862,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
       debugger;
     }
     i.el.style.position = 'absolute';
-    stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(childWidth), function (w) {
+    stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
       updateDomStyle(i.el, 'width', w);
     });
-    stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(childHeight), function (h) {
+    stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
       updateDomStyle(i.el, 'height', h);
     });
-    stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(childTop), function (t) {
+    stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
       updateDomStyle(i.el, 'top', t);
     });
-    stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(childLeft), function (l) {
+    stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
       updateDomStyle(i.el, 'left', l);
     });
     return i;
@@ -1357,9 +1352,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         fcHover = colors.fontHover || fc;
         transition(i, 'background-color', (colors.backgroundTransition || colors.transition || 0) + 's');
         transition(i, 'color', (colors.fontTransition || colors.transition || 0) + 's');
-        setTimeout(function () {
-          applyColors();
-        });
+        applyColors();
       });
       i.el.addEventListener('mouseover', function () {
         hoverState = true;
