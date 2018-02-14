@@ -1023,7 +1023,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     i.el.style.position = 'relative';
     i.el.style.top = '0px';
     i.el.style.left = '0px';
-    i.el.style.backgroundColor = config.noBackground ? '' : 'white';
     i.el.classList.add('root-component');
     i.el.classList.add('root-component-' + countComponentsRendered);
     countComponentsRendered += 1;
