@@ -1277,7 +1277,11 @@
         fc = colors.font;
         bcHover = colors.backgroundHover || bc;
         fcHover = colors.fontHover || fc;
-        applyColors();
+        transition(i, 'background-color', (colors.backgroundTransition || colors.transition || 0) + 's');
+        transition(i, 'color', (colors.fontTransition || colors.transition || 0) + 's');
+        setTimeout(function () {
+          applyColors();
+         });
       });
       i.el.addEventListener('mouseover', function () {
         hoverState = true;
