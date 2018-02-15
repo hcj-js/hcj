@@ -822,7 +822,6 @@
         var childInstances = [];
         el.style.position = 'absolute';
         el.style.pointerEvents = 'none';
-        el.style.overflow = 'hidden';
         var i = buildLayout.apply(null, [el, ctx].concat(layoutRecurse(childInstances, el, ctx, args)));
         return {
           el: el,
@@ -846,7 +845,6 @@
       var childInstances = [];
       el.style.position = 'absolute';
       el.style.pointerEvents = 'none';
-      el.style.overflow = 'hidden';
       var i = buildContainer(el, context, function (c, ctx, noRemove) {
         return layoutAppend(childInstances, el, context, c, ctx, noRemove);
       });
@@ -3432,7 +3430,6 @@
     config.transition = config.transition || "0.5s";
     return layout(function (el, ctx, source, panel) {
       el.classList.add('dropdown-panel');
-      el.style.overflow = 'visible';
       var panelCtx = {
         height: stream.create(),
         top: stream.create(),
@@ -3475,9 +3472,6 @@
     config.transition = config.transition || "0.5s";
     return layout(function (el, ctx, source, panel) {
       el.classList.add('side-sliding-panel');
-      setTimeout(function () {
-        el.style.overflow = 'visible';
-      });
       var panelCtx = {
         width: stream.create(),
         height: stream.create(),
