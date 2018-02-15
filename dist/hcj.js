@@ -3505,7 +3505,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
   var dropdownPanel = function (source, panel, onOffS, config) {
     config = config || {};
-    config.transition = config.transition || "0.5s";
+    config.transition = config.transition || 0;
     return layout(function (el, ctx, source, panel) {
       el.classList.add('dropdown-panel');
       var panelCtx = {
@@ -3538,7 +3538,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         stream.pushAll(context.height, config.panelHeightS);
       }
       var i = panel(context);
-      transition(i, 'top ', config.transition);
+      transition(i, 'top ', config.transition + 's');
       return i;
     })(panel));
   };
@@ -3546,7 +3546,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   // generally for headers
   var sideSlidingPanel = function (source, panel, onOffS, config) {
     config = config || {};
-    config.transition = config.transition || "0.5s";
+    config.transition = config.transition || 0;
     return layout(function (el, ctx, source, panel) {
       el.classList.add('side-sliding-panel');
       var panelCtx = {
@@ -3591,7 +3591,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           return on ? 0 : w;
         }),
       });
-      transition(i, 'left ', config.transition);
+      transition(i, 'left ', config.transition + 's');
       return i;
     })(panel));
   };
