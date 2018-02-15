@@ -3539,7 +3539,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       }
       var i = panel(context);
       transition(i, 'top ', config.transition);
-      i.el.style.zIndex = 1000;
       return i;
     })(panel));
   };
@@ -3556,8 +3555,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         left: stream.create(),
         top: stream.create(),
       };
-      var panelI = panel(panelCtx);
       var sourceI = source();
+      var panelI = panel(panelCtx);
       useMinWidth(panelCtx, panelI);
       stream.combineInto([
         ctx.height,
@@ -3593,7 +3592,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         }),
       });
       transition(i, 'left ', config.transition);
-      i.el.style.zIndex = 1000;
       return i;
     })(panel));
   };
@@ -3605,14 +3603,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var headerHeightS = stream.create();
       var bodyHeightS = stream.create();
 
-      var headerI = headerC({
-        width: ctx.width,
-        height: headerHeightS,
-      });
       var bodyI = bodyC({
         top: headerHeightS,
         width: ctx.width,
         height: bodyHeightS,
+      });
+      var headerI = headerC({
+        width: ctx.width,
+        height: headerHeightS,
       });
 
       stream.combine([
