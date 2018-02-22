@@ -1522,7 +1522,7 @@
         strs = [strs];
       }
       if (config2) {
-        deprecate('hcj.component.text taking TextConfig second.  TextConfig is now an optional first argument.');
+        deprecate('hcj.component.text taking TextConfig second.  Optional TextConfig is now the first argument.');
       }
       config = config || config2 || {};
       if (Array.isArray(config)) {
