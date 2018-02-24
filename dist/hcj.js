@@ -3598,7 +3598,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
   var fixedHeaderBody = uncurryConfig(function (config) {
     config = config || {};
-    config.transition = config.transition || "0.5s";
+    config.transition = config.transition || "0s";
     return layout(function (el, ctx, headerC, bodyC) {
       var headerHeightS = stream.create();
       var bodyHeightS = stream.create();
