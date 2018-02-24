@@ -2329,6 +2329,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var sideBySide = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
+    if (config.surplusWidthFunc) {
+      deprecate('surplusWidthFunc property of SideBySideConfig.  Now called surplusWidth.')
+    }
     config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
     return layout(function (el, ctx, cs) {
       el.classList.add('sideBySide');
@@ -2649,6 +2652,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var stack = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
+    if (config.surplusHeightFunc) {
+      deprecate('surplusHeightFunc property of StackConfig.  Now called surplusHeight.')
+    }
     config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.collapsePadding = config.collapsePadding || false;
     config.transition = config.transition || 0;
@@ -2726,6 +2732,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var stackStream = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
+    if (config.surplusHeightFunc) {
+      deprecate('surplusHeightFunc property of StackStreamConfig.  Now called surplusHeight.')
+    }
     config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.transition = config.transition || 0;
     return function (actionS) {
@@ -3765,7 +3774,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var grid = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
+    if (config.surplusWidthFunc) {
+      deprecate('surplusWidthFunc property of GridConfig.  Now called surplusWidth.')
+    }
     config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
+    if (config.surplusHeightFunc) {
+      deprecate('surplusHeightFunc property of GridConfig.  Now called surplusHeight.')
+    }
     config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.rowHeight = config.rowHeight || useMaxHeight;
     config.maxPerRow = config.maxPerRow || 0;
