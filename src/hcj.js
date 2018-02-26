@@ -4134,14 +4134,11 @@
       var allMinHeights = mapMinHeights(is);
       var chooseIndex = function (w, mws) {
         var index = mws.reduce(function (a, mw, index) {
-          return (mw <= w) && (a === null || mw > a.mw) ? {
+          return (a === null || a.mw > w && a.mw > mw || a.mw < mw && mw < w) ? {
             mw: mw,
             index: index,
           } : a;
         }, null).index;
-        if (index === null) {
-          console.log('none small enough, TODO: use smallest');
-        }
         return index;
       };
       stream.combine([
