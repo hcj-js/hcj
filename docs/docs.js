@@ -3050,18 +3050,23 @@
     }],
   }];
   var darkPurple = hcj.color.color({
+    r: 70,
+    g: 0,
+    b: 70,
+  });
+  var darkPurpleHover = hcj.color.color({
     r: 100,
     g: 0,
     b: 100,
   });
-  var darkPurpleHover = hcj.color.color({
-    r: 150,
-    g: 0,
-    b: 150,
-  });
   var white = hcj.color.color({
     r: 255,
     g: 255,
+    b: 255,
+  });
+  var notWhite = hcj.color.color({
+    r: 255,
+    g: 250,
     b: 255,
   });
   var headerText = function (str) {
@@ -3129,6 +3134,7 @@
           stream.push(onOffSs[j], false);
         }
       }),
+      c.backgroundColor(notWhite),
     ])(c.fixedHeaderBody(header, c.all([
       c.padding(20),
     ])(docStack(pages[page]()))));
