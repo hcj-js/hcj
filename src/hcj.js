@@ -3455,6 +3455,9 @@
   var dropdownPanel = function (source, panel, onOffS, config) {
     config = config || {};
     config.transition = config.transition || 0;
+    if (!source || !panel || !onOffS) {
+      console.error('dropdownPanel requires 3 arguments');
+    }
     return layout(function (el, ctx, source, panel) {
       el.classList.add('dropdown-panel');
       var panelCtx = {
