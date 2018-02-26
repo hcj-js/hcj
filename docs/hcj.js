@@ -3521,6 +3521,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var toggleHeight = function (open) {
     return layout(function (el, ctx, c) {
       el.classList.add('toggle-height');
+      el.style.overflow = 'hidden';
       var i = c();
       return {
         minWidth: i.minWidth,
