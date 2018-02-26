@@ -447,6 +447,7 @@
     updateWindowWidth();
     updateWindowHeight();
   });
+  var windowWidthMinusScrollbar = stream.create();
 
   var windowScroll = stream.create(true);
   window.addEventListener('scroll', function () {
@@ -947,6 +948,7 @@
         document.body.style.overflowY = 'initial';
       }
       stream.push(width, componentMinWidth);
+      stream.push(windowWidthMinusScrollbar, componentMinWidth);
       stream.push(height, Math.max(wh, componentMinHeight));
     });
     var i = rootLayout(c)({
@@ -5247,9 +5249,10 @@
       px: px,
     },
     viewport: {
+      fullWidthS: windowWidth,
       heightS: windowHeight,
       scrollS: windowScroll,
-      widthS: windowWidth,
+      widthS: windowWidthMinusScrollbar,
     },
   };
 

@@ -1263,14 +1263,15 @@ $(function () {
       h1('Defined Streams'),
       p('HCJ defines some streams that may be useful in application code.  These streams are all properties of the `hcj.viewport` object.'),
 
-      h2('WindowHeight'),
-      p('`hcj.viewport.windowHeight` gives the current height of the window in pixels.'),
+      h2('Height'),
+      p('`hcj.viewport.heightS` gives the current height of the window in pixels.'),
 
-      h2('WindowScroll'),
-      p('`hcj.viewport.windowScroll` gives the current Y scroll position.'),
+      h2('Scroll'),
+      p('`hcj.viewport.scrollS` gives the current Y scroll position.'),
 
-      h2('WindowWidth'),
-      p('`hcj.viewport.windowWidth` gives the width of the window in pixels.  This number includes any scrollbars that may be present; it is not checked whether there is a scrollbar.'),
+      h2('Width and FullWidth'),
+      p('`hcj.viewport.widthS` gives the width of the window in pixels, minus the width of the vertical scrollbar if present.'),
+      p('`hcj.viewport.fullWidthS` gives the full width of the window in pixels, including the vertical scrollbar if present.'),
     ];
   };
 

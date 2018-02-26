@@ -525,6 +525,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     updateWindowWidth();
     updateWindowHeight();
   });
+  var windowWidthMinusScrollbar = stream.create();
 
   var windowScroll = stream.create(true);
   window.addEventListener('scroll', function () {
@@ -852,7 +853,23 @@ function waitForWebfonts(fonts, callback, maxTime) {
     ctx.height = ctx.height || context.height;
     ctx.top = ctx.top || onceZeroS;
     ctx.left = ctx.left || onceZeroS;
-    var i = c(ctx);
+    var i = c({
+      el: ctx.el,
+      width: ctx.width,
+      height: ctx.height,
+      top: stream.combine([
+        context.top,
+        ctx.top,
+      ], function (t1, t2) {
+        return t1 + t2;
+      }),
+      left: stream.combine([
+        context.left,
+        ctx.left,
+      ], function (l1, l2) {
+        return l1 + l2;
+      }),
+    });
     if (noRemove !== true) {
       childInstances.push(i);
     }
@@ -1009,6 +1026,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         document.body.style.overflowY = 'initial';
       }
       stream.push(width, componentMinWidth);
+      stream.push(windowWidthMinusScrollbar, componentMinWidth);
       stream.push(height, Math.max(wh, componentMinHeight));
     });
     var i = rootLayout(c)({
@@ -5309,9 +5327,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
       px: px,
     },
     viewport: {
+      fullWidthS: windowWidth,
       heightS: windowHeight,
       scrollS: windowScroll,
-      widthS: windowWidth,
+      widthS: windowWidthMinusScrollbar,
     },
   };
 
