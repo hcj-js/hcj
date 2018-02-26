@@ -1,6 +1,8 @@
 $(function () {
   var hcj = window.hcj;
 
+  var id = hcj.funcs.id;
+
   var c = hcj.component;
   var casesplit = hcj.casesplit;
   var el = hcj.element;
@@ -14,6 +16,155 @@ $(function () {
   var docStack2 = c.stack({
     padding: 10,
   });
+
+
+  var mapMinWidths = function (is) {
+    return stream.all(is.map(function (i) {
+      return i.minWidth;
+    }));
+  };
+  var mapMinHeights = function (is) {
+    return stream.all(is.map(function (i) {
+      return i.minHeight;
+    }));
+  };
+  var useMinHeight = function (ctx, i) {
+    return stream.combineInto([
+      ctx.width,
+      i.minHeight,
+    ], function (w, mh) {
+      return mh(w);
+    }, ctx.height);
+  };
+  var dropdownPanels = function (items, config) {
+    config = config || {};
+    config.transition = config.transition || 0;
+    config.align = config.align || 'left';
+    var sources = items.map(function (item) {
+      return item.source;
+    });
+    var panels = items.map(function (item) {
+      return item.panel;
+    });
+    return c.layout(function (el, ctx, sources, panels) {
+      el.classList.add('dropdown-panels');
+      var panelCtxs = [];
+      var sourceCtxs = [];
+      var panelIs = [];
+      var sourceIs = [];
+      for (var i = 0; i < panels.length; i++) {
+        var panelCtx = {
+          top: stream.create(),
+          height: stream.create(),
+          left: stream.create(),
+        };
+        var sourceCtx = {
+          left: stream.create(),
+        };
+        panelCtxs.push(panelCtx);
+        sourceCtxs.push(sourceCtx);
+        var panelI = panels[i](panelCtx);
+        var sourceI = sources[i](sourceCtx);
+        useMinHeight(panelCtx, panelI);
+        stream.pushAll(ctx.height, panelCtx.top);
+        panelIs.push(panelI);
+        sourceIs.push(sourceI);
+      }
+      var panelMinWidths = mapMinWidths(panelIs);
+      var panelMinHeights = mapMinHeights(panelIs);
+      var sourceMinWidths = mapMinWidths(sourceIs);
+      var sourceMinHeights = mapMinHeights(sourceIs);
+      var loopStart;
+      var loopInc;
+      switch (config.align) {
+      case 'left':
+        loopStart = 0;
+        loopInc = 1;
+        break;
+      case 'right':
+        loopStart = items.length - 1;
+        loopInc = -1;
+        break;
+      }
+      stream.combine([
+        ctx.width,
+        ctx.left,
+        hcj.viewport.widthS,
+        sourceMinWidths,
+        panelMinWidths,
+      ], function (w, lo, ww, sourceMWs, panelMWs) {
+        var left;
+        switch (config.align) {
+        case 'left':
+          left = 0;
+          break;
+        case 'right':
+          left = w;
+          break;
+        }
+        for (var i = loopStart; i >= 0 && i < items.length; i += loopInc) {
+          switch (config.align) {
+          case 'left':
+            stream.push(sourceCtxs[i].left, left);
+            if (lo + left + panelMWs[i] <= ww) {
+              stream.push(panelCtxs[i].left, left);
+            }
+            else {
+              stream.push(panelCtxs[i].left, ww - lo - panelMWs[i]);
+            }
+            left += sourceMWs[i];
+            break;
+          case 'right':
+            stream.push(sourceCtxs[i].left, left - sourceMWs[i]);
+            if (lo + left >= panelMWs[i]) {
+              stream.push(panelCtxs[i].left, left - panelMWs[i]);
+            }
+            else {
+              stream.push(panelCtxs[i].left, -lo);
+            }
+            left -= sourceMWs[i];
+            break;
+          }
+        }
+      });
+      return {
+        minWidth: stream.combine([
+          sourceMinWidths,
+        ], function (mws) {
+          return mws.reduce(function (a, mw) {
+            return a + mw;
+          }, 0);
+        }),
+        minHeight: stream.combine([
+          sourceMinHeights,
+        ], function (mhs) {
+          return function (w) {
+            return mhs.reduce(function (a, mh) {
+              return Math.max(a, mh(w));
+            }, 0);
+          };
+        }),
+      };
+    })(sources, panels.map(function (panel, idx) {
+      return c.layout(function (el, ctx, panel) {
+        el.style.overflow = 'hidden';
+        var context = {
+          top: stream.combine([
+            items[idx].onOffS,
+            ctx.height,
+          ], function (on, h) {
+            return on ? 0 : -h;
+          })
+        };
+        if (config.panelHeightS) {
+          stream.pushAll(context.height, config.panelHeightS);
+        }
+        var i = panel(context);
+        hcj.transition(i, 'top ', config.transition + 's');
+        return i;
+      })(panel);
+    }));
+  };
 
   var color = {
     lightGray: hcj.color.create({
@@ -225,7 +376,7 @@ $(function () {
 
   var aLittleVocab = function () {
     return [
-      p("The building block of the HCJ framework is the `component`.  Components can be rendered as web pages, or combined together to create new components."),
+      p("The basic building block of the HCJ framework is the `component`.  Components can be rendered as web pages, or combined together to create new components."),
       p("A `component` is any function taking a `context` and returning an `instance`.  To `render` a component is to pass it a context."),
       p("Additionally, in HCJ terminology, a `layout` is a function that takes one or more components, and returns a new component.  A `style` is a function that takes exactly one component and returns a component.  Therefore, all styles are layouts."),
       docStack2([
@@ -2827,139 +2978,159 @@ $(function () {
     ];
   };
 
-  var pages = [{
-    name: 'home',
-    title: "Home",
-    components: introduction,
+  var pages = {
+    home: introduction,
+    helloWorld: renderingComponents,
+    introduction: aLittleVocab,
+    apiComponents: standardLibraryComponents,
+    apiLayouts: standardLibraryLayouts,
+    apiStyles: standardLibraryComponentModifiers,
+    apiForms: standardLibraryForms,
+    apiFormsExamples: standardLibraryFormExamples,
+    apiFormFor: standardLibraryFormFor,
+    apiColors: standardLibraryColors,
+    apiStreams: standardLibraryStreams,
+    apiExamples: testPage,
+    definingComponents: definingComponents,
+    definingLayouts: definingLayouts,
+    community: support,
+  };
+
+  var logoC = c.all([
+    c.keepAspectRatio({
+      left: true,
+    }),
+    c.minWidth(0),
+    c.minHeight(0),
+    c.padding({
+      all: 10,
+    }),
+  ])(c.image({
+    src: './demo.png',
+    alt: 'HCJ Logo',
+  }));
+  var links = [{
+    name: 'Home',
+    href: '.',
   }, {
-    name: 'hello-world',
-    title: 'Hello World',
-    components: renderingComponents,
+    name: 'Tutorial',
+    items: [{
+      name: '0. Introduction',
+      href: 'introduction.html',
+    }, {
+      name: '1. Hello World',
+      href: 'helloWorld.html',
+    }],
   }, {
-    name: 'introduction',
-    title: 'Introduction',
-    components: aLittleVocab,
+    name: 'Examples',
+    href: 'apiExamples.html',
   }, {
-    name: 'api-components',
-    title: 'API - Components',
-    components: standardLibraryComponents,
-  }, {
-    name: 'api-layouts',
-    title: 'API - Layouts',
-    components: standardLibraryLayouts,
-  }, {
-    name: 'api-styles',
-    title: 'API - Styles',
-    components: standardLibraryComponentModifiers,
-  }, {
-    name: 'api-forms',
-    title: 'API - Forms',
-    components: standardLibraryForms,
-  }, {
-    name: 'api-forms-examples',
-    title: 'API - Forms Examples',
-    components: standardLibraryFormExamples,
-  }, {
-    name: 'api-formfor',
-    title: 'API - FormFor',
-    components: standardLibraryFormFor,
-  }, {
-    name: 'api-colors',
-    title: 'API - Colors',
-    components: standardLibraryColors,
-  }, {
-    name: 'api-streams',
-    title: 'API - Streams',
-    components: standardLibraryStreams,
-  }, {
-    name: 'api-examples',
-    title: 'Examples',
-    components: testPage,
-  }, {
-    name: 'api-defining-components',
-    title: 'Defining Components',
-    components: definingComponents,
-  }, {
-    name: 'api-defining-layouts',
-    title: 'Defining Layouts',
-    components: definingLayouts,
-  }, {
-    name: 'api-community',
-    title: 'Community',
-    components: support,
+    name: 'API',
+    items: [{
+      name: 'Components',
+      href: 'apiComponents.html',
+    }, {
+      name: 'Layouts',
+      href: 'apiLayouts.html',
+    }, {
+      name: 'Styles',
+      href: 'apiStyles.html',
+    }, {
+      name: 'Colors',
+      href: 'apiColors.html',
+    }, {
+      name: 'Streams',
+      href: 'apiStreams.html',
+    }, {
+      name: 'Custom Components',
+      href: 'definingComponents.html',
+    }, {
+      name: 'Custom Layouts',
+      href: 'definingLayouts.html',
+    }],
   }];
-
-  var initialPage = window.location.hash && window.location.hash.substring(1);
-  var currentPageS = stream.once(initialPage);
-  $(window).on('hashchange', function () {
-    var page = window.location.hash && window.location.hash.substring(1);
-    stream.push(currentPageS, page);
+  var darkPurple = hcj.color.color({
+    r: 100,
+    g: 0,
+    b: 100,
   });
-  var currentPageIndexS = stream.map(currentPageS, function (currentPage) {
-    var index = pages.findIndex(function (page) {
-      return page.name === currentPage;
-    });
-    if (index === -1) {
-      index = 0;
-    }
-    return index;
+  var darkPurpleHover = hcj.color.color({
+    r: 150,
+    g: 0,
+    b: 150,
   });
-
-  stream.map(currentPageS, function (index) {
-    window.location.hash = index;
+  var white = hcj.color.color({
+    r: 255,
+    g: 255,
+    b: 255,
   });
-
-  var sidebar = c.all([
-    c.margin(10),
-    c.border(color.lightGray, {
-      right: 1,
-      bottom: 1,
-    }),
-  ])(docStack([
-    c.all([
-      c.alignHLeft,
-    ])(c.image({
-      src: './demo.png',
-      minWidth: 240,
-      alt: 'HCJ Logo',
-    })),
-    c.bar.h(20),
-    c.all([
-      c.and(function (i) {
-        $(i.el).addClass('sidebar');
+  var headerText = function (str) {
+    return c.all([
+      c.padding(20),
+      c.backgroundColor({
+        background: darkPurple,
+        backgroundHover: darkPurpleHover,
       }),
-    ])(stack(pages.map(function (p, i) {
-      return c.all([
-        c.margin(2),
-        c.linkTo(window.location.origin + window.location.pathname + '#' + p.name),
-        c.backgroundColor({
-          background: stream.map(currentPageIndexS, function (index) {
-            return index === i ? color.lightGray : color.lighterGray;
-          }),
-          backgroundHover: color.lightGray,
-        }),
-      ])(c.text(p.title, font.p0));
-    }))),
-  ]));
+    ])(c.text({
+      measureWidth: true,
+      family: 'sans-serif',
+    }, str));
+  };
+  var onOffSs = links.map(function () {
+    return stream.once(false);
+  });
+  var linksWideC = dropdownPanels(links.map(function (link, i) {
+    var linkC = c.all([
+      link.href ? c.linkTo(link.href) : c.link,
+      c.clickThis(function (ev) {
+        for (var j = 0; j < links.length; j++) {
+          if (j === i) {
+            stream.push(onOffSs[j], !onOffSs[j].lastValue);
+          }
+          else {
+            stream.push(onOffSs[j], false);
+          }
+        }
+        ev.stopPropagation();
+      }),
+    ])(headerText(link.name));
+    return {
+      source: linkC,
+      panel: link.items ? c.stack(link.items.map(function (item) {
+        return c.all([
+          c.linkTo(item.href),
+        ])(headerText(item.name));
+      })) : c.nothing,
+      onOffS: onOffSs[i],
+    };
+  }), {
+    align: 'left'
+  });
 
-  var docs = c.all([
-    c.minHeightAtLeast(stream.windowHeight),
+ var header = c.all([
     c.backgroundColor({
-      background: color.lighterGray,
-      font: color.notBlack,
+      background: darkPurple,
+      font: white,
     }),
-  ])(c.componentStream(stream.map(currentPageIndexS, function (index) {
-    var page = pages[index];
-    return c.basicFloat({
-      padding: 10,
-      // clearHanging: true,
-    }, sidebar, [
-      h1m('hcj.js'),
-      pm('v0.3 (development)'),
-      pm('It could be worse.'),
-      h1m(page.title),
-    ].concat(page.components()));
-  })));
+  ])(c.grid({
+    surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(0),
+  }, [
+    logoC,
+    c.all([
+      c.alignVMiddle,
+    ])(linksWideC),
+  ]));
+  var body = c.text('body');
 
-  window.hcj.rootComponent(docs);
-});
+  window.docsPage = function (page) {
+    return c.all([
+      c.clickThis(function () {
+        for (var j = 0; j < links.length; j++) {
+          stream.push(onOffSs[j], false);
+        }
+      }),
+    ])(c.fixedHeaderBody(header, c.all([
+      c.padding(20),
+    ])(docStack(pages[page]()))));
+  };
+})();
