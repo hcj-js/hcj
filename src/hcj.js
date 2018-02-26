@@ -774,7 +774,23 @@
     ctx.height = ctx.height || context.height;
     ctx.top = ctx.top || onceZeroS;
     ctx.left = ctx.left || onceZeroS;
-    var i = c(ctx);
+    var i = c({
+      el: ctx.el,
+      width: ctx.width,
+      height: ctx.height,
+      top: stream.combine([
+        context.top,
+        ctx.top,
+      ], function (t1, t2) {
+        return t1 + t2;
+      }),
+      left: stream.combine([
+        context.left,
+        ctx.left,
+      ], function (l1, l2) {
+        return l1 + l2;
+      }),
+    });
     if (noRemove !== true) {
       childInstances.push(i);
     }
