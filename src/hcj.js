@@ -771,8 +771,14 @@
   var layoutAppend = function (childInstances, el, context, c, ctx, noRemove) {
     ctx = ctx || {};
     ctx.el = ctx.el || el;
-    ctx.width = ctx.width || context.width;
-    ctx.height = ctx.height || context.height;
+    if (!ctx.width) {
+      ctx.widthCalc = stream.once('100%');
+      ctx.width = context.width;
+    }
+    if (!ctx.height) {
+      ctx.heightCalc = stream.once('100%');
+      ctx.height = context.height;
+    }
     ctx.top = ctx.top || onceZeroS;
     ctx.left = ctx.left || onceZeroS;
     var i = c({
