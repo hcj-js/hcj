@@ -28,6 +28,9 @@
       return i.minHeight;
     }));
   };
+  var useMinWidth = function (ctx, i) {
+    return stream.pushAll(i.minWidth, ctx.width);
+  };
   var useMinHeight = function (ctx, i) {
     return stream.combineInto([
       ctx.width,
@@ -57,15 +60,19 @@
           top: stream.create(),
           height: stream.create(),
           left: stream.create(),
+          width: stream.create(),
         };
         var sourceCtx = {
           left: stream.create(),
+          width: stream.create(),
         };
         panelCtxs.push(panelCtx);
         sourceCtxs.push(sourceCtx);
         var panelI = panels[i](panelCtx);
         var sourceI = sources[i](sourceCtx);
+        useMinWidth(panelCtx, panelI);
         useMinHeight(panelCtx, panelI);
+        useMinWidth(sourceCtx, sourceI);
         stream.pushAll(ctx.height, panelCtx.top);
         panelIs.push(panelI);
         sourceIs.push(sourceI);
@@ -3000,7 +3007,7 @@
     c.keepAspectRatio({
       left: true,
     }),
-    c.minWidth(0),
+    c.minWidth(46.5),
     c.minHeight(0),
     c.padding({
       all: 10,
@@ -3111,19 +3118,59 @@
   }), {
     align: 'left'
   });
+  var narrowOnOffS = stream.once(false);
+  var linksNarrowC = c.all([
+  ])(dropdownPanels([{
+    source: c.all([
+      c.clickThis(function (ev) {
+        ev.stopPropagation();
+        stream.push(narrowOnOffS, !narrowOnOffS.lastValue);
+      }),
+    ])(headerText('Menu')),
+    panel: c.stack(links.map(function (link) {
+      if (link.items) {
+        var onOffS = stream.once(false);
+        return c.stack([
+          c.all([
+            c.clickThis(function (ev) {
+              ev.stopPropagation();
+              stream.push(onOffS, !onOffS.lastValue);
+            }),
+            c.link,
+          ])(headerText(link.name)),
+          c.all([
+            c.toggleHeight(onOffS),
+          ])(c.stack(link.items.map(function (item) {
+            return c.all([
+              c.linkTo(item.href),
+            ])(headerText(item.name));
+          }))),
+        ]);
+      }
+      return c.all([
+        c.linkTo(link.href),
+      ])(headerText(link.name));
+    })),
+    onOffS: narrowOnOffS,
+  }]));
 
- var header = c.all([
+  var header = c.all([
     c.backgroundColor({
       background: darkPurple,
       font: white,
     }),
-  ])(c.grid({
-    surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(0),
+  ])(c.sideBySide({
+    surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
   }, [
     logoC,
-    c.all([
-      c.alignVMiddle,
-    ])(linksWideC),
+    c.largestWidthThatFits([
+      c.all([
+        c.alignHRight,
+      ])(linksWideC),
+      c.all([
+        c.alignHRight,
+      ])(linksNarrowC),
+    ]),
   ]));
   var body = c.text('body');
 
@@ -3133,6 +3180,7 @@
         for (var j = 0; j < links.length; j++) {
           stream.push(onOffSs[j], false);
         }
+        stream.push(narrowOnOffS, false);
       }),
       c.backgroundColor(notWhite),
     ])(c.fixedHeaderBody(header, c.all([
