@@ -1,4 +1,4 @@
-$(function () {
+(function () {
   var hcj = window.hcj;
 
   var id = hcj.funcs.id;
@@ -238,7 +238,7 @@ $(function () {
           str: s,
         };
       }
-      return $.extend({
+      return hcj.funcs.extend({
         str: s,
       }, font.code);
     });
