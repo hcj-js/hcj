@@ -4411,6 +4411,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return minHeight(size)(nothing);
     },
   };
+  var barWithDeprecationWarnings = {
+    h: function (size) {
+      deprecate('hcj.component.bar.h: use hcj.component.barH instead');
+      return minWidth(size)(nothing);
+    },
+    v: function (size) {
+      deprecate('hcj.component.bar.v: use hcj.component.barV instead');
+      return minHeight(size)(nothing);
+    },
+  };
   var rectangle = function (size) {
     return all([
       minHeight(size.v || size.x || 0),
@@ -5198,7 +5208,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       all: all,
       and: and,
       backgroundColor: backgroundColor,
-      bar: bar,
+      bar: barWithDeprecationWarnings,
       barH: bar.h,
       barV: bar.v,
       basicFloat: basicFloat,
