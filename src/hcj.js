@@ -1562,130 +1562,6 @@
         var mhS = stream.create();
         var spanStreams = [];
         el.classList.add('text');
-        strs.map(function (c, index) {
-          if (typeof c === 'string') {
-            c = {
-              str: c,
-            };
-            strs[index] = c;
-          }
-          var updateStr = function (str) {
-            if (index === strs.length - 1) {
-              str = str + ' ';
-            }
-            span.innerHTML = str;
-            c.words = str.split(' ');
-          };
-          var span = document.createElement('span');
-          if (stream.isStream(c.str)) {
-            span = document.createElement('span');
-            spanStreams.push(stream.map(c.str, function (x) {
-              updateStr(x);
-            }));
-          }
-          else {
-            span.innerHTML = c.str;
-          }
-          c.size = c.size || config.size;
-          var fontStyle = 'normal';
-          var fontVariant = 'normal';
-          var fontWeight = c.weight || config.weight || 'normal';
-          var fontSize = c.size || config.size || bodyFontSize;
-          var lineHeight = c.lineHeight || config.lineHeight || bodyLineHeight;
-          var fontFamily = c.family || config.family || bodyFontFamily;
-          c.font = [
-            fontStyle,
-            fontVariant,
-            fontWeight,
-            fontSize + '/' + lineHeight,
-            fontFamily,
-          ].join(' ');
-
-          if (c.size) {
-            if (stream.isStream(c.size)) {
-              spanStreams.push(stream.map(c.size, function (x) {
-                span.style.fontSize = x;
-              }));
-            }
-            else {
-              span.style.fontSize = c.size;
-            }
-          }
-          if (c.weight) {
-            if (stream.isStream(c.weight)) {
-              spanStreams.push(stream.map(c.weight, function (x) {
-                span.style.fontWeight = x;
-              }));
-            }
-            else {
-              span.style.fontWeight = c.weight;
-            }
-          }
-          if (c.family) {
-            if (stream.isStream(c.family)) {
-              spanStreams.push(stream.map(c.family, function (x) {
-                span.style.fontFamily = x;
-              }));
-            }
-            else {
-              span.style.fontFamily = c.family;
-            }
-          }
-          if (c.color) {
-            if (stream.isStream(c.color)) {
-              spanStreams.push(stream.map(c.color, function (x) {
-                span.style.color = colorString(x);
-              }));
-            }
-            else {
-              span.style.color = colorString(c.color);
-            }
-          }
-          if (c.shadow) {
-            if (stream.isStream(c.shadow)) {
-              spanStreams.push(stream.map(c.shadow, function (x) {
-                span.style.textShadow = x;
-              }));
-            }
-            else {
-              span.style.textShadow = c.shadow;
-            }
-          }
-          if (c.verticalAlign) {
-            if (stream.isStream(c.verticalAlign)) {
-              spanStreams.push(stream.map(c.verticalAlign, function (x) {
-                span.style.verticalAlign = x;
-              }));
-            }
-            else {
-              span.style.verticalAlign = c.verticalAlign;
-            }
-          }
-          if (c.spanCSS) {
-            c.spanCSS.map(function (css) {
-              span.style[css.name] = css.value;
-            });
-          }
-          if (c.lineHeight) {
-            if (stream.isStream(c.lineHeight)) {
-              spanStreams.push(stream.map(c.lineHeight, function (x) {
-                span.style.lineHeight = x;
-              }));
-            }
-            else {
-              span.style.lineHeight = c.lineHeight;
-            }
-          }
-          if (c.linkTo) {
-            var a = document.createElement('a');
-            a.href = c.linkTo;
-            el.appendChild(a);
-            a.appendChild(span);
-          }
-          else {
-            el.appendChild(span);
-          }
-        });
         var firstPush = true;
         var pushDimensions = function () {
           stream.next(function () {
@@ -1738,6 +1614,140 @@
             firstPush = false;
           });
         };
+        strs.map(function (c, index) {
+          if (typeof c === 'string') {
+            c = {
+              str: c,
+            };
+            strs[index] = c;
+          }
+          var updateStr = function (str) {
+            if (index === strs.length - 1) {
+              str = str + ' ';
+            }
+            span.innerHTML = str;
+            c.words = str.split(' ');
+          };
+          var span = document.createElement('span');
+          if (stream.isStream(c.str)) {
+            span = document.createElement('span');
+            spanStreams.push(stream.map(c.str, function (x) {
+              updateStr(x);
+              pushDimensions();
+            }));
+          }
+          else {
+            span.innerHTML = c.str;
+          }
+          c.size = c.size || config.size;
+          var fontStyle = 'normal';
+          var fontVariant = 'normal';
+          var fontWeight = c.weight || config.weight || 'normal';
+          var fontSize = c.size || config.size || bodyFontSize;
+          var lineHeight = c.lineHeight || config.lineHeight || bodyLineHeight;
+          var fontFamily = c.family || config.family || bodyFontFamily;
+
+          // for measuring span size via html5 canvas:
+          c.font = [
+            fontStyle,
+            fontVariant,
+            fontWeight,
+            fontSize + '/' + lineHeight,
+            fontFamily,
+          ].join(' ');
+
+          if (c.size) {
+            if (stream.isStream(c.size)) {
+              spanStreams.push(stream.map(c.size, function (x) {
+                span.style.fontSize = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.fontSize = c.size;
+            }
+          }
+          if (c.weight) {
+            if (stream.isStream(c.weight)) {
+              spanStreams.push(stream.map(c.weight, function (x) {
+                span.style.fontWeight = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.fontWeight = c.weight;
+            }
+          }
+          if (c.family) {
+            if (stream.isStream(c.family)) {
+              spanStreams.push(stream.map(c.family, function (x) {
+                span.style.fontFamily = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.fontFamily = c.family;
+            }
+          }
+          if (c.color) {
+            if (stream.isStream(c.color)) {
+              spanStreams.push(stream.map(c.color, function (x) {
+                span.style.color = colorString(x);
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.color = colorString(c.color);
+            }
+          }
+          if (c.shadow) {
+            if (stream.isStream(c.shadow)) {
+              spanStreams.push(stream.map(c.shadow, function (x) {
+                span.style.textShadow = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.textShadow = c.shadow;
+            }
+          }
+          if (c.verticalAlign) {
+            if (stream.isStream(c.verticalAlign)) {
+              spanStreams.push(stream.map(c.verticalAlign, function (x) {
+                span.style.verticalAlign = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.verticalAlign = c.verticalAlign;
+            }
+          }
+          if (c.spanCSS) {
+            c.spanCSS.map(function (css) {
+              span.style[css.name] = css.value;
+            });
+          }
+          if (c.lineHeight) {
+            if (stream.isStream(c.lineHeight)) {
+              spanStreams.push(stream.map(c.lineHeight, function (x) {
+                span.style.lineHeight = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.lineHeight = c.lineHeight;
+            }
+          }
+          if (c.linkTo) {
+            var a = document.createElement('a');
+            a.href = c.linkTo;
+            el.appendChild(a);
+            a.appendChild(span);
+          }
+          else {
+            el.appendChild(span);
+          }
+        });
         if (spanStreams.length > 0) {
           stream.combine(spanStreams, function () {
             pushDimensions();
