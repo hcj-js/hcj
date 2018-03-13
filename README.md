@@ -14,6 +14,7 @@ See [hello world example](https://hcj-js.github.io/hcj/index.html#1).
 Latest docs are located at http://hcj-js.org/index.html
 
 v0.3 docs: http://hcj-js.org/docs-0.3/index.html
+
 v0.2 docs: http://hcj-js.org/docs-0.2/index.html
 
 ## Building from Source ##
