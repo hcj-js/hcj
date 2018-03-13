@@ -1,5 +1,5 @@
-# Changes in Latest #
+# Changes in v0.3 #
 
 * Removed hcj.forms
-* Implement significant speed-ups
-* Export and document some new layouts
+* Significant speed-ups
+* New layouts
