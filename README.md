@@ -11,11 +11,11 @@ See [hello world example](https://hcj-js.github.io/hcj/index.html#1).
 
 ## Docs ##
 
-Latest docs are located at http://hcj-js.org/index.html
+Latest docs are located at http://hcj-js.org/
 
-v0.3 docs: http://hcj-js.org/docs-0.3/index.html
+v0.3 docs: http://hcj-js.org/docs-0.3/
 
-v0.2 docs: http://hcj-js.org/docs-0.2/index.html
+v0.2 docs: http://hcj-js.org/docs-0.2/
 
 ## Building from Source ##
 
