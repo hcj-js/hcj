@@ -1132,6 +1132,7 @@
     position = position || {};
     return layout(function (el, ctx, c) {
       ctx = extend({}, ctx, {
+      el.classList.add('adjust-position');
         el: el,
         top: onceZeroS,
         left: onceZeroS,
