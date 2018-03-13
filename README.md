@@ -2,6 +2,8 @@
 
 It could be worse.
 
+http://hcj-js.org/
+
 ## Install ##
 
 `git clone https://github.com/hcj-js/hcj.git`
