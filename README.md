@@ -6,8 +6,9 @@ It could be worse.
 
 `git clone https://github.com/hcj-js/hcj.git`
 
-From the `dist` folder, copy `hcj.css` and `hcj.js` into your project.
-See [hello world example](https://hcj-js.github.io/hcj/index.html#1).
+From the `dist` folder, copy `hcj.css` and `hcj.min.js` into your project.
+
+See [hello world example](http://hcj-js.org/helloWorld.html).
 
 ## Docs ##
 
