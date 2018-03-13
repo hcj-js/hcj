@@ -5056,7 +5056,11 @@
           var label = labels[name];
           var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
           fieldStreams[name] = fieldStream;
-          fieldInputs[name] = style(type, label, name, fieldStream)(formComponent(type, name, fieldStream));
+          fieldInputs[name] = style(type, label, name, fieldStream)(formComponent({
+            type: type,
+            name: name,
+            stream: fieldStream,
+          }));
         });
         var disabledS = stream.once(false);
         var submitComponentF = customSubmitComponentF ? function (name) {
