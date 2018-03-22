@@ -2401,7 +2401,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     if (config.surplusWidthFunc) {
       deprecate('surplusWidthFunc property of SideBySideConfig.  Now called surplusWidth.')
     }
-    config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
+    config.surplusWidth = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
     return layout(function (el, ctx, cs) {
       el.classList.add('sideBySide');
       if (cs.length === 0) {
@@ -2433,7 +2433,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           left += w;
           return position;
         });
-        positions = config.surplusWidthFunc(width, [positions])[0];
+        positions = config.surplusWidth(width, [positions])[0];
         return positions;
       };
       stream.combine([
@@ -2724,7 +2724,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     if (config.surplusHeightFunc) {
       deprecate('surplusHeightFunc property of StackConfig.  Now called surplusHeight.')
     }
-    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeight = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.collapsePadding = config.collapsePadding || false;
     config.transition = config.transition || 0;
     return layout(function (el, ctx, cs) {
@@ -2775,7 +2775,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
           return position;
         });
-        positions = config.surplusHeightFunc(height, positions);
+        positions = config.surplusHeight(height, positions);
         positions.map(function (position, index) {
           var context = contexts[index];
           stream.push(context.top, position.top);
@@ -2804,7 +2804,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     if (config.surplusHeightFunc) {
       deprecate('surplusHeightFunc property of StackStreamConfig.  Now called surplusHeight.')
     }
-    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeight = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.transition = config.transition || 0;
     return function (actionS) {
       return container(function (el, ctx, append) {
@@ -2852,7 +2852,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
             top += minHeight;
             return position;
           });
-          positions = config.surplusHeightFunc(height, positions);
+          positions = config.surplusHeight(height, positions);
           contexts.map(function (context, index) {
             var position = positions[index];
             stream.push(context.top, position.top);
@@ -3850,11 +3850,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
     if (config.surplusWidthFunc) {
       deprecate('surplusWidthFunc property of GridConfig.  Now called surplusWidth.')
     }
-    config.surplusWidthFunc = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
+    config.surplusWidth = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
     if (config.surplusHeightFunc) {
       deprecate('surplusHeightFunc property of GridConfig.  Now called surplusHeight.')
     }
-    config.surplusHeightFunc = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeight = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
     config.rowHeight = config.rowHeight || useMaxHeight;
     config.maxPerRow = config.maxPerRow || 0;
     config.rowOrColumn = config.rowOrColumn || false;
@@ -3959,7 +3959,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var rowCells = rows.map(function (row) {
             return row.cells;
           });
-          config.surplusWidthFunc(gridWidth, rowCells);
+          config.surplusWidth(gridWidth, rowCells);
           rows.map(function (row, i) {
             row.cells = rowCells[i];
           });
@@ -4009,7 +4009,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
             row.top = top;
             top += row.height + config.padding;
           });
-          rows = config.surplusHeightFunc(gridHeight, rows, config);
+          rows = config.surplusHeight(gridHeight, rows, config);
           rows.map(function (row, i) {
             var positions = row.cells.map(function (cell) {
               var position = {
