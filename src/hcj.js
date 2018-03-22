@@ -1680,6 +1680,17 @@
               span.style.fontSize = c.size;
             }
           }
+          if (c.style) {
+            if (stream.isStream(c.style)) {
+              spanStreams.push(stream.map(c.style, function (x) {
+                span.style.fontStyle = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.fontStyle = c.style;
+            }
+          }
           if (c.weight) {
             if (stream.isStream(c.weight)) {
               spanStreams.push(stream.map(c.weight, function (x) {
@@ -1775,6 +1786,17 @@
           }
           else {
             el.style.fontSize = config.size;
+          }
+        }
+        if (config.style) {
+          if (stream.isStream(config.style)) {
+            stream.map(config.style, function (style) {
+              el.style.fontStyle = style;
+              pushDimensions();
+            });
+          }
+          else {
+            el.style.fontStyle = config.style;
           }
         }
         if (config.weight) {

@@ -1209,24 +1209,37 @@ function waitForWebfonts(fonts, callback, maxTime) {
     minSize = minSize || {};
     position = position || {};
     return layout(function (el, ctx, c) {
-      ctx = extend({}, ctx, {
+      el.classList.add('adjust-position');
+      var adjustedCtx = extend({}, ctx, {
         el: el,
         top: onceZeroS,
         left: onceZeroS,
-        width: position.width ? stream.map(ctx.width, function (w) {
-          return position.width(w, el.firstChild);
-        }) : ctx.width,
-        height: position.height ? stream.map(ctx.height, function (h) {
-          return position.height(h, el.firstChild);
-        }) : ctx.height,
-        widthCalc: ctx.widthCalc && (position.widthCalc ? stream.map(ctx.widthCalc, function (wc) {
-          return position.widthCalc(wc, el.firstChild);
-        }) : ctx.widthCalc),
-        heightCalc: ctx.heightCalc && (position.heightCalc ? stream.map(ctx.heightCalc, function (hc) {
-          return position.heightCalc(hc, el.firstChild);
-        }) : ctx.heightCalc),
+        width: position.width ? stream.create() : ctx.width,
+        height: position.height ? stream.create() : ctx.height,
+        widthCalc: ctx.widthCalc && (position.widthCalc ? stream.create() : ctx.widthCalc),
+        heightCalc: ctx.heightCalc && (position.heightCalc ? stream.create() : ctx.heightCalc),
       });
-      var i = c(ctx);
+      var i = c(adjustedCtx);
+      if (position.width) {
+        stream.onValue(ctx.width, function (w) {
+          stream.push(adjustedCtx.width, position.width(w, el.firstChild));
+        });
+      }
+      if (position.height) {
+        stream.onValue(ctx.height, function (h) {
+          stream.push(adjustedCtx.height, position.height(h, el.firstChild));
+        });
+      }
+      if (ctx.widthCalc && position.widthCalc) {
+        stream.onValue(ctx.widthCalc, function (wc) {
+          stream.push(adjustedCtx.widthCalc, position.widthCalc(wc, el.firstChild));
+        });
+      }
+      if (ctx.heightCalc && position.heightCalc) {
+        stream.onValue(ctx.heightCalc, function (hc) {
+          stream.push(adjustedCtx.heightCalc, position.heightCalc(hc, el.firstChild));
+        });
+      }
       return extend({}, i, {
         minWidth: minSize.minWidth ? stream.map(i.minWidth, function (mw) {
           return minSize.minWidth(mw, el.firstChild);
@@ -1745,6 +1758,17 @@ function waitForWebfonts(fonts, callback, maxTime) {
               span.style.fontSize = c.size;
             }
           }
+          if (c.style) {
+            if (stream.isStream(c.style)) {
+              spanStreams.push(stream.map(c.style, function (x) {
+                span.style.fontStyle = x;
+                pushDimensions();
+              }));
+            }
+            else {
+              span.style.fontStyle = c.style;
+            }
+          }
           if (c.weight) {
             if (stream.isStream(c.weight)) {
               spanStreams.push(stream.map(c.weight, function (x) {
@@ -1840,6 +1864,17 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
           else {
             el.style.fontSize = config.size;
+          }
+        }
+        if (config.style) {
+          if (stream.isStream(config.style)) {
+            stream.map(config.style, function (style) {
+              el.style.fontStyle = style;
+              pushDimensions();
+            });
+          }
+          else {
+            el.style.fontStyle = config.style;
           }
         }
         if (config.weight) {
@@ -5134,7 +5169,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var label = labels[name];
           var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
           fieldStreams[name] = fieldStream;
-          fieldInputs[name] = style(type, label, name, fieldStream)(formComponent(type, name, fieldStream));
+          fieldInputs[name] = style(type, label, name, fieldStream)(formComponent({
+            type: type,
+            name: name,
+            stream: fieldStream,
+          }));
         });
         var disabledS = stream.once(false);
         var submitComponentF = customSubmitComponentF ? function (name) {
