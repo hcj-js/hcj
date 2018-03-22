@@ -4342,7 +4342,7 @@
         css('pointer-events', 'initial'),
       ])(stack()([
         sideBySide({
-          surplusWidthFunc: centerSurplusWidth,
+          surplusWidth: centerSurplusWidth,
         })(list.map(function (item, index) {
           return alignTBM()({
             b: all([
