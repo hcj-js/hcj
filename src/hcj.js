@@ -5089,7 +5089,7 @@
           var type = fields[name];
           var defaultValue = defaults[name];
           var label = labels[name];
-          var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
+          var fieldStream = (defaultValue !== undefined) ? stream.once(defaultValue) : stream.create();
           fieldStreams[name] = fieldStream;
           fieldInputs[name] = style(type, label, name, fieldStream)(formComponent({
             type: type,
