@@ -5026,6 +5026,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
   };
   var formComponent = function (def) {
+    if (def.type.type) {
+      deprecate('fieldType type property.  Now use kind property instead.');
+    }
     return formComponentObj[def.type.kind || def.type.type](def);
   };
   for (var key in formComponentObj) {
@@ -5039,22 +5042,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     minWidth(150),
   ]));
   var textInput = constant(all([
-    margin({
-      top: 1,
-      bottom: 1,
-      left: 0,
-      right: 0,
-    }),
-    border(color({
-      r: 0,
-      g: 0,
-      b: 0,
-    }), {
-      top: 2,
-      bottom: 2,
-      left: 2,
-      right: 2,
-    }, 'inset'),
     minWidth(150),
   ]));
   var textareaInput = constant(all([
@@ -5097,6 +5084,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
                 var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
                 var label = labels[name];
                 var type = fields[name];
+                if (type.type) {
+                  deprecate('fieldType type property.  Now use kind property instead.');
+                }
                 var fieldStyle = (type && style[type.kind || type.type]) || constant(id);
                 fieldStreams[name] = fieldStream;
                 fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.kind || type.type]({
@@ -5108,6 +5098,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
               var disabledS = stream.once(false);
               var submit = function (name) {
                 var fieldType = submitButtonFieldTypeF();
+                if (fieldType.type) {
+                  deprecate('fieldType type property.  Now use kind property instead.');
+                }
                 var fieldStyle = style[fieldType.kind || fieldType.type] || constant(id);
                 // TODO: use formComponent[fieldType.type] instead of text
                 return fieldStyle('', stream.create(), fieldType, name)(text({
@@ -5167,7 +5160,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var type = fields[name];
           var defaultValue = defaults[name];
           var label = labels[name];
-          var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
+          var fieldStream = (defaultValue !== undefined) ? stream.once(defaultValue) : stream.create();
           fieldStreams[name] = fieldStream;
           fieldInputs[name] = style(type, label, name, fieldStream)(formComponent({
             type: type,
@@ -5233,16 +5226,22 @@ function waitForWebfonts(fonts, callback, maxTime) {
       adjustPosition: adjustPosition,
       alignH: alignLRM,
       alignHorizontal: alignLRM,
+      alignHL: alignHLeft,
       alignHLeft: alignHLeft,
+      alignHM: alignHMiddle,
       alignHMiddle: alignHMiddle,
+      alignHR: alignHRight,
       alignHRight: alignHRight,
       alignLRM: alignLRM,
       alignMiddle: alignMiddle,
       alignTBM: alignTBM,
       alignV: alignTBM,
+      alignVB: alignVBottom,
       alignVBottom: alignVBottom,
       alignVertical: alignTBM,
+      alignVM: alignVMiddle,
       alignVMiddle: alignVMiddle,
+      alignVT: alignVTop,
       alignVTop: alignVTop,
       all: all,
       and: and,
