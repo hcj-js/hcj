@@ -4948,6 +4948,9 @@
     },
   };
   var formComponent = function (def) {
+    if (def.type.type) {
+      deprecate('fieldType type property.  Now use kind property instead.');
+    }
     return formComponentObj[def.type.kind || def.type.type](def);
   };
   for (var key in formComponentObj) {
@@ -5003,6 +5006,9 @@
                 var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
                 var label = labels[name];
                 var type = fields[name];
+                if (type.type) {
+                  deprecate('fieldType type property.  Now use kind property instead.');
+                }
                 var fieldStyle = (type && style[type.kind || type.type]) || constant(id);
                 fieldStreams[name] = fieldStream;
                 fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.kind || type.type]({
@@ -5014,6 +5020,9 @@
               var disabledS = stream.once(false);
               var submit = function (name) {
                 var fieldType = submitButtonFieldTypeF();
+                if (fieldType.type) {
+                  deprecate('fieldType type property.  Now use kind property instead.');
+                }
                 var fieldStyle = style[fieldType.kind || fieldType.type] || constant(id);
                 // TODO: use formComponent[fieldType.type] instead of text
                 return fieldStyle('', stream.create(), fieldType, name)(text({
