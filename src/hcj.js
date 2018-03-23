@@ -4961,22 +4961,6 @@
     minWidth(150),
   ]));
   var textInput = constant(all([
-    margin({
-      top: 1,
-      bottom: 1,
-      left: 0,
-      right: 0,
-    }),
-    border(color({
-      r: 0,
-      g: 0,
-      b: 0,
-    }), {
-      top: 2,
-      bottom: 2,
-      left: 2,
-      right: 2,
-    }, 'inset'),
     minWidth(150),
   ]));
   var textareaInput = constant(all([
