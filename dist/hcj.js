@@ -3969,9 +3969,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
         // todo: fix interaction of allSameWidth and useFullWidth
         stream.pushAll(stream.map(minWidthsS, function (mws) {
-          return mws.reduce(function (a, mw) {
-            return config.useFullWidth ? a + mw + config.padding : Math.max(a, mw) + config.padding;
-          }, -config.padding);
+          return config.useFullWidth ?
+            mws.reduce(function (a, mw) {
+              return a + mw + config.padding;
+            }, -config.padding) :
+            mws.reduce(function (a, mw) {
+              return Math.max(a, mw);
+            }, 0);
         }), minWidth);
         stream.combineInto([
           minWidthsS,
