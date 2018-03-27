@@ -4989,8 +4989,8 @@
     textarea: textInput,
     time: textInput,
   };
-  var defaultStyle = function (type, label, name, fieldStream) {
-    return formStyle[type.kind](label, name, fieldStream, type);
+  var defaultStyle = function (field) {
+    return formStyle[field.type.kind](field);
   };
 
   var formForOld = function (submitButtonFieldTypeF, formComponent) {
@@ -5074,25 +5074,16 @@
     if (typeof style !== 'function') {
       return formForOld(formComponent, style);
     }
-    return function (mkOnSubmit, fields, labels, defaults) {
-      labels = labels || {};
-      defaults = defaults || {};
-
-      var names = Object.keys(fields);
+    return function (mkOnSubmit, fields) {
       return function (f) {
         var fieldStreams = {};
         var fieldInputs = {};
-        names.map(function (name) {
-          var type = fields[name];
-          var defaultValue = defaults[name];
-          var label = labels[name];
-          var fieldStream = (defaultValue !== undefined) ? stream.once(defaultValue) : stream.create();
-          fieldStreams[name] = fieldStream;
-          fieldInputs[name] = style(type, label, name, fieldStream)(formComponent({
-            type: type,
-            name: name,
-            stream: fieldStream,
-          }));
+        Object.keys(fields).map(function (name) {
+          var field = fields[name];
+          field.name = name;
+          field.stream = (field.default !== undefined) ? stream.once(field.default) : stream.create();
+          fieldStreams[name] = field.stream;
+          fieldInputs[name] = style(field)(formComponent(field));
         });
         var disabledS = stream.once(false);
         var submitComponentF = customSubmitComponentF ? function (name) {
