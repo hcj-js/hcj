@@ -4967,16 +4967,28 @@
   var buttonInput = constant(all([
     minWidth(150),
   ]));
-  var textInput = constant(all([
-    minWidth(150),
-  ]));
-  var textareaInput = constant(all([
-    textInput(),
-    minHeightAtLeast(100),
-  ]));
+  var textInput = function (field) {
+    if (!field.label) {
+      return all([
+        minWidth(150),
+      ]);
+    }
+    return function (c) {
+      return stack([
+        text(field.label),
+        c,
+      ]);
+    };
+  };
+  var textareaInput = function (field) {
+    return all([
+      textInput(field),
+      minHeightAtLeast(100),
+    ]);
+  };
   var formStyle = {
     button: buttonInput,
-    checkbox: constant(id),
+    checkbox: textInput,
     date: textInput,
     dropdown: buttonInput,
     file: textInput,
@@ -4984,7 +4996,7 @@
     image: textInput,
     number: textInput,
     password: textInput,
-    radios: id,
+    radios: textInput,
     text: textInput,
     textarea: textInput,
     time: textInput,
