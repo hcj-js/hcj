@@ -246,9 +246,6 @@
     },
     reduce: function (s, f, v1) {
       var out = stream.once(v1);
-      if (s.lastValue !== undefined) {
-        stream.push(out, f(out.lastValue, s.lastValue));
-      }
       stream.map(s, function (v) {
         stream.push(out, f(out.lastValue, v));
       });
