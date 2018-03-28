@@ -1134,8 +1134,8 @@
       el.classList.add('adjust-position');
       var adjustedCtx = extend({}, ctx, {
         el: el,
-        top: onceZeroS,
-        left: onceZeroS,
+        top: position.topS || onceZeroS,
+        left: position.leftS || onceZeroS,
         width: position.width ? stream.create() : ctx.width,
         height: position.height ? stream.create() : ctx.height,
         widthCalc: ctx.widthCalc && (position.widthCalc ? stream.create() : ctx.widthCalc),
