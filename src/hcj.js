@@ -1898,6 +1898,9 @@
     };
   }, function (obj) {
     if (Array.isArray(obj)) {
+      if (obj.length === 0) {
+        return true;
+      }
       obj = obj[0];
     }
     return typeof obj === 'string' || (obj && obj.hasOwnProperty('str'));
