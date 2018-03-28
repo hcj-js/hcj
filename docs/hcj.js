@@ -980,7 +980,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left),
     ], function (w, h, t, l) {
       stream.push(displayedS, true);
-      updateDomStyle(document.querySelector('body'), 'height', 'auto');
       updateDomStyle(i.el, 'width', w);
       updateDomStyle(i.el, 'height', h);
       updateDomStyle(i.el, 'top', t);
@@ -1000,7 +999,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
     document.body.appendChild(sandbox);
   };
   var countComponentsRendered = 0;
+  var rootComponentHeights = [];
   var rootComponent = function (c, config) {
+    var nthRootComponent = countComponentsRendered;
+    countComponentsRendered += 1;
     config = config || {};
     ensureSandbox();
     var scrollbarWidth = _scrollbarWidth();
@@ -1046,8 +1048,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     i.el.style.top = '0px';
     i.el.style.left = '0px';
     i.el.classList.add('root-component');
-    i.el.classList.add('root-component-' + countComponentsRendered);
-    countComponentsRendered += 1;
+    i.el.classList.add('root-component-' + nthRootComponent);
     stream.pushAll(i.minHeight, minHeight);
     stream.combine([
       width,
@@ -1055,6 +1056,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     ], function (w, h) {
       i.el.style.width = px(w);
       i.el.style.height = px(h);
+    });
+    stream.onValue(height, function (h) {
+      rootComponentHeights[nthRootComponent] = h;
+      document.body.style.height = rootComponentHeights.reduce(function (a, x) {
+        return Math.max(a, x);
+      }, 0) + 'px';
     });
     return i;
   };
@@ -1212,8 +1219,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
       el.classList.add('adjust-position');
       var adjustedCtx = extend({}, ctx, {
         el: el,
-        top: onceZeroS,
-        left: onceZeroS,
+        top: position.topS || onceZeroS,
+        left: position.leftS || onceZeroS,
         width: position.width ? stream.create() : ctx.width,
         height: position.height ? stream.create() : ctx.height,
         widthCalc: ctx.widthCalc && (position.widthCalc ? stream.create() : ctx.widthCalc),
