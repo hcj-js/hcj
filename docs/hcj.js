@@ -4973,8 +4973,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         var lastOuterHeight = outerHeight(el);
         var mw = stream.once(lastOuterWidth);
         var mh = stream.once(constant(lastOuterHeight));
-        document.body.addEventListener('mousemove', function () {
-          // this handler is a memory leak, should unbind it on remove
+        var onTextareaResize = function () {
           var currentOuterWidth = outerWidth(el);
           var currentOuterHeight = outerHeight(el);
           if (lastOuterWidth !== currentOuterWidth) {
@@ -4985,22 +4984,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
             stream.push(mh, constant(currentOuterHeight));
             lastOuterHeight = currentOuterHeight;
           }
-        });
-        el.addEventListener('click', function () {
-          var currentOuterWidth = outerWidth(el);
-          var currentOuterHeight = outerHeight(el);
-          if (lastOuterWidth !== currentOuterWidth) {
-            stream.push(mw, currentOuterWidth);
-            lastOuterWidth = currentOuterWidth;
-          }
-          if (lastOuterHeight !== currentOuterHeight) {
-            stream.push(mh, constant(currentOuterHeight));
-            lastOuterHeight = currentOuterHeight;
-          }
-        });
+        };
+        document.body.addEventListener('mousemove', onTextareaResize);
+        el.addEventListener('click', onTextareaResize);
         return {
           minWidth: mw,
           minHeight: mh,
+          remove: function () {
+            document.body.removeEventListener('mousemove', onTextareaResize);
+          },
         };
       }));
     },
@@ -5045,16 +5037,28 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var buttonInput = constant(all([
     minWidth(150),
   ]));
-  var textInput = constant(all([
-    minWidth(150),
-  ]));
-  var textareaInput = constant(all([
-    textInput(),
-    minHeightAtLeast(100),
-  ]));
+  var textInput = function (field) {
+    if (!field.label) {
+      return all([
+        minWidth(150),
+      ]);
+    }
+    return function (c) {
+      return stack([
+        text(field.label),
+        c,
+      ]);
+    };
+  };
+  var textareaInput = function (field) {
+    return all([
+      textInput(field),
+      minHeightAtLeast(100),
+    ]);
+  };
   var formStyle = {
     button: buttonInput,
-    checkbox: constant(id),
+    checkbox: textInput,
     date: textInput,
     dropdown: buttonInput,
     file: textInput,
@@ -5062,13 +5066,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
     image: textInput,
     number: textInput,
     password: textInput,
-    radios: id,
+    radios: textInput,
     text: textInput,
     textarea: textInput,
     time: textInput,
   };
-  var defaultStyle = function (type, label, name, fieldStream) {
-    return formStyle[type.kind](label, name, fieldStream, type);
+  var defaultStyle = function (field) {
+    return formStyle[field.type.kind](field);
   };
 
   var formForOld = function (submitButtonFieldTypeF, formComponent) {
@@ -5152,25 +5156,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
     if (typeof style !== 'function') {
       return formForOld(formComponent, style);
     }
-    return function (mkOnSubmit, fields, labels, defaults) {
-      labels = labels || {};
-      defaults = defaults || {};
-
-      var names = Object.keys(fields);
+    return function (mkOnSubmit, fields) {
       return function (f) {
         var fieldStreams = {};
         var fieldInputs = {};
-        names.map(function (name) {
-          var type = fields[name];
-          var defaultValue = defaults[name];
-          var label = labels[name];
-          var fieldStream = (defaultValue !== undefined) ? stream.once(defaultValue) : stream.create();
-          fieldStreams[name] = fieldStream;
-          fieldInputs[name] = style(type, label, name, fieldStream)(formComponent({
-            type: type,
-            name: name,
-            stream: fieldStream,
-          }));
+        Object.keys(fields).map(function (name) {
+          var field = fields[name];
+          field.name = name;
+          field.stream = (field.default !== undefined) ? stream.once(field.default) : stream.create();
+          fieldStreams[name] = field.stream;
+          fieldInputs[name] = style(field)(formComponent(field));
         });
         var disabledS = stream.once(false);
         var submitComponentF = customSubmitComponentF ? function (name) {
@@ -5240,9 +5235,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
       alignMiddle: alignMiddle,
       alignTBM: alignTBM,
       alignV: alignTBM,
+      alignVertical: alignTBM,
       alignVB: alignVBottom,
       alignVBottom: alignVBottom,
-      alignVertical: alignTBM,
       alignVM: alignVMiddle,
       alignVMiddle: alignVMiddle,
       alignVT: alignVTop,

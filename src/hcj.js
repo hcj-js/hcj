@@ -4895,8 +4895,7 @@
         var lastOuterHeight = outerHeight(el);
         var mw = stream.once(lastOuterWidth);
         var mh = stream.once(constant(lastOuterHeight));
-        document.body.addEventListener('mousemove', function () {
-          // this handler is a memory leak, should unbind it on remove
+        var onTextareaResize = function () {
           var currentOuterWidth = outerWidth(el);
           var currentOuterHeight = outerHeight(el);
           if (lastOuterWidth !== currentOuterWidth) {
@@ -4907,22 +4906,15 @@
             stream.push(mh, constant(currentOuterHeight));
             lastOuterHeight = currentOuterHeight;
           }
-        });
-        el.addEventListener('click', function () {
-          var currentOuterWidth = outerWidth(el);
-          var currentOuterHeight = outerHeight(el);
-          if (lastOuterWidth !== currentOuterWidth) {
-            stream.push(mw, currentOuterWidth);
-            lastOuterWidth = currentOuterWidth;
-          }
-          if (lastOuterHeight !== currentOuterHeight) {
-            stream.push(mh, constant(currentOuterHeight));
-            lastOuterHeight = currentOuterHeight;
-          }
-        });
+        };
+        document.body.addEventListener('mousemove', onTextareaResize);
+        el.addEventListener('click', onTextareaResize);
         return {
           minWidth: mw,
           minHeight: mh,
+          remove: function () {
+            document.body.removeEventListener('mousemove', onTextareaResize);
+          },
         };
       }));
     },
@@ -5165,9 +5157,9 @@
       alignMiddle: alignMiddle,
       alignTBM: alignTBM,
       alignV: alignTBM,
+      alignVertical: alignTBM,
       alignVB: alignVBottom,
       alignVBottom: alignVBottom,
-      alignVertical: alignTBM,
       alignVM: alignVMiddle,
       alignVMiddle: alignVMiddle,
       alignVT: alignVTop,
