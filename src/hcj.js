@@ -1167,14 +1167,14 @@
           stream.push(adjustedCtx.heightCalc, position.heightCalc(hc, el.firstChild));
         });
       }
-      return extend({}, i, {
+      return {
         minWidth: minSize.minWidth ? stream.map(i.minWidth, function (mw) {
           return minSize.minWidth(mw, el.firstChild);
         }) : i.minWidth,
         minHeight: minSize.minHeight ? stream.map(i.minHeight, function (mh) {
           return minSize.minHeight(mh, el.firstChild);
         }) : i.minHeight,
-      });
+      };
     });
   };
 
@@ -3551,7 +3551,10 @@
       }
       var i = panel(context);
       transition(i, 'top ', config.transition + 's');
-      return i;
+      return {
+        minWidth: i.minWidth,
+        minHeight: i.minHeight,
+      };
     })(panel));
   };
 
@@ -3604,7 +3607,10 @@
         }),
       });
       transition(i, 'left ', config.transition + 's');
-      return i;
+      return {
+        minWidth: i.minWidth,
+        minHeight: i.minHeight,
+      };
     })(panel));
   };
 
@@ -3697,7 +3703,10 @@
           }
         });
       });
-      return i;
+      return {
+        minWidth: i.minWidth,
+        minHeight: i.minHeight,
+      };
     });
   }, function (c) {
     return !(typeof c === 'number') && !stream.isStream(c);
@@ -5139,7 +5148,11 @@
         }
         return layout('form', function (el, ctx, c) {
           setupFormSubmit(el);
-          return c();
+          var i = c();
+          return {
+            minWidth: i.minWidth,
+            minHeight: i.minHeight,
+          };
         })(f(fieldInputs, submitComponentF, fieldStreams, onSubmit && onSubmit.resultS));
       };
     };
