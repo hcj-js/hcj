@@ -1200,7 +1200,10 @@
 
   var onThis = function (event, handler) {
     return and(function (i) {
-      i.el.addEventListener(event, handler);
+      i.el.addEventListener(event, function () {
+        Array.prototype.push.call(arguments, i);
+        handler.apply(null, arguments);
+      });
     });
   };
   var onThisCurried = function (event) {
