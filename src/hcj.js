@@ -844,7 +844,6 @@
       return component(el, function (el, ctx) {
         var childInstances = [];
         el.style.position = 'absolute';
-        el.style.pointerEvents = 'none';
         var i = buildLayout.apply(null, [el, ctx].concat(layoutRecurse(childInstances, el, ctx, args)));
         return {
           el: el,
@@ -867,7 +866,6 @@
     return component(el, function (el, context) {
       var childInstances = [];
       el.style.position = 'absolute';
-      el.style.pointerEvents = 'none';
       var i = buildContainer(el, context, function (c, ctx, noRemove) {
         return layoutAppend(childInstances, el, context, c, ctx, noRemove);
       });

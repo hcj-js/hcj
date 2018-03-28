@@ -922,7 +922,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return component(el, function (el, ctx) {
         var childInstances = [];
         el.style.position = 'absolute';
-        el.style.pointerEvents = 'none';
         var i = buildLayout.apply(null, [el, ctx].concat(layoutRecurse(childInstances, el, ctx, args)));
         return {
           el: el,
@@ -945,7 +944,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return component(el, function (el, context) {
       var childInstances = [];
       el.style.position = 'absolute';
-      el.style.pointerEvents = 'none';
       var i = buildContainer(el, context, function (c, ctx, noRemove) {
         return layoutAppend(childInstances, el, context, c, ctx, noRemove);
       });
@@ -1278,7 +1276,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
   var onThis = function (event, handler) {
     return and(function (i) {
-      i.el.addEventListener(event, handler);
+      i.el.addEventListener(event, function () {
+        Array.prototype.push.call(arguments, i);
+        handler.apply(null, arguments);
+      });
     });
   };
   var onThisCurried = function (event) {
