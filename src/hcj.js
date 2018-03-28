@@ -770,30 +770,93 @@
   };
   var layoutAppend = function (childInstances, el, context, c, ctx, noRemove) {
     ctx = ctx || {};
-    ctx.el = ctx.el || el;
+    var childWidth = stream.create();
+    var childWidthCalc = stream.create();
+    var childHeight = stream.create();
+    var childHeightCalc = stream.create();
+    var childTop = stream.create();
+    var childTopCalc = stream.create();
+    var childLeft = stream.create();
+    var childLeftCalc = stream.create();
+    var contextTop = stream.create();
+    var contextLeft = stream.create();
+
+    var unpushWidth;
+    var unpushWidthCalc;
+    var unpushHeight;
+    var unpushHeightCalc;
+    var unpushTop;
+    var unpushTopCalc;
+    var unpushLeft;
+    var unpushLeftCalc;
+    var unpushContextTop = stream.pushAll(context.top, contextTop);
+    var unpushContextLeft = stream.pushAll(context.left, contextLeft);
     if (!ctx.width) {
-      ctx.widthCalc = stream.once('100%');
-      ctx.width = context.width;
+      unpushWidth = stream.pushAll(context.width, childWidth);
+      stream.push(childWidthCalc, '100%');
+    }
+    else {
+      unpushWidth = stream.pushAll(ctx.width, childWidth);
+      if (ctx.widthCalc) {
+        unpushWidthCalc = stream.pushAll(ctx.widthCalc, childWidthCalc);
+      }
+      else {
+        unpushWidthCalc = stream.pushAll(mapPx(ctx.width), childWidthCalc);
+      }
     }
     if (!ctx.height) {
-      ctx.heightCalc = stream.once('100%');
-      ctx.height = context.height;
+      unpushHeight = stream.pushAll(context.height, childHeight);
+      stream.push(childHeightCalc, '100%');
     }
-    ctx.top = ctx.top || onceZeroS;
-    ctx.left = ctx.left || onceZeroS;
+    else {
+      unpushHeight = stream.pushAll(ctx.height, childHeight);
+      if (ctx.heightCalc) {
+        unpushHeightCalc = stream.pushAll(ctx.heightCalc, childHeightCalc);
+      }
+      else {
+        unpushHeightCalc = stream.pushAll(mapPx(ctx.height), childHeightCalc);
+      }
+    }
+    if (ctx.top) {
+      unpushTop = stream.pushAll(ctx.top, childTop);
+      if (ctx.topCalc) {
+        unpushTopCalc = stream.pushAll(ctx.topCalc, childTopCalc);
+      }
+      else {
+        unpushTopCalc = stream.pushAll(mapPx(ctx.top), childTopCalc);
+      }
+    }
+    else {
+      stream.push(childTop, 0);
+      stream.push(childTopCalc, '0px');
+    }
+    if (ctx.left) {
+      unpushLeft = stream.pushAll(ctx.left, childLeft);
+      if (ctx.leftCalc) {
+        unpushLeftCalc = stream.pushAll(ctx.leftCalc, childLeftCalc);
+      }
+      else {
+        unpushLeftCalc = stream.pushAll(mapPx(ctx.left), childLeftCalc);
+      }
+    }
+    else {
+      stream.push(childLeft, 0);
+      stream.push(childLeftCalc, '0px');
+    }
+
     var i = c({
-      el: ctx.el,
-      width: ctx.width,
-      height: ctx.height,
+      el: ctx && ctx.el || el,
+      width: childWidth,
+      height: childHeight,
       top: stream.combine([
-        context.top,
-        ctx.top,
+        contextTop,
+        childTop,
       ], function (t1, t2) {
         return t1 + t2;
       }),
       left: stream.combine([
-        context.left,
-        ctx.left,
+        contextLeft,
+        childLeft,
       ], function (l1, l2) {
         return l1 + l2;
       }),
@@ -807,19 +870,52 @@
       debugger;
     }
     i.el.style.position = 'absolute';
-    stream.onValue(ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width), function (w) {
+    stream.onValue(mapCalc(childWidthCalc), function (w) {
       updateDomStyle(i.el, 'width', w);
     });
-    stream.onValue(ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height), function (h) {
+    stream.onValue(mapCalc(childHeightCalc), function (h) {
       updateDomStyle(i.el, 'height', h);
     });
-    stream.onValue(ctx.topCalc ? mapCalc(ctx.topCalc) : mapPx(ctx.top), function (t) {
+    stream.onValue(mapCalc(childTopCalc), function (t) {
       updateDomStyle(i.el, 'top', t);
     });
-    stream.onValue(ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left), function (l) {
+    stream.onValue(mapCalc(childLeftCalc), function (l) {
       updateDomStyle(i.el, 'left', l);
     });
-    return i;
+    return {
+      el: i.el,
+      minWidth: i.minWidth,
+      minHeight: i.minHeight,
+      remove: function () {
+        i.remove && i.remove();
+        if (unpushWidth) {
+          unpushWidth();
+        }
+        if (unpushWidthCalc) {
+          unpushWidthCalc();
+        }
+        if (unpushHeight) {
+          unpushHeight();
+        }
+        if (unpushHeightCalc) {
+          unpushHeightCalc();
+        }
+        if (unpushTop) {
+          unpushTop();
+        }
+        if (unpushTopCalc) {
+          unpushTopCalc();
+        }
+        if (unpushLeft) {
+          unpushLeft();
+        }
+        if (unpushLeftCalc) {
+          unpushLeftCalc();
+        }
+        unpushContextTop();
+        unpushContextLeft();
+      },
+    };
   };
   var layoutRecurse = function (childInstances, el, context, cs) {
     if (Array.isArray(cs)) {
