@@ -310,7 +310,7 @@
       if (source.lastValue !== undefined) {
         stream.push(target, source.lastValue);
       }
-      stream.onValue(source, function (v) {
+      return stream.onValue(source, function (v) {
         stream.push(target, v);
       });
     },
