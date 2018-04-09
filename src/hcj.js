@@ -5081,7 +5081,7 @@
     return function (c) {
       return stack([
         text(field.label),
-        c,
+        alignHLeft(c),
       ]);
     };
   };
