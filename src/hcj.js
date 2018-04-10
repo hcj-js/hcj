@@ -1286,7 +1286,6 @@
   });
   var link = all([
     css('cursor', 'pointer'),
-    css('pointer-events', 'initial'),
   ]);
 
   var onThis = function (event, handler) {
@@ -1337,7 +1336,6 @@
       return v;
     };
     return and(function (i) {
-      i.el.style.pointerEvents = 'initial';
       i.el.addEventListener('mouseover', function (ev) {
         stream.push(s, f(ev));
       });
@@ -1624,7 +1622,6 @@
     }
     return layout('a', function (el, ctx, c) {
       el.href = config.href;
-      el.style.pointerEvents = 'initial';
       if (config.target) {
         el.target = config.target || '';
       }
@@ -2974,7 +2971,6 @@
     config = config || {};
     return layout(function (el, ctx, c) {
       el.style.overflowX = 'auto';
-      el.style.pointerEvents = 'initial';
       var widthS = stream.create();
       var heightS = stream.create();
       var i = c({
@@ -3053,7 +3049,6 @@
     }
     return layout(function (el, ctx, c) {
       el.classList.add('margin');
-      el.style.pointerEvents = 'initial';
       var i = c({
         top: stream.once(top),
         left: stream.once(left),
@@ -3378,7 +3373,6 @@
 
     var borderLayout = layout(function (el, ctx, c) {
       el.classList.add('border');
-      el.style.pointerEvents = 'initial';
       // overflow hidden is necessary to prevent cutting off corners
       // of border if there is a border radius
       var i = c();
@@ -3564,7 +3558,6 @@
         el.style.position = 'fixed';
         transition(i, 'opacity', transitionTime + 's');
         el.style.display = 'none';
-        el.style.pointerEvents = 'initial'; // TODO: is this necessary?
 
         stream.onValue(open, function (on) {
           if (on) {
@@ -4456,7 +4449,6 @@
         minWidth(0),
         css('overflow-x', 'scroll'),
         css('overflow-y', 'hidden'),
-        css('pointer-events', 'initial'),
       ])(stack()([
         sideBySide({
           surplusWidth: centerSurplusWidth,

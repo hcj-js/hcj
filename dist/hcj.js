@@ -1364,7 +1364,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
   });
   var link = all([
     css('cursor', 'pointer'),
-    css('pointer-events', 'initial'),
   ]);
 
   var onThis = function (event, handler) {
@@ -1415,7 +1414,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return v;
     };
     return and(function (i) {
-      i.el.style.pointerEvents = 'initial';
       i.el.addEventListener('mouseover', function (ev) {
         stream.push(s, f(ev));
       });
@@ -1702,7 +1700,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     }
     return layout('a', function (el, ctx, c) {
       el.href = config.href;
-      el.style.pointerEvents = 'initial';
       if (config.target) {
         el.target = config.target || '';
       }
@@ -3052,7 +3049,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     config = config || {};
     return layout(function (el, ctx, c) {
       el.style.overflowX = 'auto';
-      el.style.pointerEvents = 'initial';
       var widthS = stream.create();
       var heightS = stream.create();
       var i = c({
@@ -3131,7 +3127,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     }
     return layout(function (el, ctx, c) {
       el.classList.add('margin');
-      el.style.pointerEvents = 'initial';
       var i = c({
         top: stream.once(top),
         left: stream.once(left),
@@ -3456,7 +3451,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
     var borderLayout = layout(function (el, ctx, c) {
       el.classList.add('border');
-      el.style.pointerEvents = 'initial';
       // overflow hidden is necessary to prevent cutting off corners
       // of border if there is a border radius
       var i = c();
@@ -3642,7 +3636,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         el.style.position = 'fixed';
         transition(i, 'opacity', transitionTime + 's');
         el.style.display = 'none';
-        el.style.pointerEvents = 'initial'; // TODO: is this necessary?
 
         stream.onValue(open, function (on) {
           if (on) {
@@ -4534,7 +4527,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         minWidth(0),
         css('overflow-x', 'scroll'),
         css('overflow-y', 'hidden'),
-        css('pointer-events', 'initial'),
       ])(stack()([
         sideBySide({
           surplusWidth: centerSurplusWidth,
