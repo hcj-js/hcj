@@ -4492,8 +4492,8 @@
   };
   var rectangle = function (size) {
     return all([
-      minHeight(size.v || size.x || 0),
-      minWidth(size.h || size.y || 0),
+      minWidth(size.h || size.x || 0),
+      minHeight(size.v || size.y || 0),
     ])(nothing);
   };
   var matchStrings = function (stringsAndRouters) {
