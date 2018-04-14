@@ -1717,8 +1717,7 @@
             }
             if (!config.oneLine) {
               stream.defer(function () {
-                var mh = (config.minHeight && constant(config.minHeight)) ||
-                    measureHeight(el);
+              var mh = config.hasOwnProperty('minHeight') ? constant(config.minHeight) : measureHeight(el);
                 // measureTextHeight(strs.map(function (c) {
                 //   return {
                 //     words: c.words.slice(0),
