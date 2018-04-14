@@ -670,6 +670,9 @@
     }
 
     instance.remove = function () {
+      if (context.remove) {
+        context.remove();
+      }
       if (buildResult.remove) {
         buildResult.remove();
       }
@@ -857,34 +860,7 @@
       ], function (l1, l2) {
         return l1 + l2;
       }),
-    });
-    if (noRemove !== true) {
-      childInstances.push(i);
-    }
-    // todo: replace with some isInstance function
-    if (!i || !i.minWidth || !i.minHeight) {
-      console.log('not a component');
-      debugger;
-    }
-    i.el.style.position = 'absolute';
-    stream.onValue(mapCalc(childWidthCalc), function (w) {
-      updateDomStyle(i.el, 'width', w);
-    });
-    stream.onValue(mapCalc(childHeightCalc), function (h) {
-      updateDomStyle(i.el, 'height', h);
-    });
-    stream.onValue(mapCalc(childTopCalc), function (t) {
-      updateDomStyle(i.el, 'top', t);
-    });
-    stream.onValue(mapCalc(childLeftCalc), function (l) {
-      updateDomStyle(i.el, 'left', l);
-    });
-    return {
-      el: i.el,
-      minWidth: i.minWidth,
-      minHeight: i.minHeight,
       remove: function () {
-        i.remove && i.remove();
         if (unpushWidth) {
           unpushWidth();
         }
@@ -912,7 +888,29 @@
         unpushContextTop();
         unpushContextLeft();
       },
-    };
+    });
+    if (noRemove !== true) {
+      childInstances.push(i);
+    }
+    // todo: replace with some isInstance function
+    if (!i || !i.minWidth || !i.minHeight) {
+      console.log('not a component');
+      debugger;
+    }
+    i.el.style.position = 'absolute';
+    stream.onValue(mapCalc(childWidthCalc), function (w) {
+      updateDomStyle(i.el, 'width', w);
+    });
+    stream.onValue(mapCalc(childHeightCalc), function (h) {
+      updateDomStyle(i.el, 'height', h);
+    });
+    stream.onValue(mapCalc(childTopCalc), function (t) {
+      updateDomStyle(i.el, 'top', t);
+    });
+    stream.onValue(mapCalc(childLeftCalc), function (l) {
+      updateDomStyle(i.el, 'left', l);
+    });
+    return i;
   };
   var layoutRecurse = function (childInstances, el, context, cs) {
     if (Array.isArray(cs)) {
@@ -986,6 +984,7 @@
 
   var rootLayout = layout(function (el, ctx, c) {
     var i = c();
+    // todo: detach from these streams when instance is removed
     stream.combine([
       ctx.widthCalc ? mapCalc(ctx.widthCalc) : mapPx(ctx.width),
       ctx.heightCalc ? mapCalc(ctx.heightCalc) : mapPx(ctx.height),
