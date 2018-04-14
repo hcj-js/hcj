@@ -1679,11 +1679,17 @@
         var spanStreams = [];
         el.classList.add('text');
         var firstPush = true;
+        var pushingDimensions = false;
         var pushDimensions = function () {
+          if (pushingDimensions) {
+            return;
+          }
+          pushingDimensions = true;
           stream.next(function () {
             if (removed) {
               return;
             }
+            pushingDimensions = false;
             var mw = null;
             if (config.hasOwnProperty('minWidth')) {
               mw = config.minWidth;
