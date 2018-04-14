@@ -727,6 +727,10 @@
           type: 'String?',
           description: 'Font size.',
         }, {
+          name: 'style',
+          type: 'String?',
+          description: 'Fost style.',
+        }, {
           name: 'weight',
           type: 'String?',
           description: 'Font weight.',
