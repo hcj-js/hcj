@@ -1668,6 +1668,8 @@
       }
 
       return (config.el || div)(function (el, ctx) {
+        var removed = false;
+
         var didMH = false;
         var mwS = (config.minWidth ||
                    (config.measureWidth))
@@ -1679,6 +1681,9 @@
         var firstPush = true;
         var pushDimensions = function () {
           stream.next(function () {
+            if (removed) {
+              return;
+            }
             var mw = null;
             if (config.hasOwnProperty('minWidth')) {
               mw = config.minWidth;
@@ -1986,6 +1991,9 @@
         return {
           minWidth: mwS,
           minHeight: mhS,
+          remove: function () {
+            removed = true;
+          },
         };
       });
     };
