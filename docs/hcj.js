@@ -1840,7 +1840,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
           else {
             span.innerHTML = c.str;
           }
-          c.size = c.size || config.size;
           var fontStyle = 'normal';
           var fontVariant = 'normal';
           var fontWeight = c.weight || config.weight || 'normal';
