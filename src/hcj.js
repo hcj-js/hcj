@@ -1670,8 +1670,8 @@
         var removed = false;
 
         var didMH = false;
-        var mwS = (config.minWidth ||
-                   (config.measureWidth))
+        var mwS = (config.hasOwnProperty('minWidth') ||
+                   config.measureWidth)
             ? stream.create()
             : once300S;
         var mhS = stream.create();
