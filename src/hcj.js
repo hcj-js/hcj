@@ -5145,7 +5145,7 @@
     button: buttonInput,
     checkbox: textInput,
     date: textInput,
-    dropdown: buttonInput,
+    dropdown: textInput,
     file: textInput,
     hidden: id,
     image: textInput,
