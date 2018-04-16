@@ -1120,6 +1120,9 @@
     return (c.r + c.g + c.b) / (255 + 255 + 255);
   };
   var colorString = function (c) {
+    if (typeof c === 'string') {
+      return c;
+    }
     return 'rgba(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ',' + c.a + ')';
   };
   var rgbColorString = function (c) {
