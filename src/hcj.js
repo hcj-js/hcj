@@ -4177,7 +4177,7 @@
           var dimTop = top;
           var dimWidth = top < topBelowFloat ? w - (floatWidth + 2 * config.padding) : w - 2 * config.padding;
           var dimHeight = mhi(dimWidth);
-          if (config.clearHanging && top < topBelowFloat && top + dimHeight > topBelowFloat) {
+          if (config.clearHanging && top < topBelowFloat && top + dimHeight + config.padding > topBelowFloat) {
             top = topBelowFloat;
             dimLeft = config.padding;
             dimTop = top;

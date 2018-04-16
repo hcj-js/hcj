@@ -1198,6 +1198,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return (c.r + c.g + c.b) / (255 + 255 + 255);
   };
   var colorString = function (c) {
+    if (typeof c === 'string') {
+      return c;
+    }
     return 'rgba(' + Math.floor(c.r) + ',' + Math.floor(c.g) + ',' + Math.floor(c.b) + ',' + c.a + ')';
   };
   var rgbColorString = function (c) {
@@ -3109,6 +3112,47 @@ function waitForWebfonts(fonts, callback, maxTime) {
     });
   });
 
+  var overflowVertical = uncurryConfig(function (config) {
+    config = config || {};
+    return layout(function (el, ctx, c) {
+      el.style.overflowY = 'auto';
+      var widthS = stream.create();
+      var heightS = stream.create();
+      var i = c({
+        width: widthS,
+        height: heightS,
+      });
+      var minHeight;
+      if (config.hasOwnProperty('minHeight')) {
+        if (typeof config.minHeight === 'number') {
+          minHeight = stream.once(constant(config.minHeight));
+        }
+        if (typeof config.minHeight === 'function') {
+          minHeight = stream.map(i.minHeight, config.minHeight);
+        }
+      }
+      else {
+        minHeight = i.minHeight;
+      }
+      stream.combine([
+        i.minHeight,
+        ctx.width,
+        ctx.height,
+      ], function (mhF, ctxW, ctxH) {
+        var mh = mhF(ctxW);
+        stream.push(widthS, ctxW - (mh > ctxH ? _scrollbarWidth() : 0));
+        stream.push(heightS, Math.max(mh, ctxH));
+      });
+      var minWidth = stream.map(i.minWidth, function (mw) {
+        return mw + _scrollbarWidth();
+      });
+      return {
+        minWidth: minWidth,
+        minHeight: minHeight,
+      };
+    });
+  });
+
   var margin = function (amount) {
     var top = amount.all || 0,
         bottom = amount.all || 0,
@@ -4211,7 +4255,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var dimTop = top;
           var dimWidth = top < topBelowFloat ? w - (floatWidth + 2 * config.padding) : w - 2 * config.padding;
           var dimHeight = mhi(dimWidth);
-          if (config.clearHanging && top < topBelowFloat && top + dimHeight > topBelowFloat) {
+          if (config.clearHanging && top < topBelowFloat && top + dimHeight + config.padding > topBelowFloat) {
             top = topBelowFloat;
             dimLeft = config.padding;
             dimTop = top;
@@ -5179,7 +5223,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     button: buttonInput,
     checkbox: textInput,
     date: textInput,
-    dropdown: buttonInput,
+    dropdown: textInput,
     file: textInput,
     hidden: id,
     image: textInput,
@@ -5415,6 +5459,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       nothing: nothing,
       onThis: onThis,
       overflowHorizontal: overflowHorizontal,
+      overflowVertical: overflowVertical,
       overlays: overlays,
       padding: margin,
       passthrough: passthrough,
