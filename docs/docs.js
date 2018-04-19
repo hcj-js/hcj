@@ -3164,17 +3164,34 @@
       background: darkPurple,
       font: white,
     }),
-  ])(c.sideBySide({
-    surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
-  }, [
-    logoC,
-    c.largestWidthThatFits([
+  ])(c.largestWidthThatFits([
+    c.sideBySide({
+      surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+    }, [
+      logoC,
       c.all([
-        c.alignHRight,
-      ])(linksWideC),
+        c.alignVM,
+        c.alignHM
+      ])(c.text({
+        size: '30px',
+        family: 'sans-serif',
+        measureWidth: true,
+      }, 'HCJ.JS')),
+      linksWideC
+    ]),
+    c.sideBySide({
+      surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+    }, [
+      logoC,
       c.all([
-        c.alignHRight,
-      ])(linksNarrowC),
+        c.alignVM,
+        c.alignHM
+      ])(c.text({
+        size: '30px',
+        family: 'sans-serif',
+        measureWidth: true,
+      }, 'HCJ.JS')),
+      linksNarrowC,
     ]),
   ]));
   var body = c.text('body');
