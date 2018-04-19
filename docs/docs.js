@@ -372,9 +372,11 @@
 
   var introduction = function () {
     return [
-      p("The HCJ Web Framework is a whole new way to write programs for the web browser.  It is highly modular, so that you can re-use styles and content.  Working at all scales from one-page sites to complicated web applications, and at all stages of your website's lifecycle from from prototyping to production, it saves you time, and allows you to focus on what matters."),
-      p("HCJ provides a single, simple yet powerful method by which elements are arranged on the web page.  It provides a library of elements and layouts that all implement the same interface and work together seamlessly.  By implementing this interface yourself, you can write your own elements and layouts.  A website written in HCJ contains no CSS whatsoever.  The CSS language provides an enormous number of styles, some combinations of which interact in very bizarre and highly surprising ways.  Because of this, most website editors have rigid templates that you must fit your site into, and are very finnicky with regard to the spacing, margins, and padding around page elements.  Using HCJ components and layouts, you can effortlessly format your content on any screen size just how you want."),
-      p("Source code: <a href=\"https://github.com/hcj-js/hcj\">https://github.com/hcj-js/hcj</a>"),
+      p("The HCJ Web Framework is a whole new way to write programs for the web browser."),
+      p("A highly modular framework, designed using functional programming, you can re-use styles and content with ease.  Working at all scales from one-page sites to complicated web applications, and at all stages of your website's lifecycle from from prototyping to production, it saves you time, and allows you to focus on what matters."),
+      p("HCJ provides a single, simple yet powerful method by which elements are arranged on the web page.  It provides a library of elements and layouts that all implement the same interface and work together seamlessly.  By implementing this interface yourself, you can write your own elements and layouts too.  A website written in HCJ contains no CSS whatsoever.  Most website editors have rigid templates that you must fit your site into, and can be finnicky with regard to the spacing, margins, and padding around page elements.  Using HCJ components and layouts, you can effortlessly format your content on any screen size just how you want."),
+      p("Email: <a href=\"mailto:info@hcj-js.org\">info@hcj-js.org</a>"),
+      // p("Source code: <a href=\"https://github.com/hcj-js/hcj\">https://github.com/hcj-js/hcj</a>"),
     ];
   };
 
