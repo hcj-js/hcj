@@ -12,7 +12,7 @@ From the `dist` folder, copy `hcj.css` and `hcj.min.js` into your project.
 
 See [hello world example](http://hcj-js.org/helloWorld.html).
 
-## Docs ##
+## Documentation ##
 
 Latest docs are located at http://hcj-js.org/
 
