@@ -1014,8 +1014,8 @@
     config = config || {};
     ensureSandbox();
     var scrollbarWidth = _scrollbarWidth();
-    var width = stream.create();
-    var height = stream.create();
+    var widthS = stream.create();
+    var heightS = stream.create();
     var minHeight = stream.create();
     stream.combine([
       windowWidth,
@@ -1041,14 +1041,14 @@
         componentMinHeight = mhAtWW;
         document.body.style.overflowY = 'initial';
       }
-      stream.push(width, componentMinWidth);
+      stream.push(widthS, componentMinWidth);
       stream.push(windowWidthMinusScrollbar, componentMinWidth);
-      stream.push(height, Math.max(wh, componentMinHeight));
+      stream.push(heightS, Math.max(wh, componentMinHeight));
     });
     var i = rootLayout(c)({
       el: document.body,
-      width: width,
-      height: height,
+      width: widthS,
+      height: heightS,
       top: onceZeroS,
       left: onceZeroS,
     });
@@ -1059,13 +1059,13 @@
     i.el.classList.add('root-component-' + nthRootComponent);
     stream.pushAll(i.minHeight, minHeight);
     stream.combine([
-      width,
-      height,
+      widthS,
+      heightS,
     ], function (w, h) {
       i.el.style.width = px(w);
       i.el.style.height = px(h);
     });
-    stream.onValue(height, function (h) {
+    stream.onValue(heightS, function (h) {
       rootComponentHeights[nthRootComponent] = h;
       document.body.style.height = rootComponentHeights.reduce(function (a, x) {
         return Math.max(a, x);
