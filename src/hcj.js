@@ -3770,6 +3770,9 @@
         top: headerHeightS,
         width: ctx.width,
         height: bodyHeightS,
+        heightCalc: stream.map(headerHeightS, function (h) {
+          return '100% - ' + px(h);
+        }),
       });
       var headerI = headerC({
         width: ctx.width,
