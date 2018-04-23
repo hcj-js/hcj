@@ -1070,10 +1070,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       ctx.leftCalc ? mapCalc(ctx.leftCalc) : mapPx(ctx.left),
     ], function (w, h, t, l) {
       stream.push(displayedS, true);
-      updateDomStyle(i.el, 'width', w);
-      updateDomStyle(i.el, 'height', h);
-      updateDomStyle(i.el, 'top', t);
-      updateDomStyle(i.el, 'left', l);
     });
     return i;
   });
