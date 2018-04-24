@@ -933,6 +933,7 @@
     return function () {
       var args = Array.prototype.slice.call(arguments);
       return component(el, function (el, ctx) {
+        el.style.textDecoration = 'inherit';
         var childInstances = [];
         el.style.position = 'absolute';
         var i = buildLayout.apply(null, [el, ctx].concat(layoutRecurse(childInstances, el, ctx, args)));
