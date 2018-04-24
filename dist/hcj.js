@@ -2851,15 +2851,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
         };
       }
       var contexts = [];
-      var is = cs.reverse().map(function (c) {
+      var is = cs.map(function (c) {
         var context = {
           widthCalc: stream.once('100%'),
           top: stream.create(),
           height: stream.create(),
         };
-        contexts.unshift(context);
+        contexts.push(context);
         return c(context);
-      }).reverse();
+      });
       if (config.transition) {
         is.map(function (i) {
           transition(i, 'height', config.transition + 's');
