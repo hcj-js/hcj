@@ -5202,7 +5202,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var buttonInput = constant(all([
     minWidth(150),
   ]));
-  var textInput = function (field) {
+  var textInput = function (field, labelText) {
     if (!field.label) {
       return all([
         minWidth(150),
@@ -5210,7 +5210,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     }
     return function (c) {
       return stack([
-        text(field.label),
+        (labelText || text)(field.label),
         alignHLeft(c),
       ]);
     };
@@ -5237,6 +5237,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     time: textInput,
   };
   var defaultStyle = function (field) {
+    if (!field.type) {
+      var labelText = field;
+      return function (field) {
+        return formStyle[field.type.kind](field, labelText);
+      };
+    }
     return formStyle[field.type.kind](field);
   };
 
