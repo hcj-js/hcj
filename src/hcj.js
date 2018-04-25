@@ -5463,6 +5463,7 @@
         justify: justifySurplusWidth,
         justifyAndCenter: justifyAndCenterSurplusWidth,
         giveToNth: giveToNth,
+        eachRow: mapSurplusWidthFunc,
       },
       surplusHeight: {
         ignore: ignoreSurplusHeight,
