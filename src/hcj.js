@@ -1578,7 +1578,7 @@
           stream.push(minWidth, mw);
         }
         stream.push(minHeight, function (w) {
-          return w / aspectRatio(w, mh(mw));
+          return w / aspectRatio(mw, mh(mw));
         });
       });
       return {
