@@ -1499,6 +1499,9 @@
       el.classList.add('keepAspectRatio');
       if (config.fill) {
         el.style.overflow = 'hidden';
+        if (!stream.isStream(config.fill)) {
+          config.fill = stream.once(config.fill);
+        }
       }
       var props = stream.create();
       var i = c({
@@ -1512,12 +1515,13 @@
         i.minHeight,
         ctx.width,
         ctx.height,
-      ], function (mw, mh, w, h) {
+        config.fill,
+      ], function (mw, mh, w, h, fill) {
         var ar = aspectRatio(mw, mh(mw));
         var AR = aspectRatio(w, h);
         // container is wider
-        if ((!config.fill && AR > ar) ||
-            (config.fill && AR < ar)) {
+        if ((!fill && AR > ar) ||
+            (fill && AR < ar)) {
           var usedWidth = h * ar;
 
           var left;
