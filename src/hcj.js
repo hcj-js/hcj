@@ -3946,10 +3946,35 @@
     config.rowHeight = config.rowHeight || useMaxHeight;
     config.maxPerRow = config.maxPerRow || 0;
     config.rowOrColumn = config.rowOrColumn || false;
+    config.splitH = config.splitH || null; // this feature is not stable, do not use :)
+    config.splitV = config.splitV || config.splitH; // this feature is not stable, do not use :)
+
+    var totalPaddingH = config.padding + (config.splitH ? 1 + config.padding : 0);
+    var totalPaddingV = config.padding + (config.splitV ? 1 + config.padding : 0);
 
     return function (cs) {
       return layout(function (el, ctx, cs) {
         el.classList.add('grid');
+        if (config.splitH || config.splitV) {
+          var splitHEls = cs.map(function () {
+            var splitHEl = document.createElement('div');
+            splitHEl.style.display = 'none';
+            splitHEl.style.backgroundColor = colorString(config.splitH);
+            splitHEl.style.position = 'absolute';
+            splitHEl.style.width = '1px';
+            el.appendChild(splitHEl);
+            return splitHEl;
+          });
+          var splitVEls = cs.map(function () {
+            var splitVEl = document.createElement('div');
+            splitVEl.style.display = 'none';
+            splitVEl.style.backgroundColor = colorString(config.splitV);
+            splitVEl.style.position = 'absolute';
+            splitVEl.style.height = '1px';
+            el.appendChild(splitVEl);
+            return splitVEl;
+          });
+        }
         var minWidth = stream.create();
         var minHeight = stream.create();
         if (cs.length === 0) {
@@ -4002,7 +4027,7 @@
             var currentRow = a.currentRow;
 
             var widthUsedThisRow = currentRow.cells.reduce(function (a, cell) {
-              return a + cell.width + config.padding;
+              return a + cell.width + totalPaddingH;
             }, 0);
             var widthNeeded = Math.min(mw, gridWidth);
 
@@ -4020,7 +4045,7 @@
             });
             currentRow.contexts.push(contexts[index]);
 
-            left += widthNeeded + config.padding;
+            left += widthNeeded + totalPaddingH;
             return {
               rows: rows,
               currentRow: currentRow,
@@ -4059,8 +4084,8 @@
         stream.pushAll(stream.map(minWidthsS, function (mws) {
           return config.useFullWidth ?
             mws.reduce(function (a, mw) {
-              return a + mw + config.padding;
-            }, -config.padding) :
+              return a + mw + totalPaddingH;
+            }, -totalPaddingH) :
             mws.reduce(function (a, mw) {
               return Math.max(a, mw);
             }, 0);
@@ -4075,8 +4100,8 @@
             var h = rows.map(function (row) {
               var h = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
               index += row.cells.length;
-              return h + config.padding;
-            }).reduce(add, -config.padding);
+              return h + totalPaddingV;
+            }).reduce(add, -totalPaddingV);
             return h;
           };
         }, minHeight);
@@ -4090,6 +4115,16 @@
           var rows = computeRows(gridWidth, mws);
           var index = 0;
           var top = 0;
+          if (config.splitH) {
+            splitHEls.map(function (splitEl) {
+              updateDomStyle(splitEl, 'display', 'none');
+            });
+          }
+          if (config.splitV) {
+            splitVEls.map(function (splitEl) {
+              updateDomStyle(splitEl, 'display', 'none');
+            });
+          }
           rows.map(function (row) {
             row.height = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
             index += row.cells.length;
@@ -4099,19 +4134,39 @@
           }
           rows.map(function (row) {
             row.top = top;
-            top += row.height + config.padding;
+            top += row.height + totalPaddingV;
           });
           rows = config.surplusHeight(gridHeight, rows, config);
+          var elsPositionedH = 0;
+          var elsPositionedV = 0;
           rows.map(function (row, i) {
-            var positions = row.cells.map(function (cell) {
+            var rightmostCell = row.cells[row.cells.length - 1];
+            row.right = rightmostCell.left + rightmostCell.width;
+            var positions = row.cells.map(function (cell, i) {
               var position = {
                 top: row.top,
                 left: cell.left,
                 width: cell.width,
                 height: row.height,
               };
+              if (config.splitH && i > 0) {
+                updateDomStyle(splitHEls[elsPositionedH], 'display', '');
+                updateDomStyle(splitHEls[elsPositionedH], 'top', row.top + 'px');
+                updateDomStyle(splitHEls[elsPositionedH], 'left', (cell.left - config.padding - 1) + 'px');
+                updateDomStyle(splitHEls[elsPositionedH], 'height', row.height + 'px');
+                elsPositionedH += 1;
+              }
               return position;
             });
+            if (config.splitV && i > 0) {
+              updateDomStyle(splitVEls[elsPositionedV], 'display', '');
+              updateDomStyle(splitVEls[elsPositionedV], 'top', (row.top - config.padding - 1) + 'px');
+              var minLeft = Math.min(rows[i-1].cells[0].left, rows[i].cells[0].left);
+              var maxRight = Math.max(rows[i-1].right, rows[i].right);
+              updateDomStyle(splitVEls[elsPositionedV], 'left', minLeft + 'px');
+              updateDomStyle(splitVEls[elsPositionedV], 'width', (maxRight - minLeft) + 'px');
+              elsPositionedV += 1;
+            }
             positions.map(function (position, index) {
               var context = row.contexts[index];
               stream.push(context.top, position.top);
