@@ -3959,6 +3959,17 @@
     return function (cs) {
       return layout(function (el, ctx, cs) {
         el.classList.add('grid');
+        var ds = [];
+        cs = cs.map(function (c) {
+          if (Array.isArray(c)) {
+            ds.push(c[1]);
+            return c[0];
+          }
+          else {
+            ds.push(undefined);
+            return c;
+          }
+        });
         if (config.splitH || config.splitV) {
           var splitHEls = cs.map(function () {
             var splitHEl = document.createElement('div');
@@ -3985,7 +3996,7 @@
           stream.push(minWidth, 0);
           stream.push(minHeight, constant(0));
         }
-        var contexts = [];
+        var cContexts = [];
         var is = cs.map(function (c) {
           var context = {
             top: stream.create(),
@@ -3993,22 +4004,61 @@
             width: stream.create(),
             height: stream.create(),
           };
-          contexts.push(context);
+          cContexts.push(context);
           return c(context);
         });
+        var dContexts = [];
+        var js = ds.map(function (d) {
+          if (d) {
+            var context = {
+              top: stream.create(),
+              left: stream.create(),
+              width: stream.create(),
+              height: stream.create(),
+            };
+            dContexts.push(context);
+            return d(context);
+          }
+        });
 
-        var minWidthsS = stream.combine(is.map(function (i) {
+        var cMinWidthsS = stream.combine(is.map(function (i) {
           return i.minWidth;
         }), function () {
           return Array.prototype.slice.call(arguments);
         });
-        var minHeightsS = stream.combine(is.map(function (i) {
+        var cMinHeightsS = stream.combine(is.map(function (i) {
           return i.minHeight;
         }), function () {
           return Array.prototype.slice.call(arguments);
         });
 
-        var computeRows = function (gridWidth, mws) {
+        var dMinWidthsS = stream.map(stream.combine(js.map(function (j) {
+          return j ? j.minWidth : stream.once(null);
+        }), function () {
+          return Array.prototype.slice.call(arguments);
+        }), function (mw) {
+          if (mw === null) {
+            return 0;
+          }
+          return mw;
+        });
+        var dMinHeightsS = stream.map(stream.combine(js.map(function (j) {
+          return j ? j.minHeight : stream.once(null);
+        }), function () {
+          return Array.prototype.slice.call(arguments);
+        }), function (mh) {
+          if (mh === null) {
+            return function (w) {
+              return 0;
+            };
+          }
+          return mh;
+        });
+
+        var computeRows = function (gridWidth, cmws, dmws) {
+          var mws = cmws.map(function (cmw, i) {
+            return Math.max(cmw, dmws[i]);
+          });
           if (config.allSameWidth) {
             var maxMW = mws.reduce(mathMax, 0);
             // thank you, keenan simons
@@ -4021,7 +4071,8 @@
             left = 0;
             return {
               cells: [],
-              contexts: [],
+              cContexts: [],
+              dContexts: [],
               height: 0,
             };
           };
@@ -4047,7 +4098,8 @@
               width: widthNeeded,
               left: left,
             });
-            currentRow.contexts.push(contexts[index]);
+            currentRow.cContexts.push(cContexts[index]);
+            currentRow.dContexts.push(dContexts[index]);
 
             left += widthNeeded + totalPaddingH;
             return {
@@ -4067,7 +4119,8 @@
                   width: mw,
                   left: 0,
                 }],
-                contexts: [contexts[index]],
+                cContexts: [cContexts[index]],
+                dContexts: [dContexts[index]],
                 height: 0,
               };
             });
@@ -4085,26 +4138,33 @@
         };
 
         // todo: fix interaction of allSameWidth and useFullWidth
-        stream.pushAll(stream.map(minWidthsS, function (mws) {
-          return config.useFullWidth ?
-            mws.reduce(function (a, mw) {
-              return a + mw + totalPaddingH;
-            }, -totalPaddingH) :
-            mws.reduce(function (a, mw) {
-              return Math.max(a, mw);
-            }, 0);
+        stream.pushAll(stream.combine([
+          cMinWidthsS,
+          dMinWidthsS,
+        ], function (cmws, dmws) {
+          if (config.useFullWidth) {
+            return cmws.reduce(function (a, mw, i) {
+              return a + Math.max(mw, dmws[i]) + totalPaddingH;
+            }, -totalPaddingH);
+          }
+          return cmws.reduce(function (a, mw, i) {
+            return Math.max(a, Math.max(mw, dmws[i]));
+          }, 0);
         }), minWidth);
         stream.combineInto([
-          minWidthsS,
-          minHeightsS,
-        ], function (mws, mhs) {
+          cMinWidthsS,
+          cMinHeightsS,
+          dMinWidthsS,
+          dMinHeightsS,
+        ], function (cmws, cmhs, dmws, dmhs) {
           return function (w) {
-            var rows = computeRows(w, mws);
+            var rows = computeRows(w, cmws, dmws);
             var index = 0;
             var h = rows.map(function (row) {
-              var h = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
+              var ch = config.rowHeight(row.cells, cmhs.slice(index, index + row.cells.length));
+              var dh = config.rowHeight(row.cells, dmhs.slice(index, index + row.cells.length));
               index += row.cells.length;
-              return h + totalPaddingV;
+              return ch + dh + totalPaddingV;
             }).reduce(add, -totalPaddingV);
             return h;
           };
@@ -4113,10 +4173,12 @@
         stream.combine([
           ctx.width,
           ctx.height,
-          minWidthsS,
-          minHeightsS,
-        ], function (gridWidth, gridHeight, mws, mhs) {
-          var rows = computeRows(gridWidth, mws);
+          cMinWidthsS,
+          cMinHeightsS,
+          dMinWidthsS,
+          dMinHeightsS,
+        ], function (gridWidth, gridHeight, cmws, cmhs, dmws, dmhs) {
+          var rows = computeRows(gridWidth, cmws, dmws);
           var index = 0;
           var top = 0;
           if (config.splitH) {
@@ -4130,7 +4192,10 @@
             });
           }
           rows.map(function (row) {
-            row.height = config.rowHeight(row.cells, mhs.slice(index, index + row.cells.length));
+            var cHeight = config.rowHeight(row.cells, cmhs.slice(index, index + row.cells.length));
+            var dHeight = config.rowHeight(row.cells, dmhs.slice(index, index + row.cells.length));
+            row.height = cHeight + dHeight;
+            row.dHeight = dHeight;
             index += row.cells.length;
           });
           if (config.bottomToTop) {
@@ -4152,6 +4217,7 @@
                 left: cell.left,
                 width: cell.width,
                 height: row.height,
+                dHeight: row.dHeight,
               };
               if (config.splitH && i > 0) {
                 updateDomStyle(splitHEls[elsPositionedH], 'display', '');
@@ -4172,11 +4238,18 @@
               elsPositionedV += 1;
             }
             positions.map(function (position, index) {
-              var context = row.contexts[index];
-              stream.push(context.top, position.top);
-              stream.push(context.left, position.left);
-              stream.push(context.width, position.width);
-              stream.push(context.height, position.height);
+              var cContext = row.cContexts[index];
+              stream.push(cContext.top, position.top);
+              stream.push(cContext.left, position.left);
+              stream.push(cContext.width, position.width);
+              stream.push(cContext.height, position.height - position.dHeight);
+              var dContext = row.dContexts[index];
+              if (dContext) {
+                stream.push(dContext.top, position.top + position.height - position.dHeight);
+                stream.push(dContext.left, position.left);
+                stream.push(dContext.width, position.width);
+                stream.push(dContext.height, position.dHeight);
+              }
             });
           });
         });
