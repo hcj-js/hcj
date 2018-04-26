@@ -5419,6 +5419,7 @@
       fixedHeaderBody: fixedHeaderBody,
       grid: grid,
       hoverThis: hoverThis,
+      hoverStream: hoverStream,
       keepAspectRatio: keepAspectRatio,
       keydownThis: keydownThis,
       keyupThis: keyupThis,

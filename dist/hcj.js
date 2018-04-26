@@ -5497,6 +5497,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       fixedHeaderBody: fixedHeaderBody,
       grid: grid,
       hoverThis: hoverThis,
+      hoverStream: hoverStream,
       keepAspectRatio: keepAspectRatio,
       keydownThis: keydownThis,
       keyupThis: keyupThis,
