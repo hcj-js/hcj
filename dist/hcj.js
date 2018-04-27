@@ -4110,27 +4110,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
           return Array.prototype.slice.call(arguments);
         });
 
-        var dMinWidthsS = stream.map(stream.combine(js.map(function (j) {
-          return j ? j.minWidth : stream.once(null);
+        var dMinWidthsS = stream.combine(js.map(function (j) {
+          return j ? j.minWidth : stream.once(0);
         }), function () {
           return Array.prototype.slice.call(arguments);
-        }), function (mw) {
-          if (mw === null) {
-            return 0;
-          }
-          return mw;
         });
-        var dMinHeightsS = stream.map(stream.combine(js.map(function (j) {
-          return j ? j.minHeight : stream.once(null);
+        var dMinHeightsS = stream.combine(js.map(function (j) {
+          return j ? j.minHeight : onceConstantZeroS;
         }), function () {
           return Array.prototype.slice.call(arguments);
-        }), function (mh) {
-          if (mh === null) {
-            return function (w) {
-              return 0;
-            };
-          }
-          return mh;
         });
 
         var computeRows = function (gridWidth, cmws, dmws) {
