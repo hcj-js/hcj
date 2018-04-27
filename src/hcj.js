@@ -5072,6 +5072,9 @@
       ])(input(function (el, ctx, mw, mh) {
         mw();
         mh();
+        if (def.hasOwnProperty('step')) {
+          el.step = def.step;
+        }
         el.name = k;
         el.type = 'number';
         stream.onValue(s, function (v) {
