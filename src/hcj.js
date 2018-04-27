@@ -1335,10 +1335,10 @@
       return v;
     };
     return and(function (i) {
-      i.el.addEventListener('mouseover', function (ev) {
+      i.el.addEventListener('mouseenter', function (ev) {
         stream.push(s, f(ev));
       });
-      i.el.addEventListener('mouseout', function (ev) {
+      i.el.addEventListener('mouseleave', function (ev) {
         stream.push(s, f(false));
       });
     });
