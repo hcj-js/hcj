@@ -5150,6 +5150,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
       ])(input(function (el, ctx, mw, mh) {
         mw();
         mh();
+        if (def.hasOwnProperty('step')) {
+          el.step = def.step;
+        }
         el.name = k;
         el.type = 'number';
         stream.onValue(s, function (v) {
@@ -5334,16 +5337,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var buttonInput = constant(all([
     minWidth(150),
   ]));
-  var textInput = function (field, labelText) {
-    if (!field.label) {
-      return all([
-        minWidth(150),
-      ]);
-    }
+  var textInput = function (field, labelText, validationText) {
     return function (c) {
       return stack([
-        (labelText || text)(field.label),
+        field.label ? (labelText || text)(field.label) : nothing,
         alignHLeft(c),
+        (validationText || function (strS) {
+          return text({
+            str: strS,
+          });
+        })(field.validationMessageS),
       ]);
     };
   };
@@ -5368,14 +5371,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     textarea: textInput,
     time: textInput,
   };
-  var defaultStyle = function (field) {
-    if (!field.type) {
-      var labelText = field;
-      return function (field) {
-        return formStyle[field.type.kind](field, labelText);
-      };
-    }
-    return formStyle[field.type.kind](field);
+  var defaultStyle = function (formStyle, labelText, validationText) {
+    // todo: labelText, validationText should just be arguments
+    // instead
+    return function (field) {
+      return formStyle[field.type.kind](field, labelText, validationText);
+    };
   };
 
   var formForOld = function (submitButtonFieldTypeF, formComponent) {
@@ -5468,7 +5469,20 @@ function waitForWebfonts(fonts, callback, maxTime) {
           field.name = name;
           field.stream = (field.default !== undefined) ? stream.once(field.default) : stream.create();
           fieldStreams[name] = field.stream;
-          fieldInputs[name] = style(field)(formComponent(field));
+          field.validateS = field.validate ? field.validate(field.stream, fieldStreams) : stream.once('');
+          field.validationMessageS = stream.map(field.validateS, function (validate) {
+            if (validate.message) {
+              return validate.message;
+            }
+            return validate;
+          });
+          field.isValidS = stream.map(field.validateS, function (validate) {
+            if (validate.valid) {
+              return validate.valid;
+            }
+            return validate.length === 0;
+          });
+          fieldInputs[name] = style(field)(formComponent[field.type.kind](field));
         });
         var disabledS = stream.once(false);
         var submitComponentF = customSubmitComponentF ? function (name) {
@@ -5497,6 +5511,17 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var setupFormSubmit = function (el) {
             el.addEventListener('submit', function (ev) {
               if (disabledS.lastValue) {
+                ev.preventDefault();
+                return;
+              }
+              var allValid = true;
+              Object.keys(fields).map(function (name) {
+                if (fields[name].isValidS.lastValue) {
+                  allValid = false;
+                }
+              });
+              if (!allValid) {
+                console.log('not all valid');
                 ev.preventDefault();
                 return;
               }
@@ -5649,7 +5674,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     forms: {
       defaultStyle: defaultStyle,
-      formComponent: formComponent,
+      formComponent: formComponentObj,
       formFor: formFor,
       formStyle: formStyle,
       fieldType: fieldType,
