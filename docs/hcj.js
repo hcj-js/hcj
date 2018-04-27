@@ -5344,6 +5344,29 @@ function waitForWebfonts(fonts, callback, maxTime) {
       minHeightAtLeast(100),
     ]);
   };
+  var imageInput = function (field, labelText, validationText) {
+    return function (c) {
+      return stack([
+        field.label ? (labelText || text)(field.label) : nothing,
+        alignHLeft(c),
+        componentStream(stream.map(field.stream, function (v) {
+          return v ? all([
+            keepAspectRatio({
+              fill: true,
+            }),
+            minWidth(0),
+          ])(image({
+            src: v,
+          })) : nothing;
+        })),
+        (validationText || function (strS) {
+          return text({
+            str: strS,
+          });
+        })(field.validationMessageS),
+      ]);
+    };
+  };
   var formStyle = {
     button: buttonInput,
     checkbox: textInput,
@@ -5351,7 +5374,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     dropdown: textInput,
     file: textInput,
     hidden: id,
-    image: textInput,
+    image: imageInput,
     number: textInput,
     password: textInput,
     radios: textInput,
