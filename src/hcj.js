@@ -4020,6 +4020,19 @@
             return d(context);
           }
         });
+        if (config.transition) {
+          is.map(function (i) {
+            transition(i, 'top', config.transition);
+            transition(i, 'height', config.transition);
+          });
+          js.map(function (j) {
+            transition(j, 'top', config.transition);
+            transition(j, 'height', config.transition);
+          });
+          splitVEls.map(function (splitVEl) {
+            splitVEl.style.transition = 'top ' + config.transition;
+          });
+        }
 
         var cMinWidthsS = stream.combine(is.map(function (i) {
           return i.minWidth;
