@@ -4181,7 +4181,10 @@
           }
           rows.map(function (row) {
             var cHeight = config.rowHeight(row.cells, cmhs.slice(index, index + row.cells.length));
-            var dHeight = config.rowHeight(row.cells, dmhs.slice(index, index + row.cells.length));
+            row.dHeights = dmhs.slice(index, index + row.cells.length).map(function (dmh, i) {
+              return dmh(row.cells[i].width);
+            });
+            var dHeight = row.dHeights.reduce(mathMax, 0);
             row.height = cHeight + dHeight;
             row.dHeight = dHeight;
             index += row.cells.length;
@@ -4205,7 +4208,8 @@
                 left: cell.left,
                 width: cell.width,
                 height: row.height,
-                dHeight: row.dHeight,
+                dTop: row.top + row.height - row.dHeight,
+                dHeight: row.dHeights[i],
               };
               if (config.splitH && i > 0) {
                 updateDomStyle(splitHEls[elsPositionedH], 'display', '');
@@ -4230,10 +4234,10 @@
               stream.push(cContext.top, position.top);
               stream.push(cContext.left, position.left);
               stream.push(cContext.width, position.width);
-              stream.push(cContext.height, position.height - position.dHeight);
+              stream.push(cContext.height, position.dTop - position.top);
               var dContext = row.dContexts[index];
               if (dContext) {
-                stream.push(dContext.top, position.top + position.height - position.dHeight);
+                stream.push(dContext.top, position.dTop);
                 stream.push(dContext.left, position.left);
                 stream.push(dContext.width, position.width);
                 stream.push(dContext.height, position.dHeight);
