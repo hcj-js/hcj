@@ -3645,7 +3645,17 @@
     return layout(function (el, ctx, c) {
       el.classList.add('toggle-height');
       el.style.overflow = 'hidden';
-      var i = c();
+      var context = {
+        height: stream.create(),
+      };
+      var i = c(context);
+      stream.pushAll(stream.combine([
+        i.minHeight,
+        ctx.width,
+        ctx.height,
+      ], function (mh, w, h) {
+        return Math.max(h, mh(w));
+      }), context.height);
       return {
         minWidth: i.minWidth,
         minHeight: stream.combine([
