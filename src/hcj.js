@@ -4846,27 +4846,27 @@
   var getFormElementMarginTop = function (el) {
     var style = window.getComputedStyle(el);
     // '|| 0' is required because parseFloat('') === NaN
-    return (parseFloat(style.marginTop) || 0) +
-      (parseFloat(style.paddingTop) || 0) +
-      (parseFloat(style.borderTop) || 0);
+    return parseFloat(style.marginTop) +
+      parseFloat(style.paddingTop) +
+      parseFloat(style.borderTopWidth);
   };
   var getFormElementMarginBottom = function (el) {
     var style = window.getComputedStyle(el);
-    return (parseFloat(style.marginBottom) || 0) +
-      (parseFloat(style.paddingBottom) || 0) +
-      (parseFloat(style.borderBottom) || 0);
+    return parseFloat(style.marginBottom) +
+      parseFloat(style.paddingBottom) +
+      parseFloat(style.borderBottomWidth);
   };
   var getFormElementMarginLeft = function (el) {
     var style = window.getComputedStyle(el);
-    return (parseFloat(style.marginLeft) || 0) +
-      (parseFloat(style.paddingLeft) || 0) +
-      (parseFloat(style.borderLeft) || 0);
+    return parseFloat(style.marginLeft) +
+      parseFloat(style.paddingLeft) +
+      parseFloat(style.borderLeftWidth);
   };
   var getFormElementMarginRight = function (el) {
     var style = window.getComputedStyle(el);
-    return (parseFloat(style.marginRight) || 0) +
-      (parseFloat(style.paddingRight) || 0) +
-      (parseFloat(style.borderRight) || 0);
+    return parseFloat(style.marginRight) +
+      parseFloat(style.paddingRight) +
+      parseFloat(style.borderRightWidth);
   };
   var applyFormBorder = adjustPosition({}, {
     width: function (w, el) {
