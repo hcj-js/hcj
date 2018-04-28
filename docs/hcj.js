@@ -1577,9 +1577,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
       el.classList.add('keepAspectRatio');
       if (config.fill) {
         el.style.overflow = 'hidden';
-        if (!stream.isStream(config.fill)) {
-          config.fill = stream.once(config.fill);
-        }
+      }
+      if (!stream.isStream(config.fill)) {
+        config.fill = stream.once(config.fill || false);
       }
       var props = stream.create();
       var i = c({
