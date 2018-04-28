@@ -4923,27 +4923,28 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
   var getFormElementMarginTop = function (el) {
     var style = window.getComputedStyle(el);
-    return parseFloat(style.marginTop) +
-      parseFloat(style.paddingTop) +
-      parseFloat(style.borderTop);
+    // '|| 0' is required because parseFloat('') === NaN
+    return (parseFloat(style.marginTop) || 0) +
+      (parseFloat(style.paddingTop) || 0) +
+      (parseFloat(style.borderTop) || 0);
   };
   var getFormElementMarginBottom = function (el) {
     var style = window.getComputedStyle(el);
-    return parseFloat(style.marginBottom) +
-      parseFloat(style.paddingBottom) +
-      parseFloat(style.borderBottom);
+    return (parseFloat(style.marginBottom) || 0) +
+      (parseFloat(style.paddingBottom) || 0) +
+      (parseFloat(style.borderBottom) || 0);
   };
   var getFormElementMarginLeft = function (el) {
     var style = window.getComputedStyle(el);
-    return parseFloat(style.marginLeft) +
-      parseFloat(style.paddingLeft) +
-      parseFloat(style.borderLeft);
+    return (parseFloat(style.marginLeft) || 0) +
+      (parseFloat(style.paddingLeft) || 0) +
+      (parseFloat(style.borderLeft) || 0);
   };
   var getFormElementMarginRight = function (el) {
     var style = window.getComputedStyle(el);
-    return parseFloat(style.marginRight) +
-      parseFloat(style.paddingRight) +
-      parseFloat(style.borderRight);
+    return (parseFloat(style.marginRight) || 0) +
+      (parseFloat(style.paddingRight) || 0) +
+      (parseFloat(style.borderRight) || 0);
   };
   var applyFormBorder = adjustPosition({}, {
     width: function (w, el) {
