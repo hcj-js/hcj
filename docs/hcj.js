@@ -4924,7 +4924,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
   var getFormElementMarginTop = function (el) {
     var style = window.getComputedStyle(el);
-    // '|| 0' is required because parseFloat('') === NaN
     return parseFloat(style.marginTop) +
       parseFloat(style.paddingTop) +
       parseFloat(style.borderTopWidth);
@@ -4960,12 +4959,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
-    left: function (el) {
-      return stream.once(getFormElementMarginLeft(el));
-    },
-    top: function (el) {
-      return stream.once(getFormElementMarginTop(el));
-    },
   });
   var applyTextareaBorder = adjustPosition({}, {
     width: function (w, el) {
@@ -4979,12 +4972,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
-    },
-    left: function (el) {
-      return stream.once(getFormElementMarginLeft(el));
-    },
-    top: function (el) {
-      return stream.once(getFormElementMarginTop(el));
     },
   });
   var applyCheckboxBorder = adjustPosition({}, {
@@ -5000,12 +4987,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
-    left: function (el) {
-      return stream.once(getFormElementMarginLeft(el));
-    },
-    top: function (el) {
-      return stream.once(getFormElementMarginTop(el));
-    },
   });
   var applyRadioBorder = adjustPosition({}, {
     width: function (w, el) {
@@ -5019,12 +5000,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
-    },
-    left: function (el) {
-      return stream.once(getFormElementMarginLeft(el));
-    },
-    top: function (el) {
-      return stream.once(getFormElementMarginTop(el));
     },
   });
   var formComponentObj = {
