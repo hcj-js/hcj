@@ -1309,14 +1309,20 @@ function waitForWebfonts(fonts, callback, maxTime) {
       el.classList.add('adjust-position');
       var adjustedCtx = extend({}, ctx, {
         el: el,
-        top: position.topS || onceZeroS,
-        left: position.leftS || onceZeroS,
+        top: position.top ? stream.create() : onceZeroS,
+        left: position.left ? stream.create() : onceZeroS,
         width: position.width ? stream.create() : ctx.width,
         height: position.height ? stream.create() : ctx.height,
         widthCalc: ctx.widthCalc && (position.widthCalc ? stream.create() : ctx.widthCalc),
         heightCalc: ctx.heightCalc && (position.heightCalc ? stream.create() : ctx.heightCalc),
       });
       var i = c(adjustedCtx);
+      if (position.top) {
+        stream.pushAll(position.top(el.firstChild), adjustedCtx.top);
+      }
+      if (position.left) {
+        stream.pushAll(position.left(el.firstChild), adjustedCtx.left);
+      }
       if (position.width) {
         stream.onValue(ctx.width, function (w) {
           stream.push(adjustedCtx.width, position.width(w, el.firstChild));
@@ -4952,6 +4958,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
+    left: function (el) {
+      return stream.once(getFormElementMarginLeft(el));
+    },
+    top: function (el) {
+      return stream.once(getFormElementMarginTop(el));
+    },
   });
   var applyTextareaBorder = adjustPosition({}, {
     width: function (w, el) {
@@ -4965,6 +4977,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
+    },
+    left: function (el) {
+      return stream.once(getFormElementMarginLeft(el));
+    },
+    top: function (el) {
+      return stream.once(getFormElementMarginTop(el));
     },
   });
   var applyCheckboxBorder = adjustPosition({}, {
@@ -4980,6 +4998,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
+    left: function (el) {
+      return stream.once(getFormElementMarginLeft(el));
+    },
+    top: function (el) {
+      return stream.once(getFormElementMarginTop(el));
+    },
   });
   var applyRadioBorder = adjustPosition({}, {
     width: function (w, el) {
@@ -4993,6 +5017,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     heightCalc: function (calc, el) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
+    },
+    left: function (el) {
+      return stream.once(getFormElementMarginLeft(el));
+    },
+    top: function (el) {
+      return stream.once(getFormElementMarginTop(el));
     },
   });
   var formComponentObj = {
