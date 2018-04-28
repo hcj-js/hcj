@@ -5542,6 +5542,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
             str: name,
           }));
         };
+        var allFieldsValid = function () {
+          var allValid = true;
+          Object.keys(fields).map(function (name) {
+            if (!fields[name].isValidS.lastValue) {
+              allValid = false;
+            }
+          });
+          return allValid;
+        }
         if (typeof mkOnSubmit === 'function') {
           var onSubmit = mkOnSubmit(fieldStreams, function () {
             stream.push(disabledS, true);
@@ -5555,13 +5564,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
                 ev.preventDefault();
                 return;
               }
-              var allValid = true;
-              Object.keys(fields).map(function (name) {
-                if (fields[name].isValidS.lastValue) {
-                  allValid = false;
-                }
-              });
-              if (!allValid) {
+              if (!allFieldsValid()) {
                 console.log('not all valid');
                 ev.preventDefault();
                 return;
@@ -5574,6 +5577,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
           var setupFormSubmit = function (el) {
             el.method = mkOnSubmit.method;
             el.action = mkOnSubmit.action;
+            el.addEventListener('submit', function (ev) {
+              if (!allFieldsValid()) {
+                console.log('not all valid');
+                ev.preventDefault();
+                return;
+              }
+            });
           };
         }
         return layout('form', function (el, ctx, c) {
