@@ -5243,6 +5243,12 @@
         var lastOuterHeight = outerHeight(el);
         var mw = stream.once(lastOuterWidth);
         var mh = stream.once(constant(lastOuterHeight));
+        var afterTextareaResize = function () {
+          stream.defer(function () {
+            el.style.width = 'calc(' + (ctx.widthCalc ? ctx.widthCalc.lastValue : px(ctx.width.lastValue)) + ')';
+            el.style.height = 'calc(' + (ctx.heightCalc ? ctx.heightCalc.lastValue : px(ctx.height.lastValue)) + ')';
+          });
+        };
         var onTextareaResize = function () {
           var currentOuterWidth = outerWidth(el);
           var currentOuterHeight = outerHeight(el);
@@ -5256,12 +5262,14 @@
           }
         };
         document.body.addEventListener('mousemove', onTextareaResize);
+        document.body.addEventListener('mouseup', afterTextareaResize);
         el.addEventListener('click', onTextareaResize);
         return {
           minWidth: mw,
           minHeight: mh,
           remove: function () {
             document.body.removeEventListener('mousemove', onTextareaResize);
+            document.body.removeEventListener('mouseup', afterTextareaResize);
           },
         };
       }));
