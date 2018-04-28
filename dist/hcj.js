@@ -3893,6 +3893,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       setTimeout(function () {
         transition(headerI, 'height', config.transition);
         transition(bodyI, 'top', config.transition);
+        transition(bodyI, 'height', config.transition);
       });
 
       return {
