@@ -4107,6 +4107,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
             transition(j, 'top', config.transition);
             transition(j, 'height', config.transition);
           });
+          splitHEls.map(function (splitVEl) {
+            splitVEl.style.transition = 'top ' + config.transition + ', height ' + config.transition;
+          });
           splitVEls.map(function (splitVEl) {
             splitVEl.style.transition = 'top ' + config.transition;
           });
