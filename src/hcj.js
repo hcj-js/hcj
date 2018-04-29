@@ -1266,12 +1266,8 @@
         });
       }
       return {
-        minWidth: minSize.minWidth ? stream.map(i.minWidth, function (mw) {
-          return minSize.minWidth(mw, el.firstChild);
-        }) : i.minWidth,
-        minHeight: minSize.minHeight ? stream.map(i.minHeight, function (mh) {
-          return minSize.minHeight(mh, el.firstChild);
-        }) : i.minHeight,
+        minWidth: minSize.minWidth ? minSize.minWidth(i.minWidth, el.firstChild) : i.minWidth,
+        minHeight: minSize.minHeight ? minSize.minHeight(i.minHeight, el.firstChild) : i.minHeight,
       };
     });
   };
