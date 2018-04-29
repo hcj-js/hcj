@@ -1788,20 +1788,26 @@ function waitForWebfonts(fonts, callback, maxTime) {
               // }, 0);
               mw = measureWidth(el);
             }
-            var elStyle = getComputedStyle(el);
-            var lineHeightCss = elStyle.lineHeight;
-            var fontSize = config.size || parseInt(elStyle.fontSize);
-            var lineHeightPx = config.lineHeight && config.lineHeight * fontSize || (lineHeightCss.indexOf('px') !== -1 && parseFloat(lineHeightCss));
-            var mh;
-            if (config.oneLine) {
-              mh = constant(lineHeightPx);
+            if (mw !== null) {
+              stream.push(mwS, mw);
             }
-            else if (config.approximateHeight) {
-              mh = function (w) {
-                // TODO: loop over spans
-                var str = el.textContent;
-                return Math.ceil(lineHeightPx * str.length * 0.5 / w) * lineHeightPx;
-              };
+            if (config.oneLine || config.approximateHeight) {
+              var elStyle = getComputedStyle(el);
+              var lineHeightCss = elStyle.lineHeight;
+              var fontSize = config.size || parseInt(elStyle.fontSize);
+              var lineHeightPx = config.lineHeight && config.lineHeight * fontSize || (lineHeightCss.indexOf('px') !== -1 && parseFloat(lineHeightCss));
+              var mh;
+              if (config.oneLine) {
+                mh = constant(lineHeightPx);
+              }
+              else if (config.approximateHeight) {
+                mh = function (w) {
+                  // TODO: loop over spans
+                  var str = el.textContent;
+                  return Math.ceil(lineHeightPx * str.length * 0.5 / w) * lineHeightPx;
+                };
+              }
+              stream.push(mhS, mh);
             }
             if (!config.oneLine) {
               stream.defer(function () {
@@ -1815,12 +1821,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
                 // }), config.lineHeight);
                 stream.push(mhS, mh);
               });
-            }
-            if (mw !== null) {
-              stream.push(mwS, mw);
-            }
-            if (config.oneLine || config.approximateHeight) {
-              stream.push(mhS, mh);
             }
             firstPush = false;
           });
