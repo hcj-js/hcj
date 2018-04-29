@@ -4579,86 +4579,134 @@
   });
 
 
-  // // var table = function (config, css)) {
-  // //     config = config || {};
-  // //     var padding = (config.padding || 0) * 2;
-  // //     return div.all(stream.map(css, function (cs) {
-  // //         return children(cs);
-  // //     })).all([
-  // //         componentName('table'),
-  // //         wireChildren(function () {
-  // //             var args = Array.prototype.slice.call(arguments);
-  // //             var instance = args[0];
-  // //             var context = args[1];
-  // //             var iss = args.slice(2);
 
-  // //             // we blindly assume all rows have the same number of columns
+  var table = uncurryConfig(function (config) {
+    config = config || {};
+    config.surplusWidth = config.surplusWidth || ignoreSurplusWidth;
+    config.surplusHeight = config.surplusHeight || ignoreSurplusHeight;
+    config.padding = config.padding || 0;
+    config.rowPadding = config.rowPadding || config.padding;
+    config.colPadding = config.colPadding || config.padding;
+    return layout(function (el, ctx, css) {
+      el.classList.add('table');
 
-  // //             // set table min width
-  // //             var maxMWs = stream.combine(iss.reduce(function (a, is) {
-  // //                 stream.push(a, stream.combine(is.map(function (i) {
-  // //                     return i.minWidth;
-  // //                 }), function () {
-  // //                     return Array.prototype.slice.call(arguments);
-  // //                 }));
-  // //                 return a;
-  // //             }, []), function () {
-  // //                 var rowMWs = Array.prototype.slice.call(arguments);
-  // //                 return rowMWs.reduce(function (a, rowMWs) {
-  // //                     return stream.map(rowMWs, function (mw, i) {
-  // //                         return Math.max(a[i] || 0, mw);
-  // //                     });
-  // //                 }, []);
-  // //             });
-  // //             stream.map(maxMWs, function (maxMWs) {
-  // //                 var mw = maxMWs.reduce(function (a, mw) {
-  // //                     return a + mw + padding;
-  // //                 }, -padding);
-  // //                 stream.push(instance.minWidth, mw);
-  // //             });
+      var contextss = [];
+      var iss = css.map(function (cs) {
+        var contexts = [];
+        contextss.push(contexts);
+        return cs.map(function (c) {
+          var context = {
+            left: stream.create(),
+            width: stream.create(),
+            top: stream.create(),
+            height: stream.create(),
+          };
+          contexts.push(context);
+          return c(context);
+        });
+      });
 
-  // //             // set table min height
-  // //             var rowMinHeights = iss.reduce(function (a, is) {
-  // //                 stream.push(a, stream.combine(is.map(function (i) {
-  // //                     return i.minHeight;
-  // //                 }), function () {
-  // //                     var args = Array.prototype.slice.call(arguments);
-  // //                     return args.reduce(mathMax, 0);
-  // //                 }));
-  // //                 return a;
-  // //             }, []);
-  // //             stream.combine(rowMinHeights, function () {
-  // //                 var mhs = Array.prototype.slice.call(arguments);
-  // //                 var mh = mhs.reduce(function (a, mh) {
-  // //                     return a + mh + padding;
-  // //                 }, -padding);
-  // //                 stream.push(instance.minHeight, mh);
-  // //             });
+      // we blindly assume all rows have the same number of columns
 
-  // //             return stream.map(rowMinHeights, function (mh, i) {
-  // //                 return stream.map(iss[i], function (_, index) {
-  // //                     return {
-  // //                         width: stream.map(maxMWs, function (maxMWs) {
-  // //                             return maxMWs[index];
-  // //                         }),
-  // //                         height: rowMinHeights[i],
-  // //                         top: stream.combine(rowMinHeights.slice(0, i).concat([stream.once(0)]), function () {
-  // //                             var mhs = Array.prototype.slice.call(arguments);
-  // //                             return mhs.reduce(function (a, mh) {
-  // //                                 return a + mh + padding;
-  // //                             }, -padding);
-  // //                         }),
-  // //                         left: stream.map(maxMWs, function (maxMWs) {
-  // //                             return maxMWs.reduce(function (a, mw, mwI) {
-  // //                                 return a + (mwI < index ? mw + padding : 0);
-  // //                             }, 0);
-  // //                         }),
-  // //                     };
-  // //                 });
-  // //             });
-  // //         }),
-  // //     ]);
-  // // };
+      var mwssS = stream.all(iss.map(function (is) {
+        return stream.all(is.map(function (i) {
+          return i.minWidth;
+        }));
+      }));
+      var mhssS = stream.all(iss.map(function (is) {
+        return stream.all(is.map(function (i) {
+          return i.minHeight;
+        }));
+      }));
+
+      // forms a single row from multiple rows by taking the max of
+      // each column
+      var findBaseWidths = function (mwss) {
+        var MWs = mwss[0].slice();
+        for (var i = 1; i < mwss.length; i++) {
+          var mws = mwss[i];
+          for (var j = 0; j < mws.length; j++) {
+            MWs[j] = Math.max(MWs[j], mws[j]);
+          }
+        }
+        return MWs;
+      };
+
+      stream.combine([
+        mwssS,
+        mhssS,
+        ctx.width,
+        ctx.height,
+      ], function (mwss, mhss, width, height) {
+        var mws = findBaseWidths(mwss);
+        var positionsH = [];
+        mws.reduce(function (a, mw) {
+          positionsH.push({
+            left: a,
+            width: mw,
+          });
+          return a + mw;
+        }, 0);
+        positionsH = config.surplusWidth(width - config.colPadding * (mws.length - 1), [positionsH])[0];
+
+        var positionsV = [];
+        mhss.reduce(function (a, mhs) {
+          var height = mhs.reduce(function (a, mh, i) {
+            return Math.max(a, mh(positionsH[i].width));
+          }, 0);
+          positionsV.push({
+            top: a,
+            height: height,
+          });
+          return a + height;
+        }, 0);
+        positionsV = config.surplusHeight(height - config.rowPadding * (mhss.length - 1), positionsV);
+
+        contextss.map(function (contexts, j) {
+          contexts.map(function (context, i) {
+            stream.push(context.left, positionsH[i].left + config.colPadding * i);
+            stream.push(context.width, positionsH[i].width);
+            stream.push(context.top, positionsV[j].top + config.rowPadding * j);
+            stream.push(context.height, positionsV[j].height);
+          });
+        });
+      });
+
+      return {
+        minWidth: stream.map(mwssS, function (mwss) {
+          return mwss.reduce(function (a, mws) {
+            return Math.max(a, mws.reduce(function (a, mw) {
+              return a + mw;
+            }, 0));
+          }, 0);
+        }),
+        minHeight: stream.combine([
+          mwssS,
+          mhssS,
+        ], function (mwss, mhss) {
+          return function (w) {
+            var mws = findBaseWidths(mwss);
+            var positionsH = [];
+            mws.reduce(function (a, mw) {
+              positionsH.push({
+                left: a,
+                width: mw,
+              });
+              return a + mw;
+            }, 0);
+            positionsH = config.surplusWidth(w - config.colPadding * (mws.length - 1), [positionsH])[0];
+
+            return mhss.reduce(function (a, mhs) {
+              var height = mhs.reduce(function (a, mh, i) {
+                return Math.max(a, mh(positionsH[i].width));
+              }, 0);
+              return a + height;
+            }, 0) + config.rowPadding * (mhss.length - 1);
+          };
+        }),
+      };
+    });
+  });
 
   var tabs = function (list, tabIndexS) {
     tabIndexS = tabIndexS || stream.once(0);
@@ -5629,6 +5677,7 @@
       stream: cStream,
       streams: cStreams,
       submitThis: submitThis,
+      table: table,
       tabs: tabs,
       text: text,
       toggleHeight: toggleHeight,
