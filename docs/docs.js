@@ -301,7 +301,9 @@
           return shown ? '[hide code]' : '[show code]';
         }),
       })),
-      c.toggleHeight(shownS)(codeBlock(strs)),
+      c.componentStream(stream.map(shownS, function (shown) {
+        return shown ? codeBlock(strs) : c.nothing;
+      })),
     ]));
   };
 
