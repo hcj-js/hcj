@@ -3162,6 +3162,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
   });
 
   var margin = function (amount) {
+    if (!amount || typeof amount === 'function') {
+      throw 'Margin must be called with 1 argument.\n\n' + new Error().stack;
+    }
     var top = amount.all || 0,
         bottom = amount.all || 0,
         left = amount.all || 0,
@@ -3499,6 +3502,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
   // // };
 
   var border = function (colorS, amount, style) {
+    if (!colorS || !amount) {
+      throw 'Border must be called with at least 2 arguments.\n\n' + new Error().stack;
+    }
     var left = amount.left || amount.all || 0;
     var right = amount.right || amount.all || 0;
     var top = amount.top || amount.all || 0;
