@@ -5389,7 +5389,7 @@
     date: textInput,
     dropdown: textInput,
     file: textInput,
-    hidden: id,
+    hidden: constant(id),
     image: imageInput,
     number: textInput,
     password: textInput,
