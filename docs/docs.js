@@ -2970,9 +2970,10 @@
         }),
         c.alignHLeft,
       ])(c.text({
-        str: 'push me',
         el: el.button,
         measureWidth: true,
+      }, {
+        str: 'Push me.',
       })),
       showCodeBlock([
         'c.all([',
