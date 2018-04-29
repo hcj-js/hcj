@@ -4665,6 +4665,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
     config.padding = config.padding || 0;
     config.rowPadding = config.rowPadding || config.padding;
     config.colPadding = config.colPadding || config.padding;
+    if (!config.hasOwnProperty('wholeRowIndex')) {
+      config.wholeRowIndex = -1;
+    }
     return layout(function (el, ctx, css) {
       el.classList.add('table');
 
@@ -4675,8 +4678,20 @@ function waitForWebfonts(fonts, callback, maxTime) {
         };
       }
 
+      var wholeRowContexts = [];
+      var wholeRowIs = [];
+
       var contextss = [];
       var iss = css.map(function (cs) {
+        if (config.wholeRowIndex > -1) {
+          var wholeRowContext = {
+            width: stream.create(),
+            top: stream.create(),
+            height: stream.create(),
+          };
+          wholeRowContexts.push(wholeRowContext);
+          wholeRowIs.push(cs.splice(config.wholeRowIndex, 1)[0](wholeRowContext));
+        }
         var contexts = [];
         contextss.push(contexts);
         return cs.map(function (c) {
@@ -4704,6 +4719,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
         }));
       }));
 
+      var wholeRowMWs = stream.all(wholeRowIs.map(function (i) {
+        return i.minWidth;
+      }));
+      var wholeRowMHs = stream.all(wholeRowIs.map(function (i) {
+        return i.minHeight;
+      }));
+
       // forms a single row from multiple rows by taking the max of
       // each column
       var findBaseWidths = function (mwss) {
@@ -4722,7 +4744,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         mhssS,
         ctx.width,
         ctx.height,
-      ], function (mwss, mhss, width, height) {
+        config.wholeRowIndex > -1 ? wholeRowMHs : onceZeroS,
+      ], function (mwss, mhss, width, height, wholeRowMHs) {
         var mws = findBaseWidths(mwss);
         var positionsH = [];
         mws.reduce(function (a, mw) {
@@ -4735,10 +4758,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
         positionsH = config.surplusWidth(width - config.colPadding * (mws.length - 1), [positionsH])[0];
 
         var positionsV = [];
-        mhss.reduce(function (a, mhs) {
+        mhss.reduce(function (a, mhs, i) {
           var height = mhs.reduce(function (a, mh, i) {
             return Math.max(a, mh(positionsH[i].width));
           }, 0);
+          if (config.wholeRowIndex > -1) {
+            height = Math.max(height, wholeRowMHs[i](width) - config.rowPadding);
+          }
           positionsV.push({
             top: a,
             height: height,
@@ -4751,44 +4777,76 @@ function waitForWebfonts(fonts, callback, maxTime) {
           contexts.map(function (context, i) {
             stream.push(context.left, positionsH[i].left + config.colPadding * i);
             stream.push(context.width, positionsH[i].width);
-            stream.push(context.top, positionsV[j].top + config.rowPadding * j);
+            stream.push(context.top, positionsV[j].top + config.rowPadding * (j + 0.5));
             stream.push(context.height, positionsV[j].height);
           });
         });
+        if (config.wholeRowIndex > -1) {
+          wholeRowContexts.map(function (context, i) {
+            stream.push(context.width, width);
+            stream.push(context.top, positionsV[i].top + config.rowPadding * i);
+            stream.push(context.height, positionsV[i].height + config.rowPadding);
+          });
+        };
       });
 
-      return {
-        minWidth: stream.map(mwssS, function (mwss) {
+      var tableMinWidthS = stream.map(mwssS, function (mwss) {
           return mwss.reduce(function (a, mws) {
             return Math.max(a, mws.reduce(function (a, mw) {
               return a + mw;
             }, 0));
           }, 0);
-        }),
-        minHeight: stream.combine([
-          mwssS,
-          mhssS,
-        ], function (mwss, mhss) {
-          return function (w) {
-            var mws = findBaseWidths(mwss);
-            var positionsH = [];
-            mws.reduce(function (a, mw) {
-              positionsH.push({
-                left: a,
-                width: mw,
-              });
-              return a + mw;
-            }, 0);
-            positionsH = config.surplusWidth(w - config.colPadding * (mws.length - 1), [positionsH])[0];
+      });
+      var tableMinHeightS = stream.combine([
+        mwssS,
+        mhssS,
+      ], function (mwss, mhss) {
+        return function (w) {
+          var mws = findBaseWidths(mwss);
+          var positionsH = [];
+          mws.reduce(function (a, mw) {
+            positionsH.push({
+              left: a,
+              width: mw,
+            });
+            return a + mw;
+          }, 0);
+          positionsH = config.surplusWidth(w - config.colPadding * (mws.length - 1), [positionsH])[0];
 
-            return mhss.reduce(function (a, mhs) {
-              var height = mhs.reduce(function (a, mh, i) {
-                return Math.max(a, mh(positionsH[i].width));
-              }, 0);
-              return a + height;
-            }, 0) + config.rowPadding * (mhss.length - 1);
+          return mhss.reduce(function (a, mhs) {
+            var height = mhs.reduce(function (a, mh, i) {
+              return Math.max(a, mh(positionsH[i].width));
+            }, 0);
+            return a + height;
+          }, 0) + config.rowPadding * mhss.length;
+        };
+      });
+
+      if (config.wholeRowIndex > -1) {
+        tableMinWidthS = stream.combine([
+          tableMinWidthS,
+          wholeRowMWs,
+        ], function (mw, mws) {
+          return mws.reduce(function (a, mw) {
+            return Math.max(a, mw);
+          }, mw);
+        });
+
+        tableMinHeightS = stream.combine([
+          tableMinHeightS,
+          wholeRowMHs,
+        ], function (mh, mhs) {
+          return function (w) {
+            return Math.max(mh(w), mhs.reduce(function (a, mh) {
+              return a + mh(w);
+            }, 0));
           };
-        }),
+        });
+      }
+
+      return {
+        minWidth: tableMinWidthS,
+        minHeight: tableMinHeightS,
       };
     });
   });
