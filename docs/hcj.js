@@ -437,6 +437,29 @@ function waitForWebfonts(fonts, callback, maxTime) {
         return i + 1;
       }, 0);
     },
+    combineMany: function (f) {
+      var arr = [];
+
+      var tryRunF = function () {
+        for (var i = 0; i < arr.length; i++) {
+          if (arr[i] === undefined) {
+            return;
+          }
+        }
+        f.apply(null, [arr]);
+      };
+
+      return {
+        addStream: function (s) {
+          var i = arr.length;
+          arr.push(undefined);
+          stream.onValue(s, function (v) {
+            arr[i] = v;
+            tryRunF();
+          });
+        },
+      };
+    },
     all: function (streams) {
       return stream.combine(streams, function () {
         return Array.prototype.slice.call(arguments);
@@ -1344,12 +1367,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       }
       return {
-        minWidth: minSize.minWidth ? stream.map(i.minWidth, function (mw) {
-          return minSize.minWidth(mw, el.firstChild);
-        }) : i.minWidth,
-        minHeight: minSize.minHeight ? stream.map(i.minHeight, function (mh) {
-          return minSize.minHeight(mh, el.firstChild);
-        }) : i.minHeight,
+        minWidth: minSize.minWidth ? minSize.minWidth(i.minWidth, el.firstChild) : i.minWidth,
+        minHeight: minSize.minHeight ? minSize.minHeight(i.minHeight, el.firstChild) : i.minHeight,
       };
     });
   };
@@ -4857,6 +4876,19 @@ function waitForWebfonts(fonts, callback, maxTime) {
     });
   });
 
+  var shareMinWidths = function () {
+    var greatestMinWidth = stream.create();
+    var streams = stream.combineMany(function (mws) {
+      stream.push(greatestMinWidth, mws.reduce(mathMax, 0));
+    });
+    return adjustPosition({
+      minWidth: function (minWidth) {
+        streams.addStream(minWidth);
+        return greatestMinWidth;
+      },
+    });
+  };
+
   var tabs = function (list, tabIndexS) {
     tabIndexS = tabIndexS || stream.once(0);
     return stack({})([
@@ -5817,6 +5849,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       passthrough: passthrough,
       promiseComponent: promiseComponent,
       scope: scope,
+      shareMinWidths: shareMinWidths,
       sideBySide: sideBySide,
       sideSlidingPanel: sideSlidingPanel,
       slideIn: slideIn,

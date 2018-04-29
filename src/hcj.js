@@ -359,6 +359,29 @@
         return i + 1;
       }, 0);
     },
+    combineMany: function (f) {
+      var arr = [];
+
+      var tryRunF = function () {
+        for (var i = 0; i < arr.length; i++) {
+          if (arr[i] === undefined) {
+            return;
+          }
+        }
+        f.apply(null, [arr]);
+      };
+
+      return {
+        addStream: function (s) {
+          var i = arr.length;
+          arr.push(undefined);
+          stream.onValue(s, function (v) {
+            arr[i] = v;
+            tryRunF();
+          });
+        },
+      };
+    },
     all: function (streams) {
       return stream.combine(streams, function () {
         return Array.prototype.slice.call(arguments);
@@ -4775,6 +4798,19 @@
     });
   });
 
+  var shareMinWidths = function () {
+    var greatestMinWidth = stream.create();
+    var streams = stream.combineMany(function (mws) {
+      stream.push(greatestMinWidth, mws.reduce(mathMax, 0));
+    });
+    return adjustPosition({
+      minWidth: function (minWidth) {
+        streams.addStream(minWidth);
+        return greatestMinWidth;
+      },
+    });
+  };
+
   var tabs = function (list, tabIndexS) {
     tabIndexS = tabIndexS || stream.once(0);
     return stack({})([
@@ -5735,6 +5771,7 @@
       passthrough: passthrough,
       promiseComponent: promiseComponent,
       scope: scope,
+      shareMinWidths: shareMinWidths,
       sideBySide: sideBySide,
       sideSlidingPanel: sideSlidingPanel,
       slideIn: slideIn,
