@@ -4590,6 +4590,13 @@
     return layout(function (el, ctx, css) {
       el.classList.add('table');
 
+      if (css.length === 0 || css[0].length === 0) {
+        return {
+          minWidth: onceZeroS,
+          minHeight: onceConstantZeroS,
+        };
+      }
+
       var contextss = [];
       var iss = css.map(function (cs) {
         var contexts = [];
