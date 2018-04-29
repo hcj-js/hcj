@@ -1457,6 +1457,7 @@
     }
     return layout(function (el, ctx, c) {
       el.classList.add('crop');
+      el.style.overflow = 'hidden';
       var props = stream.create();
       var i = c({
         top: stream.prop(props, 'top'),
