@@ -5867,8 +5867,8 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     displayedS: displayedS,
     // Remember, elements are not components.  This is why they are
-    // under 'el' and not 'c'.  If you want an empty component, use
-    // 'c.empty'.
+    // under 'el' and not 'component'.  If you want an empty
+    // component, use 'c.empty'.
     element: {
       a: a,
       button: button,
