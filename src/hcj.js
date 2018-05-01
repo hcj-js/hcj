@@ -467,13 +467,13 @@
   });
   var windowWidthMinusScrollbar = stream.create();
 
-  var windowScroll = stream.create(true);
+  var windowScroll = stream.create();
   window.addEventListener('scroll', function () {
     stream.push(windowScroll, window.scrollY);
   });
   stream.push(windowScroll, window.scrollY);
 
-  var windowHash = stream.create(true);
+  var windowHash = stream.create();
   window.addEventListener('hashchange', function () {
     stream.push(windowHash, location.pathname);
   });
