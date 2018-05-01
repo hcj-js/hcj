@@ -7,14 +7,13 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var startTime = new Date().getTime();
   var loadedFonts = 0;
   var callbackIsRun = false;
-  for(var i = 0, l = fonts.length; i < l; ++i) {
+  for(var i = 0; i < fonts.length; i++) {
     (function(font) {
       var container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.width = 0;
       document.body.appendChild(container);
       var node = document.createElement('span');
-      var $node = $(node);
       // Characters that vary significantly among different fonts
       if (font === 'FontAwesome') {
         node.innerHTML = '<i class="fa-facebook-square"></i>';
@@ -36,7 +35,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       container.appendChild(node);
 
       // Remember width with no applied web font
-      var width = $node.outerWidth();
+      var width = node.getBoundingClientRect().width;
       if (font === 'FontAwesome') {
         node.innerHTML = '<i class="fa fa-facebook-square"></i>';
       }
@@ -47,7 +46,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var interval;
       function checkFont () {
         // Compare current width with original width
-        if (node && (new Date().getTime() - startTime > maxTime || $node.outerWidth() != width)) {
+        if (node && (new Date().getTime() - startTime > maxTime || node.getBoundingClientRect().width != width)) {
           ++loadedFonts;
           node.parentNode.removeChild(node);
           node = null;
