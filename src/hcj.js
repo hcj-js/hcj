@@ -789,7 +789,7 @@
       return "calc(" + x + ")";
     });
   };
-  var layoutAppend = function (childInstances, el, context, c, ctx, noRemove) {
+  var layoutAppend = function (childInstances, el, context, c, ctx, config) {
     ctx = ctx || {};
     var childWidth = stream.create();
     var childWidthCalc = stream.create();
@@ -910,7 +910,7 @@
         unpushContextLeft();
       },
     });
-    if (noRemove !== true) {
+    if (config && config.noRemove !== true) {
       childInstances.push(i);
     }
     // todo: replace with some isInstance function
@@ -943,8 +943,8 @@
       console.log('cs is not a function');
       debugger;
     }
-    return function (ctx, noRemove) {
-      return layoutAppend(childInstances, el, context, cs, ctx, noRemove);
+    return function (ctx, config) {
+      return layoutAppend(childInstances, el, context, cs, ctx, config);
     };
   };
 
@@ -979,8 +979,8 @@
     return component(el, function (el, context) {
       var childInstances = [];
       el.style.position = 'absolute';
-      var i = buildContainer(el, context, function (c, ctx, noRemove) {
-        return layoutAppend(childInstances, el, context, c, ctx, noRemove);
+      var i = buildContainer(el, context, function (c, ctx, config) {
+        return layoutAppend(childInstances, el, context, c, ctx, config);
       });
       return {
         el: el,
@@ -3409,7 +3409,9 @@
         i = append(c, {
           widthCalc: stream.once('100%'),
           heightCalc: stream.once('100%'),
-        }, true);
+        }, {
+          noRemove: true,
+        });
         unpushMW = stream.pushAll(i.minWidth, minWidth);
         unpushMH = stream.pushAll(i.minHeight, minHeight);
         return i;
@@ -3456,7 +3458,9 @@
           widthCalc: stream.once('100%'),
           heightCalc: stream.once('100%'),
         };
-        i = append(c, ctx, true);
+        i = append(c, ctx, {
+          noRemove: true,
+        });
         i.el.style.transition = 'inherit';
         i.el.style.display = 'none';
         el.prepend(i.el);

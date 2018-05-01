@@ -514,10 +514,23 @@
       p("The `hcj.component.container` method is a helper method for defining layouts.  It takes an optional string argument giving tag name of the container, followed by a build method."),
       p("`container :: (String? , BuildContainer) -> Component`"),
       p("`type BuildContainer = (JQuery, Context, Append) -> {minWidth :: Number, minHeight :: Stream (Number -> Number), remove :: Function?}`"),
-      p("`type Append = (Component, Viewport?, Bool?) -> Instance`"),
+      p("`type Append = (Component, Viewport?, ChildConfig?) -> Instance`"),
+      c.stack([
+        p("`type ChildConfig = {`"),
+        c.all([
+          c.margin({
+            left: 20,
+          }),
+        ])(objectDefinition([{
+          name: 'noRemove',
+          type: 'Bool?',
+          description: 'Indicates that child component will be removed manually.',
+        }], true)),
+        p("`}`"),
+      ]),
       p("The build method takes three arguments.  The first two, `el` and `context`, are the root element of the container and the context that it is rendered into.  The third argument, `append`, is used to append child components to the container."),
-      p("The `append` function takes three arguments: the `Component` to append, a `Viewport`, and a `noRemove` flag."),
-      p("The first argument is self-explanatory.  The second argument, `viewport`, is an object that is upgraded to a `context` and then passed into the component being appended.  The `noRemove` flag causes the `remove` function of the returned `instance` not to be run when the container itself is removed.  This should be set to true if you intend the remove the instance yourself, typically at an earlier time than when the container is removed."),
+      p("The `append` function takes three arguments: the `Component` to append, a `Viewport`, and a `ChildConfig` object."),
+      p("The first argument is self-explanatory.  The second argument, `viewport`, is an object that is upgraded to a `context` and then passed into the component being appended.  If the `noRemove` property of the `ChildConfig` object is `true`, this means that you intend to call the `remove` function of the appended child component manually, so it will not be called automatically when the container is removed from the DOM."),
       p('A `Viewport` is an object with the following properties:'),
       objectDefinition([{
         name: 'el',
