@@ -3977,6 +3977,31 @@
     }, 0);
   };
 
+  var separatorUseMax = function (row1, row2) {
+    var rightmostCell1 = row1.cells[row1.cells.length - 1];
+    var rightmostCell2 = row2.cells[row2.cells.length - 1];
+    return {
+      left: Math.min(row1.cells[0].left, rows2.cells[0].left),
+      right: Math.max(rightmostCell1.left + rightmostCell1.width, rightmostCell2.left + rightmostCell2.width),
+    };
+  };
+  var separatorUseMin = function (row1, row2) {
+    var rightmostCell1 = row1.cells[row1.cells.length - 1];
+    var rightmostCell2 = row2.cells[row2.cells.length - 1];
+    return {
+      left: Math.max(row1.cells[0].left, row2.cells[0].left),
+      right: Math.min(rightmostCell1.left + rightmostCell1.width, rightmostCell2.left + rightmostCell2.width),
+    };
+  };
+  var separatorUseAverage = function (row1, row2) {
+    var rightmostCell1 = row1.cells[row1.cells.length - 1];
+    var rightmostCell2 = row2.cells[row2.cells.length - 1];
+    return {
+      left: (row1.cells[0].left + row2.cells[0].left) / 2,
+      right: (rightmostCell1.left + rightmostCell1.width + rightmostCell2.left + rightmostCell2.width) / 2,
+    };
+  };
+
   var grid = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
@@ -3993,6 +4018,7 @@
     config.rowOrColumn = config.rowOrColumn || false;
     config.splitH = config.splitH || null; // this feature is not stable, do not use :)
     config.splitV = config.splitV || config.splitH; // this feature is not stable, do not use :)
+    config.separatorWidth = config.separatorWidth || separatorUseMax;
 
     var totalPaddingH = config.padding + (config.splitH ? 1 + config.padding : 0);
     var totalPaddingV = config.padding + (config.splitV ? 1 + config.padding : 0);
@@ -4257,8 +4283,6 @@
           var elsPositionedH = 0;
           var elsPositionedV = 0;
           rows.map(function (row, i) {
-            var rightmostCell = row.cells[row.cells.length - 1];
-            row.right = rightmostCell.left + rightmostCell.width;
             var positions = row.cells.map(function (cell, i) {
               var position = {
                 top: row.top,
@@ -4280,10 +4304,9 @@
             if (config.splitV && i > 0) {
               updateDomStyle(splitVEls[elsPositionedV], 'display', '');
               updateDomStyle(splitVEls[elsPositionedV], 'top', (row.top - config.padding - 1) + 'px');
-              var minLeft = Math.min(rows[i-1].cells[0].left, rows[i].cells[0].left);
-              var maxRight = Math.max(rows[i-1].right, rows[i].right);
-              updateDomStyle(splitVEls[elsPositionedV], 'left', minLeft + 'px');
-              updateDomStyle(splitVEls[elsPositionedV], 'width', (maxRight - minLeft) + 'px');
+              var separatorWidth = config.separatorWidth(rows[i-1], rows[i]);
+              updateDomStyle(splitVEls[elsPositionedV], 'left', separatorWidth.left + 'px');
+              updateDomStyle(splitVEls[elsPositionedV], 'width', (separatorWidth.right - separatorWidth.left) + 'px');
               elsPositionedV += 1;
             }
             positions.map(function (position, index) {
@@ -5826,6 +5849,11 @@
       rowHeight: {
         useMaxHeight: useMaxHeight,
         useNthMinHeight: useNthMinHeight,
+      },
+      separatorWidth: {
+        useAverage: separatorUseAverage,
+        useMax: separatorUseMax,
+        useMin: separatorUseMin,
       },
       surplusWidth: {
         ignore: ignoreSurplusWidth,
