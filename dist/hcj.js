@@ -4421,19 +4421,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     });
   };
 
-  // // var atMostWindowBottom = function (c, distanceStream) {
-  // //     distanceStream = distanceStream || stream.once(0);
-  // //     return withMinHeightStream(function (instance, context) {
-  // //         return stream.combine([instance.minHeight,
-  // //                                context.top,
-  // //                                context.topOffset,
-  // //                                distanceStream,
-  // //                                windowResize], function (mh, t, ta, distance) {
-  // //                                    return Math.min(mh, window.innerHeight - t - ta - distance);
-  // //                                });
-  // //     }, c);
-  // // };
-
   var largestWidthThatFits = uncurryConfig(function (config) {
     return layout(function (el, ctx, cs) {
       el.classList.add('largest-width-that-fits');
