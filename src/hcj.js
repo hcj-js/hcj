@@ -1015,7 +1015,10 @@
     ], function (w, h, t, l) {
       stream.push(displayedS, true);
     });
-    return i;
+    return {
+      minWidth: i.minWidth,
+      minHeight: i.minHeight,
+    };
   });
 
   var ensureSandbox = function () {
