@@ -3810,33 +3810,33 @@ function waitForWebfonts(fonts, callback, maxTime) {
     });
   });
 
-  var makeSticky = uncurryConfig(function (str) {
+  var makeSticky = uncurryConfig(function (distanceS) {
     return layout(function (el, context, c) {
-      if (typeof str === 'number') {
-        str = stream.once(str);
+      if (typeof distanceS === 'number') {
+        distanceS = stream.once(distanceS);
       }
-      str = str || onceZeroS;
+      distanceS = distanceS || onceZeroS;
 
       el.classList.add('makeSticky');
 
       var i = c();
       stream.combine([
         windowScroll,
-        str,
+        distanceS,
         context.top,
         context.left,
-      ], function (scroll, diffAmount, top, left) {
+      ], function (scroll, distance, top, left) {
         stream.defer(function () {
-          if (top > scroll + diffAmount) {
+          if (top > scroll + distance) {
             i.el.style.position = 'absolute';
             i.el.style.top = px(0);
             i.el.style.left = px(0);
           }
-          else if (top < scroll + diffAmount) {
+          else if (top < scroll + distance) {
             var leftPosition = left;
             i.el.style.position = 'fixed';
             i.el.style.left = px(leftPosition);
-            i.el.style.top = px(diffAmount);
+            i.el.style.top = px(distance);
           }
         });
       });
