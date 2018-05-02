@@ -1,5 +1,5 @@
 .PHONY: docs
-all: css js
+all: css js prerender
 
 css:
 # todo: minify
@@ -11,8 +11,9 @@ js:
 	cp ./dist/hcj.js ./docs/hcj.js
 	cp ./dist/hcj.css ./docs/hcj.css
 
+prerender:
+	cp ./src/prerender.sh ./dist
 
 # docs prerender
 docs:
-	cd docs-prerender && sh ./prerender.sh
-	sed '/.*PRERENDER.*/ r docs-prerender/output' docs/docs.html | sed '/.*PRERENDER.*/d' > docs/index.html
+	cd docs && ./generatePages.sh -prerender
