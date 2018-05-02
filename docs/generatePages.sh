@@ -29,4 +29,5 @@ fi
 
 if [[ $1 == "-prerender" ]]; then
     ../src/prerender.sh -is "${pages[@]/%/.html}"
+    cp "${index_page}.html" "index.html"
 fi
