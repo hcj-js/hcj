@@ -3458,7 +3458,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var unpushMH;
       var minWidth = stream.create();
       var minHeight = stream.create();
-      var iStream = stream.reduce(cStream, function (i, c) {
+      var iStream = stream.onValue(cStream, function (c) {
         if (i) {
           i.remove();
         }
