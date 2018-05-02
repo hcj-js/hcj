@@ -201,6 +201,6 @@ for i in "$@"; do
 
     prerender_content=$(phantomjs -platform offscreen build.js "$host_url$i")
     existing_content=$(cat "$source_file" | sed "/HCJ_PRERENDER_START/,/HCJ_PRERENDER_END/d")
-    echo "$existing_content" | sed "/<body>/s/.*/&\n<!-- HCJ_PRERENDER_START -->\n${prerender_content//\//\\\/}\n<!-- HCJ_PRERENDER_END -->/" > "$target_file"
+    echo "$existing_content" | sed "/<body>/s/.*/&\n<!-- HCJ_PRERENDER_START -->\n<div style=\"display:none\">${prerender_content//\//\\\/}<\\/div>\n<!-- HCJ_PRERENDER_END -->/" > "$target_file"
 done
 
