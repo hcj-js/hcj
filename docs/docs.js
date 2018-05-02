@@ -333,13 +333,13 @@
     return stack(props.map(function (prop) {
       return c.grid({
         bottomToTop: !noBottomToTop,
-        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
       }, [
         pm((noBullet ? '`' : '&#8226;&nbsp;`') + prop.name + '&nbsp;'.repeat(maxPropLength - prop.nameLength) + ' :: ' + prop.type + '&nbsp;'.repeat(maxTypeLength - prop.typeLength) + '`'),
         c.all([
           noGray ? hcj.funcs.id : c.backgroundColor({font: color.gray}),
         ])(c.sideBySide({
-          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+          surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
           pm('`' + (commentString || '&nbsp;&nbsp;') + '`'),
           p0(prop.description),
@@ -355,11 +355,11 @@
     });
     return stack(sigs.map(function (sig) {
       return c.grid({
-        surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+        surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
       }, [
         pm((noBullet ? '`' : '&#8226;&nbsp;`') + sig.name + '&nbsp;'.repeat(maxPropLength - sig.name.length) + '`'),
         c.sideBySide({
-          surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+          surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
         }, [
           pm(typeofString || '`&nbsp;::&nbsp;`'),
           p0('`' + sig.type + '`'),
@@ -955,11 +955,11 @@
         type: 'Number?',
         description: 'Padding amount between components.',
       }, {
-        name: 'surplusWidthFunc',
+        name: 'surplusWidth',
         type: 'SurplusWidthFunc?',
         description: 'Splits any surplus width among components in each row; see `sideBySide`.',
       }, {
-        name: 'surplusHeightFunc',
+        name: 'surplusHeight',
         type: 'SurplusHeightFunc?',
         description: 'Splits surplus height among grid rows; see `stack`.',
       }, {
@@ -1004,7 +1004,7 @@
         type: 'Number?',
         description: 'Padding amount between components.',
       }, {
-        name: 'surplusWidthFunc',
+        name: 'surplusWidth',
         type: 'SurplusWidthFunc?',
         description: 'Distribute surplus width among the instances.',
       }]),
@@ -1048,7 +1048,7 @@
         type: 'Number?',
         description: 'Padding amount between components.',
       }, {
-        name: 'surplusHeightFunc',
+        name: 'surplusHeight',
         type: 'SurplusHeightFunc?',
         description: 'Distribute surplus height among the stacked items.',
       }]),
@@ -2606,7 +2606,7 @@
       h2('Show a grid of components'),
       c.grid({
         padding: 20,
-        surplusWidthFunc: hcj.funcs.surplusWidth.evenlySplitCenter,
+        surplusWidth: hcj.funcs.surplusWidth.evenlySplitCenter,
       })([
         pm('GRID TEXT'),
         pm('GRID TEXT'),
@@ -2642,7 +2642,7 @@
       showCodeBlock([
         'c.grid({',
         '  padding: 20,',
-        '  surplusWidthFunc: hcj.funcs.surplusWidth.evenlySplitCenter,',
+        '  surplusWidth: hcj.funcs.surplusWidth.evenlySplitCenter,',
         '})([',
         '  pm(\'GRID TEXT\'),',
         '  pm(\'GRID TEXT\'),',
@@ -3186,7 +3186,7 @@
     }),
   ])(c.largestWidthThatFits([
     c.sideBySide({
-      surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
     }, [
       logoC,
       c.all([
@@ -3200,7 +3200,7 @@
       linksWideC
     ]),
     c.sideBySide({
-      surplusWidthFunc: hcj.funcs.surplusWidth.giveToNth(1),
+      surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
     }, [
       logoC,
       c.all([
