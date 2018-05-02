@@ -15,7 +15,6 @@ pages=(
 	"apiExamples"
 	"definingComponents"
 	"definingLayouts"
-	"community blah"
 )
 
 index_page="home"
@@ -29,5 +28,5 @@ if [[ $1 == "-generate" ]]; then
 fi
 
 if [[ $1 == "-prerender" ]]; then
-	echo TODO
+    ../src/prerender.sh -is "${pages[@]/%/.html}"
 fi
