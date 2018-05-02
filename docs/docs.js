@@ -17,6 +17,7 @@
     padding: 10,
   });
 
+  var headerHeightS = stream.create();
 
   var mapMinWidths = function (is) {
     return stream.all(is.map(function (i) {
@@ -1238,7 +1239,7 @@
         }]),
       ]),
 
-      c.makeSticky(h2('MakeSticky')),
+      c.makeSticky(headerHeightS)(h2('MakeSticky')),
       p('`makeSticky :: (Number | Stream Number)? -> Style`'),
       p('Causes a component to stick to the top of the screen instead of scrolling off.'),
       p('A number, or a stream of numbers, can be optionally passed in before applying `makeSticky` to a component.  The component will then become sticky before it scrolls off the screen, at a distance from the top of the screen equal to the number you pass in.  (This can be useful for layering sticky items on top of one another, by passing the context height of the first into the makeSticky style of the second.)'),
@@ -3177,6 +3178,9 @@
     c.backgroundColor({
       background: darkPurple,
       font: white,
+    }),
+    c.and(function (i, ctx) {
+      stream.pushAll(ctx.height, headerHeightS);
     }),
   ])(c.largestWidthThatFits([
     c.sideBySide({
