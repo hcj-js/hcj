@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# default server hostname and port, when static-serving files
+default_server_hostname=127.0.0.1
+default_server_port=7000
+
 usage="Usage:
     prerender.sh [options] file1.html file2.html ...
 
@@ -33,10 +37,6 @@ Options:
     -h
 	Display this message.
 "
-
-# default server hostname and port, when static-serving files
-default_server_hostname=127.0.0.1
-default_server_port=7000
 
 while getopts "sp:n:u:d:ih" o; do
     case "$o" in
