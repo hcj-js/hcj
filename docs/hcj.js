@@ -987,7 +987,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         unpushContextLeft();
       },
     });
-    if (config && config.noRemove !== true) {
+    if (!config || config.noRemove !== true) {
       childInstances.push(i);
     }
     // todo: replace with some isInstance function
