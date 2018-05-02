@@ -2866,24 +2866,6 @@
     };
   });
 
-  var tree = uncurryConfig(function (config, index) {
-    config = config || {};
-    config.indent = config.indent || 10;
-    return function (actionS) {
-      var expandedS = stream.once(true);
-      return sideBySide()([
-        componentStream(stream.map(expandedS, function (e) {
-        })),
-        stackStream(config)(stream.map(actionS, caseSplit({
-          expand: function (c, i) {
-          },
-          collapse: function (i) {
-          },
-        }))),
-      ]);
-    };
-  });
-
   var intersperse = function (arr, v) {
     var result = [];
     arr.map(function (el) {
