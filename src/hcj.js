@@ -3756,7 +3756,6 @@
         stream.defer(function () {
           if (top > scroll + diffAmount) {
             i.el.style.position = 'absolute';
-            i.el.style.transition = '';
             i.el.style.top = px(0);
             i.el.style.left = px(0);
           }
@@ -3765,9 +3764,6 @@
             i.el.style.position = 'fixed';
             i.el.style.left = px(leftPosition);
             i.el.style.top = px(diffAmount);
-            setTimeout(function () {
-              i.el.style.transition = 'inherit';
-            }, 20);
           }
         });
       });
