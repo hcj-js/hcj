@@ -3849,65 +3849,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return !(typeof c === 'number') && !stream.isStream(c);
   });
 
-  // // var stickyHeaderBody = function (body1, header, body2) {
-  // //     return div.all([
-  // //         componentName('stickyHeaderBody'),
-  // //         child(body1),
-  // //         child(body2),
-  // //         child(header),
-  // //         wireChildren(function (instance, context, body1I, body2I, headerI) {
-  // //             stream.pushAll(stream.map(stream.combine([body1I, body2I, headerI], function (i) {
-  // //                 return i.minHeight;
-  // //             }), function () {
-  // //                 var args = Array.prototype.slice.call(arguments);
-  // //                 return args.reduce(add, 0);
-  // //             }), instance.minHeight);
-
-  // //             var fixedNow = false;
-
-  // //             return [{
-  // //                 top: stream.once(0),
-  // //                 left: stream.once(0),
-  // //                 width: context.width,
-  // //                 height: body1I.minHeight,
-  // //             }, {
-  // //                 top: stream.combine([body1I.minHeight, headerI.minHeight], add),
-  // //                 left: stream.once(0),
-  // //                 width: context.width,
-  // //                 height: body2I.minHeight,
-  // //             }, {
-  // //                 top: stream.combine([body1I.minHeight, context.scroll, context.topOffset], function (mh, scroll, topOffset) {
-  // //                     var $header = headerI.$el;
-  // //                     mh = Math.floor(mh);
-  // //                     if (mh > scroll + topOffset) {
-  // //                         $header.css('position', 'absolute');
-  // //                         $header.css('transition', '');
-  // //                         if (fixedNow) {
-  // //                             window.scrollTo(0, mh + topOffset);
-  // //                         }
-  // //                         fixedNow = false;
-  // //                         return mh;
-  // //                     }
-  // //                     else if (mh < scroll + topOffset) {
-  // //                         $header.css('position', 'fixed');
-  // //                         setTimeout(function () {
-  // //                             $header.css('transition', 'inherit');
-  // //                         }, 20);
-  // //                         if (!fixedNow) {
-  // //                             window.scrollTo(0, mh + topOffset);
-  // //                         }
-  // //                         fixedNow = true;
-  // //                         return topOffset;
-  // //                     }
-  // //                 }),
-  // //                 left: stream.once(0),
-  // //                 width: context.width,
-  // //                 height: headerI.minHeight,
-  // //             }];
-  // //         }),
-  // //     ]);
-  // // };
-
   var useNthMinHeight = function (n) {
     return function (cells, mhs) {
       var index = Math.min(n, cells.length - 1);
