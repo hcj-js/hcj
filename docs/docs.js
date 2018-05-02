@@ -490,8 +490,10 @@
     return [
       p('To help you get started, here is an absolutely minimal HCJ page, which you can modify with the components and layouts described in the next sections:'),
       codeBlock([
+        "&lt;!DOCTYPE HTML&gt;",
         "&lt;html&gt;",
         "    &lt;head&gt;",
+        "        &lt;meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"&gt;",
         "        &lt;link rel=\"stylesheet\" type=\"text/css\" href=\"hcj.css\"&gt;",
         "    &lt;/head&gt;",
         "    &lt;body&gt;",
