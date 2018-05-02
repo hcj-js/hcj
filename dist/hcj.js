@@ -3819,11 +3819,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
       el.classList.add('makeSticky');
 
-      var ctx = {
-        widthCalc: stream.once('100%'),
-        heightCalc: stream.once('100%'),
-      };
-      var i = c(ctx);
+      var i = c();
       stream.combine([
         windowScroll,
         str,
