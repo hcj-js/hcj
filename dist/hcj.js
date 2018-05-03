@@ -5534,14 +5534,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
         });
         return allValid;
-      }
+      };
+      var disable = function () {
+        stream.push(disabledS, true);
+        return function () {
+          stream.push(disabledS, false);
+        };
+      };
       if (typeof mkOnSubmit === 'function') {
-        var onSubmit = mkOnSubmit(fieldStreams, function () {
-          stream.push(disabledS, true);
-          return function () {
-            stream.push(disabledS, false);
-          };
-        });
         var setupFormSubmit = function (el) {
           el.addEventListener('submit', function (ev) {
             if (disabledS.lastValue) {
@@ -5549,11 +5549,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
               return;
             }
             if (!allFieldsValid()) {
-              console.log('not all valid');
               ev.preventDefault();
               return;
             }
-            onSubmit.onSubmit(ev);
+            mkOnSubmit(ev, disable(), fieldStreams);
           });
         };
       }
@@ -5577,7 +5576,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           minWidth: i.minWidth,
           minHeight: i.minHeight,
         };
-      })(f(fieldInputs, submitComponentF, fieldStreams, onSubmit && onSubmit.resultS));
+      })(f(fieldInputs, submitComponentF, fieldStreams, disable));
     };
     return function (mkOnSubmit, fields, f) {
       if (!f) {
