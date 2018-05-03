@@ -278,6 +278,9 @@
       c.overflowHorizontal({
         minWidth: 300,
       }),
+      c.margin({
+        left: 40,
+      }),
     ])(stack(strs.map(function (str) {
       return c.text(str.split(' ').join('&nbsp;'), [font.code, {
         measureWidth: true,
