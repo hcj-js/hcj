@@ -3047,11 +3047,11 @@
   }, {
     name: 'Tutorial',
     items: [{
-      name: '0. Introduction',
-      href: 'introduction.html',
-    }, {
       name: '1. Hello World',
       href: 'helloWorld.html',
+    }, {
+      name: '2. Introduction',
+      href: 'introduction.html',
     }],
   }, {
     name: 'Examples',
