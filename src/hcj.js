@@ -1860,6 +1860,9 @@
 
           if (c.linkTo) {
             var a = document.createElement('a');
+            if (c.linkToNoStyle) {
+              a.classList.add('no-style');
+            }
             a.href = c.linkTo;
             el.appendChild(a);
             a.appendChild(span);

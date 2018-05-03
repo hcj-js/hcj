@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# default server hostname and port, when static-serving files
+default_server_hostname=127.0.0.1
+default_server_port=7000
+
 usage="Usage:
     prerender.sh [options] file1.html file2.html ...
 
@@ -33,10 +37,6 @@ Options:
     -h
 	Display this message.
 "
-
-# default server hostname and port, when static-serving files
-default_server_hostname=127.0.0.1
-default_server_port=7000
 
 while getopts "sp:n:u:d:ih" o; do
     case "$o" in
@@ -201,6 +201,6 @@ for i in "$@"; do
 
     prerender_content=$(phantomjs -platform offscreen build.js "$host_url$i")
     existing_content=$(cat "$source_file" | sed "/HCJ_PRERENDER_START/,/HCJ_PRERENDER_END/d")
-    echo "$existing_content" | sed "/<body>/s/.*/&\n<!-- HCJ_PRERENDER_START -->\n${prerender_content//\//\\\/}\n<!-- HCJ_PRERENDER_END -->/" > "$target_file"
+    echo "$existing_content" | sed "/<body>/s/.*/&\n<!-- HCJ_PRERENDER_START -->\n<div style=\"display:none\">${prerender_content//\//\\\/}<\\/div>\n<!-- HCJ_PRERENDER_END -->/" > "$target_file"
 done
 
