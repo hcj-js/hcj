@@ -5419,12 +5419,18 @@
         fieldStreams[name] = field.stream;
         field.validateS = field.validate ? field.validate(field.stream, fieldStreams) : stream.once('');
         field.validationMessageS = stream.map(field.validateS, function (validate) {
+          if (!validate) {
+            return '';
+          }
           if (validate.message) {
             return validate.message;
           }
           return validate;
         });
         field.isValidS = stream.map(field.validateS, function (validate) {
+          if (!validate) {
+            return true;
+          }
           if (validate.valid) {
             return validate.valid;
           }
