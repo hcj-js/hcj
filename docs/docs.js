@@ -491,7 +491,18 @@
 
   var tutorial_helloWorld = function () {
     return [
-      p('To help you get started, here is an absolutely minimal HCJ page, which you can modify with the components and layouts described in the next sections:'),
+      p('The Component is the only concept that you must know in order to program a webpage in HCJ.  Almost everything in HCJ is either a component or a Javascript function that returns a component.'),
+      codeBlock([
+        "const pageC = hcj.component.text('Hello World');",
+      ]),
+      p('In this code, `pageC` is defined as a component.  You can tell this because it carries the "C" suffix, a convention we will carry throughout this tutorial.'),
+      p('Simply defining the `pageC` component doesn\'t do us much good, though.  It is important to be able to display the components that you define.  This is done using the `hcj.rootComponent` function.'),
+      codeBlock([
+        "hcj.rootComponent(pageC);",
+      ]),
+      p('This code displays the `pageC` component as a root component of the page.'),
+      p('Any component can be designated as a root component.  A component behaves exactly the same way as a root component of a page, as it does a child component of a larger webpage.'),
+      p('For you to copy and paste, here is the full code to a minimal "Hello World" page.'),
       codeBlock([
         "&lt;!DOCTYPE HTML&gt;",
         "&lt;html&gt;",
@@ -503,15 +514,16 @@
         "        &lt;script src=\"hcj.min.js\"&gt;&lt;/script&gt;",
         "&nbsp;",
         "        &lt;script&gt;",
-        "         var page = hcj.component.text('Hello World');",
-        "         var rootInstance = hcj.rootComponent(page);",
+        "         const pageC = hcj.component.text('Hello World');",
+        "         const rootInstance = hcj.rootComponent(pageC);",
         "        &lt;/script&gt;",
         "    &lt;/body&gt;",
         "&lt;/html&gt;",
       ]),
-      p("The page includes two external files, `hcj.css` and `hcj.js`.  The hcj.css file contains a CSS reset.  The hcj.js file contains all of the HCJ framework code.  This file must be included in the body section, not the head section, because it depends on the body element being present for some internal initialization.  Then, inside a `script` tag section, the page defines a component and renders it."),
-      p("To render a component, you must pass it to the `hcj.rootComponent` function.  This function places your component in the top-left corner of the window and gives it the window\'s height and width, and returns the instance.  Rendering into a smaller region is not currently supported.  Multiple root components can be used, e.g. to display full-window modal dialogs if you wish."),
-      p("Fonts are a particular issue for HCJ websites.  Because fonts can change the size taken up by text, text-based components must set their minimum dimensions after fonts are loaded.  It is an unfortunate reality that there are no DOM callbacks that are run when fonts are loaded, so HCJ is shipped with a `window.waitForWebfonts` function.  We recommend that you use this function to run your page after all fonts are loaded.  The `waitForWebfonts` function takes three arguments: an array of font families to wait for (these should be defined using @font-face CSS rules), a callback to run when they are all loaded, and an optional max time to wait in the event that a font never loads, which defaults to 10 seconds."),
+      p('The DOCTYPE tag is absolutely required; without it the browser may render the page in quirks mode, which will in turn cause HCJ components to be rendered incorrectly.'),
+      p('The meta tag in the HEAD section is not strictly required but is highly recommended.  Its specific effects are out of the scope of this tutorial, but it causes the site to appear at the correct scale on mobile devices.'),
+      p('Then, hcj.css is included in the head section and hcj.js in the body section.  The CSS file normalizes some browser-specific style rules, and the JS file contains the full HCJ library.'),
+      p('Last, a root component is rendered inside of a script tag.'),
     ];
   };
 
