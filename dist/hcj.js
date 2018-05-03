@@ -5046,6 +5046,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
         el.addEventListener('change', function () {
           stream.push(s, parseDateInputValue(el.value));
         });
+        el.addEventListener('keyup', function () {
+          stream.push(s, el.value);
+        });
       }));
     },
     dropdown: function (def) {
@@ -5159,6 +5162,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
           stream.push(s, el.value);
         });
         el.addEventListener('change', function () {
+          stream.push(s, el.value);
+        });
+        el.addEventListener('keyup', function () {
           stream.push(s, el.value);
         });
       }));
@@ -5318,6 +5324,9 @@ function waitForWebfonts(fonts, callback, maxTime) {
           stream.push(s, el.value);
         });
         el.addEventListener('change', function () {
+          stream.push(s, el.value);
+        });
+        el.addEventListener('keyup', function () {
           stream.push(s, el.value);
         });
       }));

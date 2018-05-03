@@ -4969,6 +4969,9 @@
         el.addEventListener('change', function () {
           stream.push(s, parseDateInputValue(el.value));
         });
+        el.addEventListener('keyup', function () {
+          stream.push(s, el.value);
+        });
       }));
     },
     dropdown: function (def) {
@@ -5082,6 +5085,9 @@
           stream.push(s, el.value);
         });
         el.addEventListener('change', function () {
+          stream.push(s, el.value);
+        });
+        el.addEventListener('keyup', function () {
           stream.push(s, el.value);
         });
       }));
@@ -5241,6 +5247,9 @@
           stream.push(s, el.value);
         });
         el.addEventListener('change', function () {
+          stream.push(s, el.value);
+        });
+        el.addEventListener('keyup', function () {
           stream.push(s, el.value);
         });
       }));
