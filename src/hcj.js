@@ -5328,6 +5328,7 @@
   };
 
   var formForOld = function (submitButtonFieldTypeF, formComponent) {
+    deprecate('formFor taking a highly curried sequence of arguments.  See documentation.');
     return function (fields, labels) {
       labels = labels || {};
       return function (defaults) {
@@ -5408,100 +5409,106 @@
     if (typeof style !== 'function') {
       return formForOld(formComponent, style);
     }
-    return function (mkOnSubmit, fields) {
-      return function (f) {
-        var fieldStreams = {};
-        var fieldInputs = {};
-        Object.keys(fields).map(function (name) {
-          var field = fields[name];
-          field.name = name;
-          field.stream = (field.default !== undefined) ? stream.once(field.default) : stream.create();
-          fieldStreams[name] = field.stream;
-          field.validateS = field.validate ? field.validate(field.stream, fieldStreams) : stream.once('');
-          field.validationMessageS = stream.map(field.validateS, function (validate) {
-            if (validate.message) {
-              return validate.message;
-            }
-            return validate;
-          });
-          field.isValidS = stream.map(field.validateS, function (validate) {
-            if (validate.valid) {
-              return validate.valid;
-            }
-            return validate.length === 0;
-          });
-          fieldInputs[name] = style(field)(formComponent[field.type.kind](field));
+    var renderForm = function (mkOnSubmit, fields, f) {
+      var fieldStreams = {};
+      var fieldInputs = {};
+      Object.keys(fields).map(function (name) {
+        var field = fields[name];
+        field.name = name;
+        field.stream = (field.default !== undefined) ? stream.once(field.default) : stream.create();
+        fieldStreams[name] = field.stream;
+        field.validateS = field.validate ? field.validate(field.stream, fieldStreams) : stream.once('');
+        field.validationMessageS = stream.map(field.validateS, function (validate) {
+          if (validate.message) {
+            return validate.message;
+          }
+          return validate;
         });
-        var disabledS = stream.once(false);
-        var submitComponentF = customSubmitComponentF ? function (name) {
-          return customSubmitComponentF(name, disabledS);
-        } :  function (name) {
-          return all([
-            and(function (i) {
-              stream.map(disabledS, function (disabled) {
-                i.el.disabled = disabled;
-              });
-            }),
-          ])(text({
-            el: button,
-            measureWidth: true,
-          }, {
-            str: name,
-          }));
+        field.isValidS = stream.map(field.validateS, function (validate) {
+          if (validate.valid) {
+            return validate.valid;
+          }
+          return validate.length === 0;
+        });
+        fieldInputs[name] = style(field)(formComponent[field.type.kind](field));
+      });
+      var disabledS = stream.once(false);
+      var submitComponentF = customSubmitComponentF ? function (name) {
+        return customSubmitComponentF(name, disabledS);
+      } :  function (name) {
+        return all([
+          and(function (i) {
+            stream.map(disabledS, function (disabled) {
+              i.el.disabled = disabled;
+            });
+          }),
+        ])(text({
+          el: button,
+          measureWidth: true,
+        }, {
+          str: name,
+        }));
+      };
+      var allFieldsValid = function () {
+        var allValid = true;
+        Object.keys(fields).map(function (name) {
+          if (!fields[name].isValidS.lastValue) {
+            allValid = false;
+          }
+        });
+        return allValid;
+      }
+      if (typeof mkOnSubmit === 'function') {
+        var onSubmit = mkOnSubmit(fieldStreams, function () {
+          stream.push(disabledS, true);
+          return function () {
+            stream.push(disabledS, false);
+          };
+        });
+        var setupFormSubmit = function (el) {
+          el.addEventListener('submit', function (ev) {
+            if (disabledS.lastValue) {
+              ev.preventDefault();
+              return;
+            }
+            if (!allFieldsValid()) {
+              console.log('not all valid');
+              ev.preventDefault();
+              return;
+            }
+            onSubmit.onSubmit(ev);
+          });
         };
-        var allFieldsValid = function () {
-          var allValid = true;
-          Object.keys(fields).map(function (name) {
-            if (!fields[name].isValidS.lastValue) {
-              allValid = false;
+      }
+      else {
+        var setupFormSubmit = function (el) {
+          el.method = mkOnSubmit.method;
+          el.action = mkOnSubmit.action;
+          el.addEventListener('submit', function (ev) {
+            if (!allFieldsValid()) {
+              console.log('not all valid');
+              ev.preventDefault();
+              return;
             }
           });
-          return allValid;
-        }
-        if (typeof mkOnSubmit === 'function') {
-          var onSubmit = mkOnSubmit(fieldStreams, function () {
-            stream.push(disabledS, true);
-            return function () {
-              stream.push(disabledS, false);
-            };
-          });
-          var setupFormSubmit = function (el) {
-            el.addEventListener('submit', function (ev) {
-              if (disabledS.lastValue) {
-                ev.preventDefault();
-                return;
-              }
-              if (!allFieldsValid()) {
-                console.log('not all valid');
-                ev.preventDefault();
-                return;
-              }
-              onSubmit.onSubmit(ev);
-            });
-          };
-        }
-        else {
-          var setupFormSubmit = function (el) {
-            el.method = mkOnSubmit.method;
-            el.action = mkOnSubmit.action;
-            el.addEventListener('submit', function (ev) {
-              if (!allFieldsValid()) {
-                console.log('not all valid');
-                ev.preventDefault();
-                return;
-              }
-            });
-          };
-        }
-        return layout('form', function (el, ctx, c) {
-          setupFormSubmit(el);
-          var i = c();
-          return {
-            minWidth: i.minWidth,
-            minHeight: i.minHeight,
-          };
-        })(f(fieldInputs, submitComponentF, fieldStreams, onSubmit && onSubmit.resultS));
-      };
+        };
+      }
+      return layout('form', function (el, ctx, c) {
+        setupFormSubmit(el);
+        var i = c();
+        return {
+          minWidth: i.minWidth,
+          minHeight: i.minHeight,
+        };
+      })(f(fieldInputs, submitComponentF, fieldStreams, onSubmit && onSubmit.resultS));
+    };
+    return function (mkOnSubmit, fields, f) {
+      if (!f) {
+        return function (f) {
+          return renderForm(mkOnSubmit, fields, f);
+        };
+      }
+      return renderForm(mkOnSubmit, fields, f);
     };
   };
 
