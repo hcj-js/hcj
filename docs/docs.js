@@ -376,7 +376,7 @@
     p("Use the files in the dist folder."),
   ]);
 
-  var introduction = function () {
+  var home = function () {
     return [
       p("The HCJ Web Framework is a whole new way to write programs for the web browser."),
       p("A highly modular framework, designed using functional programming, you can re-use styles and content with ease.  Working at all scales from one-page sites to complicated web applications, and at all stages of your website's lifecycle from from prototyping to production, it saves you time, and allows you to focus on what matters."),
@@ -386,7 +386,7 @@
     ];
   };
 
-  var aLittleVocab = function () {
+  var tutorial_introduction = function () {
     return [
       p("The basic building block of the HCJ framework is the `component`.  Components can be rendered as web pages, or combined together to create new components."),
       p("A `component` is any function taking a `context` and returning an `instance`.  To `render` a component is to pass it a context."),
@@ -489,7 +489,7 @@
     ];
   };
 
-  var renderingComponents = function () {
+  var tutorial_helloWorld = function () {
     return [
       p('To help you get started, here is an absolutely minimal HCJ page, which you can modify with the components and layouts described in the next sections:'),
       codeBlock([
@@ -3011,9 +3011,9 @@
   };
 
   var pages = {
-    home: introduction,
-    helloWorld: renderingComponents,
-    introduction: aLittleVocab,
+    home: home,
+    introduction: tutorial_introduction,
+    helloWorld: tutorial_helloWorld,
     apiComponents: standardLibraryComponents,
     apiLayouts: standardLibraryLayouts,
     apiStyles: standardLibraryComponentModifiers,
