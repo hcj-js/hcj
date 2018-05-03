@@ -5436,6 +5436,7 @@
           }
           return validate;
         });
+        stream.push(field.validationMessageS, '');
         field.isValidS = stream.map(field.validateS, function (validate) {
           if (!validate) {
             return true;
@@ -5445,6 +5446,7 @@
           }
           return validate.length === 0;
         });
+        stream.push(field.isValidS, true);
         fieldInputs[name] = style(field)(formComponent[field.type.kind](field));
       });
       var disabledS = stream.once(false);
