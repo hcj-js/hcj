@@ -16,6 +16,8 @@ See [hello world example](http://hcj-js.org/helloWorld.html).
 
 Latest docs are located at http://hcj-js.org/
 
+v0.3.1 docs: http://hcj-js.org/docs-0.3.1/
+
 v0.3 docs: http://hcj-js.org/docs-0.3/
 
 v0.2 docs: http://hcj-js.org/docs-0.2/
