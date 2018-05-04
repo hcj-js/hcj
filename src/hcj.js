@@ -5431,8 +5431,8 @@
           if (!validate) {
             return '';
           }
-          if (validate.message) {
-            return validate.message;
+          if (typeof validate === 'object') {
+            return validate.message || '';
           }
           return validate;
         });
@@ -5441,7 +5441,7 @@
           if (!validate) {
             return true;
           }
-          if (validate.valid) {
+          if (typeof validate === 'object') {
             return validate.valid;
           }
           return validate.length === 0;
