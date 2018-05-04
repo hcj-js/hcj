@@ -205,14 +205,9 @@
   var font = {
     h1: {
       family: 'sans-serif',
-      size: 40 + 'px',
-      weight: 'bold',
-    },
-    h2: {
-      family: 'sans-serif',
       size: 30 + 'px',
     },
-    h3: {
+    h2: {
       family: 'sans-serif',
       size: 20 + 'px',
     },
@@ -463,7 +458,7 @@
       p("`type BuildComponent = (Node, Context, MeasureWidth, MeasureHeight) -> {minWidth :: Stream Number?, minHeight :: Stream (Number -> Number)?, remove :: Function?}`"),
       p('The `component` function takes two arguments: an optional tag name, followed by a `build` method.  If the tag name is not specified, it defaults to `div`.  The build method initializes the component, and provides its minimum dimensions.  It is passed four arguments: first `el`, the created root node of the component, and `context`, the context as it was passed into the component.  The remaining two arguments are a `MeasureWidth` function and a `MeasureHeight` function, as explained below.  It returns a "pre-instance", which the `component` function upgrades to a full `instance`.'),
       p("The build method can provide the minimum dimensions one of two ways.  It can either call the `MeasureWidth` and `MeasureHeight` functions that it is passed, or (perhaps more commonly) return an object with `minWidth` and `minHeight` properties.  If it calls `MeasureWidth`, its width is measured by cloning the root element, appending it to an invisible sandbox, and reading off various computed DOM styles, and this number is pushed into its `minWidth` stream.  Similarly, if it calls `MeasureHeight`, a function is pushed into its `minHeight` stream that clones the element, appends it to an invisible sandbox, sets its width, measures its height at that width, and returns that height."),
-      h3("Example:"),
+      h2("Example:"),
       codeBlock([
         "// SomeCaptcha component",
         "&nbsp;",
@@ -588,7 +583,7 @@
         description: 'CSS calc string to use for the left property of the instance.  This is a "calc-sum" - the "calc(" and ")" are added by `container`.  If not provided, then "px" is appended to the values of the viewport\'s `left` stream.',
       }]),
 
-      h2('Example - Top Margin'),
+      h1('Example - Top Margin'),
       p('`topMargin :: Component -> Component`'),
       p("Here is an example of a layout that pushes its content down by five pixels.  To do this, it creates a viewport with a `top` stream, and returns a `minHeight` that is increased by five pixels."),
       codeBlock([
@@ -611,7 +606,7 @@
         "};",
       ]),
 
-      h2('Example - Purple Background'),
+      h1('Example - Purple Background'),
       p('`purpleBackground :: Component -> Component`'),
       p("Imagine we want to define a layout that adds a 10px margin and gives a component a purple background.  Here's how we can do it.  Note that there is no use of CSS `margin` or `padding` properties - the child instance is explicitly positioned in a sub-region of the container, and the container's minimum width and minimum height are increased correspondingly.  For completeness, we include `widthCalc` and `heightCalc` streams, which are required in order for any CSS transitions to work properly."),
       codeBlock([
@@ -646,7 +641,7 @@
         "};",
       ]),
 
-      h2('Example - Simple Stack'),
+      h1('Example - Simple Stack'),
       p("`stack :: [Component] -> Component`"),
       p("Say we want to put components into a vertical stack."),
       p("First we map over the components provided, initializing an array of viewports and an array of instances.  Next, we use the HCJ stream library to change the components' viewports every time the stack's context changes.  Last, we assign the minimum width and minimum height of the stack by combining together the minimum widths and minimum heights of the stacked instances."),
@@ -719,7 +714,7 @@
       p('Each of these is a property of `window.hcj.component`.'),
       p('There is a Haskell-esque "type signature" below each, showing the parameters that each function can take, followed by a description.  This "type signature" borrows syntax from Haskell and C#, and uses some new shorthand specifically for Javascript.  The function arrow `->` is borrowed from Haskell; `a -> b` is a function taking a parameter of type `a` and returning type `b`.  Additionally, `(a , b) -> c` denotes a two-argument function, while `(a ; b) -> c` denotes a two-argument function that can be curried, i.e. `f :: (a ; b) -> c` can be called either as `f(x, y)` or as `f(x)(y)`.  The type `a?`, is shorthand for `Maybe a`, denoting "Either an `a` or the value `undefined`".  And `a | b` denotes a variable that can have type `a` or type `b`.'),
 
-      h2('Text'),
+      h1('Text'),
       p('`text :: (TextConfig? ; SpanConfig | [SpanConfig]) -> Component`'),
       p('The `text` function can take one or two arguments: an optional `TextConfig`, followed by either a single `SpanConfig` or an array of `SpanConfigs`.  It returns a `Component`.'),
       p('By default, a text component has a minimum width of 300px, and its minimum height is computed by measuring the height of the element.  These can be changed by passing in a `TextConfig` object.'),
@@ -819,7 +814,7 @@
         "}]);",
       ]),
 
-      h2('Image'),
+      h1('Image'),
       p('`image :: ImageConfig -> Component`'),
       p('Creates an image component.  By default, an image\'s minimum width is its native width, and its minimum height function attempts to maintain its aspect ratio.'),
       p("An `ImageConfig` object has the following properties:"),
@@ -842,7 +837,7 @@
       }]),
       p('Note: When an image is placed into a context whose proportions are not the image\'s aspect ratio, it will stretch.  The most common solution is to wrap images with the `hcj.component.keepAspectRatio` layout.'),
 
-      h2('BarH, BarV, and Rectangle'),
+      h1('BarH, BarV, and Rectangle'),
       typeSignatures([{
         name: 'barH',
         type: 'Number -> Component',
@@ -855,7 +850,7 @@
       }]),
       p("`barH` and `barV` create horizontal and vertical separators of the size you specify.  `rectangle` takes an object with `h` and `v` or `x` and `y` properties, and creates a rectangle of that size."),
 
-      h2('Empty'),
+      h1('Empty'),
       typeSignatures([{
         name: 'empty',
         type: 'String -> Component',
@@ -872,7 +867,7 @@
     return [
       p('These are the layouts that ship with hcj.js.  All are properties of the `window.hcj.component` object.'),
 
-      h2('AlignHorizontal'),
+      h1('AlignHorizontal'),
       typeSignatures([{
         name: 'alignHorizontal',
         type: '{l: Component?, r: Component?, m: Component?} -> Component',
@@ -901,7 +896,7 @@
         ]),
       ]),
 
-      h2('AlignVertical'),
+      h1('AlignVertical'),
       typeSignatures([{
         name: 'alignVertical',
         type: '{t: Component?, b: Component?, m: Component?} -> Component',
@@ -930,7 +925,7 @@
         ]),
       ]),
 
-      h2('BasicFloat'),
+      h1('BasicFloat'),
       p('`basicFloat :: (BasicFloatConfig? ; Component , [Component]) -> Component'),
       p('Takes a single component to "float", and an array of components to display around it.'),
       p('A `BasicFloatConfig` is an object with the following properties:'),
@@ -948,7 +943,7 @@
         description: 'If set to "right" floating component floats right, if "left" floating component floats left.  Default is "left".',
       }]),
       
-      h2('ComponentStream'),
+      h1('ComponentStream'),
       p('`componentStream :: Stream Component -> Component`'),
       p('Takes an hcj stream of components and displays latest one in the stream.'),
       docStack2([
@@ -961,7 +956,7 @@
         ]),
       ]),
 
-      h2('Grid'),
+      h1('Grid'),
       p('`grid :: (GridConfig? ; [Component]) -> Component`'),
       p('Responsive grid layout.  Components are placed into rows.'),
       p('A `GridConfig` is an object with the following properties:'),
@@ -995,21 +990,21 @@
         description: 'If set, grid elements will always be arranged in either a single row if they fit horizontally, or a single column if they do not.',
       }]),
 
-      h2('LargestWidthThatFits'),
+      h1('LargestWidthThatFits'),
       p('`largestWidthThatFits :: [Component] -> Component`'),
       p('Chooses the largest-width component that fits, among the components passed in.'),
       p('The minimum width of this component is the smallest of the minimum widths of its children, and the minimum height is of the largest component that fits the given width.'),
 
-      h2('Overlays'),
+      h1('Overlays'),
       p('`overlays :: [Component] -> Component`'),
       p('Places components directly on top of one another.'),
       p('The minimum width and minimum height of the overlay are the max of the minimum widths and minimum heights of its children.'),
 
-      h2('PromiseComponent'),
+      h1('PromiseComponent'),
       p('`promiseComponent :: (Promise Component , Component?) -> Component`'),
       p('Takes a promise that resolves to a component, and an optional initial component.  Displays the initial component until the promise resolves, then switches to the resolved component.'),
 
-      h2('SideBySide'),
+      h1('SideBySide'),
       p('`sideBySide :: (SideBySideConfig ; [Component]) -> Component`'),
       p('Places components directly side by side.'),
       p('The minimum width of a `sideBySide` is the sum of the minimum widths of its children, plus any padding.  Its minimum height is the max of the minimum heights of its children at their respective minimum widths.'),
@@ -1023,7 +1018,7 @@
         type: 'SurplusWidthFunc?',
         description: 'Distribute surplus width among the instances.',
       }]),
-      h3('SurplusWidthFunc'),
+      h2('SurplusWidthFunc'),
       p('`type SurplusWidthFunc = (Number , [[{left: Number, width: Number}]]) -> [[{left: Number, width: Number}]]`'),
       p('Whenever the width of a row is greater than its minimum width, it has surplus width.  A `SurplusWidthFunc` takes two parameters: the total width available, and an array of "rows" - each an array of "columns".  (The `sideBySide` layout always passes in exactly one "row", but other layouts may pass in more.)  Each column is an object with `left` and `width` properties giving the initial left position and width of the column.  The function returns an array of rows (possibly by mutating the input array) giving each column new left and width values.'),
       p('HCJ comes with a number of `SurplusWidthFuncs` for you to use.  These are all members of the `window.hcj.funcs.surplusWidth` object:'),
@@ -1054,7 +1049,7 @@
       }]),
       p('Note that unlike a `SurplusHeightFunc`, which only operates on a single column of elements, a `SurplusWidthFunc` operates on multiple rows at once.'),
 
-      h2('Stack'),
+      h1('Stack'),
       p('`stack :: (StackConfig? ; [Component]) -> Component`'),
       p('Positions components one on top of another.  The minimum width of a stack is the max of the minimum widths of its children.  The minimum height of a stack is the sum of the minimum heights of its children.'),
       p('A `StackConfig` is an object with the following properties:'),
@@ -1067,7 +1062,7 @@
         type: 'SurplusHeightFunc?',
         description: 'Distribute surplus height among the stacked items.',
       }]),
-      h3('SurplusHeightFunc'),
+      h2('SurplusHeightFunc'),
       p('Whenever the height given to a column of components is greater than the sum of their minimum heights, the column has surplus height.  A `SurplusHeightFunc` takes two parameters: the total height available, and an array of "rows", each an object with a `top` and a `height` property initialized with its top position and height.  It returns an array of rows (possibly by mutating the input array) giving new top and height values for each row.'),
       p('`type SurplusHeightFunc = (Number , [{top: Number, height: Number}]) -> [{top: Number, height: Number}]`'),
       p('HCJ comes with a small number of `SurplusHeightFunc`s for you to use.  These are all members of the `window.hcj.funcs.surplusHeight` object:'),
@@ -1097,7 +1092,7 @@
       p('These styles are all properties of the `window.hcj.component` object.'),
       p('Again, a style is a function that takes one component and returns a component, so the type `Style` is equivalent to the type `Component -> Component`.'),
 
-      h2('All'),
+      h1('All'),
       p('`all :: [Style] -> Style`'),
       p('The `hcj.component.all` function performs function composition.  It applies multiple styles, one after another.'),
       p('Example:'),
@@ -1112,7 +1107,7 @@
         "])(text('Title'));",
       ]),
 
-      h2('And'),
+      h1('And'),
       p('`and :: ((Instance , Context) -> ()) -> Style`'),
       p('The `hcj.component.and` style lets you arbitrarily operate on an instance and read from its context.  It takes a function that takes an instance and a context, and returns a style.  This function may modify or re-assign any properties of the instance object.'),
       p('Example:'),
@@ -1122,7 +1117,7 @@
         "});",
       ]),
 
-      h2('BackgroundColor'),
+      h1('BackgroundColor'),
       p('`backgroundColor :: (BackgroundColorConfig | Stream BackgroundColorConfig) -> Style`'),
       p('Applies background and font colors to a component.'),
       docStack2([
@@ -1146,7 +1141,7 @@
         }]),
       ]),
 
-      h2('Border'),
+      h1('Border'),
       p('`border :: (Color , BorderConfig) -> Style`'),
       p('Adds a colored border around a component.'),
       docStack2([
@@ -1178,7 +1173,7 @@
         }]),
       ]),
 
-      h2('Crop'),
+      h1('Crop'),
       p('Crops a component down to a proportion of its size.'),
       p('`crop :: CropConfig -> Style`'),
       docStack2([
@@ -1206,7 +1201,7 @@
         }]),
       ]),
 
-      h2('KeepAspectRatio'),
+      h1('KeepAspectRatio'),
       p('`keepAspectRatio :: (KeepAspectRatioConfig? ; Component) -> Component`'),
       p("Actively protects the aspect ratio of a component.  Aspect ratio is defined as the component's minimum width divided by its minimum height at its minimum width.  Component can cover the entire display area, or be contained within the display area."),
       p('A `KeepAspectRatioConfig` may have any of the following properties:'),
@@ -1232,11 +1227,11 @@
         description: 'If set, child component\'s right side is aligned with the right side of the display area.',
       }]),
 
-      h2('Link'),
+      h1('Link'),
       p('`link :: Style`'),
       p('Sets the `pointer: cursor` CSS style.'),
 
-      h2('LinkTo'),
+      h1('LinkTo'),
       p('`linkTo :: LinkToConfig -> Style`'),
       p('Wraps component it in an `a` tag with the given href.'),
       docStack2([
@@ -1256,12 +1251,12 @@
         }]),
       ]),
 
-      c.makeSticky(headerHeightS)(h2('MakeSticky')),
+      c.makeSticky(headerHeightS)(h1('MakeSticky')),
       p('`makeSticky :: (Number | Stream Number)? -> Style`'),
       p('Causes a component to stick to the top of the screen instead of scrolling off.'),
       p('A number, or a stream of numbers, can be optionally passed in before applying `makeSticky` to a component.  The component will then become sticky before it scrolls off the screen, at a distance from the top of the screen equal to the number you pass in.  (This can be useful for layering sticky items on top of one another, by passing the context height of the first into the makeSticky style of the second.)'),
 
-      h2('Margin'),
+      h1('Margin'),
       typeSignatures([{
         name: 'margin',
         type: 'MarginConfig -> Style',
@@ -1293,7 +1288,7 @@
         }]),
       ]),
 
-      h2('MinHeight'),
+      h1('MinHeight'),
       typeSignatures([{
         name: 'minHeight',
         type: '(Number -> Number) -> Style',
@@ -1305,7 +1300,7 @@
       p('The `minHeight` function takes a minimum height function and sets the component\'s minimum height to that function.'),
       p('The `minHeightAtLeast` function takes a number or a stream of numbers and ensures that the minimum height of a component is at least that amount.'),
 
-      h2('MinWidth'),
+      h1('MinWidth'),
       typeSignatures([{
         name: 'minWidth',
         type: 'Number -> Style',
@@ -1319,7 +1314,7 @@
       p('The `minWidth` function takes a number and sets the minimum width of the instance to be that number.'),
       p('The `minWidthAtLeast` function takes a number or a stream of numbers, and sets the minimum width of a component to be at least that amount.'),
 
-      h2('OnThis'),
+      h1('OnThis'),
       p('Signs up an event handler.'),
       typeSignatures([{
         name: 'onThis',
@@ -1354,7 +1349,7 @@
       }]),
       p('`changeThis` is defined as `onThis("change")`, and so on.'),
 
-      h2('OverflowHorizontal'),
+      h1('OverflowHorizontal'),
       p('`overflowHorizontal :: OverflowHorizontalConfig -> Style`'),
       p('Displays a horizontal scrollbar beneath a component, if its width is less than its minimum width.  Overrides the component\'s minimum width.'),
       objectDefinition([{
@@ -1363,7 +1358,7 @@
         description: 'Minimum width of the overflowHorizontal component.',
       }]),
 
-      h2('ToggleHeight'),
+      h1('ToggleHeight'),
       p('`toggleHeight :: Stream Bool -> Style`'),
       p('Toggles the minimum height of a component.  Its own height is used if the stream contains `true`, and 0 is used if the stream contains `false`.'),
     ];
@@ -1473,10 +1468,10 @@
     return [
       p("Hcj provides some reactive form components for your convenience."),
 
-      h2('FieldKind, FieldType, FormComponent'),
+      h1('FieldKind, FieldType, FormComponent'),
       p('HCJ\'s standard library has an intricate model of form components and their types.  Logically it is based on some basic dependent types, specifically type families.  HCJ\'s model of form types is extensible, so you can add your own types of form elements by extending the `FieldKind` type and then extending the other types as needed.'),
       p('It is not required to understand this model to display individual form components; the examples in the next section should give you a good picture of how to do that.  However, the highly convenient `FormFor` function described in the section after next does depend on these interrelationships, so for that it may be worthwhile to read this section.'),
-      h3('FieldKind'),
+      h2('FieldKind'),
       p('The instances of the `FieldKind` type correspond with the kinds of form inputs that can be included in your forms.  A `FieldKind` names the kind of form element, but does not have any additional data about its validation or its contents.'),
       p('The `FieldKind` type can be considered a subset of the `String` type - all `FieldKind` values should be strings.  The HCJ standard library supports the following `FieldKind` values:'),
       typeSignatures([{
@@ -1513,7 +1508,7 @@
         name: '"time"',
         type: '',
       }], true, '&nbsp;'),
-      h3('FieldType'),
+      h2('FieldType'),
       p('A `FieldType` is a minimal complete description of a form field, from which the field can be rendered.  (It does not include the field\'s `name` attribute.)'),
       p('For each `FieldKind`, the corresponding `FieldType` is constructed differently.  For instance, a text field doesn\'t require any special data to render, while a dropdown requires a set of options.  To represent this logically, we use a type family `FieldType :: FieldKind -> Type`.  In other words, for each `k :: FieldKind`, we have a type `FieldType k`.'),
       p('Each `FieldType k` is constructed in its own particular way.  The `FieldTypes` corresponding to the `FieldKinds` included with HCJ have the following constructors.  These are all properties of the `hcj.forms.fieldType` object:'),
@@ -1566,7 +1561,7 @@
       p('`dropdown` takes one parameter: an array of objects with `name` and `value` properties giving the options to display.'),
       p('`radios` also takes one parameter: an array of strings giving the values for each radio.'),
       p('All values of type `FieldType k`, for any `k`, are objects that have a `kind` property with value `k`, plus additional properties as needed.'),
-      h3('FormComponent'),
+      h2('FormComponent'),
       p('Each form element is displayed in a certain way.  Most form elements can be displayed via single components, but `radios` in particular yields multiple radio buttons that you may want to place separately or into a custom layout.'),
       p('Therefore we present another type family, `FormComponent :: FieldKind -> Type`.  This formalizes the type produced when you go to convert a `FieldType` of a certain `FieldKind` into objects suitable for display.'),
       typeSignatures([{
@@ -1645,7 +1640,7 @@
       p('Basically, `DisplayType k` has properties `type`, `name`, and `stream` for all form kinds, and additionally `placeholder` for text and textarea.'),
       p('The `type` property again gives the `FieldType` of the form element.  The `name` field gives the desired "name" attribute of the input field.  The `stream` property allows you to access the input\'s value stream by passing in a stream.  This value stream is bi-directional: it receives a value whenever the user edits the field, and the field changes whenever the stream receives a new value.  This stream is intended to be used for field validation.  `placeholder`, of course, specifies the input placeholder.'),
       p('When you pass a `DisplayType k` to the `hcj.forms.formComponent` function, it will return a `FormComponent k`.  That is, it returns an array of `Components` for a "radios" field, and a single `Component` for all other fields.'),
-      h3('Example'),
+      h2('Example'),
       p('There are a lot of different concepts here: `FieldKind`, `FieldType`, `DisplayType`, and `FormComponent`.  So here is an example that hopefully helps clear up the meanings of all these terms.  We will create a simple email address input field with validation.'),
       p('The first step is to construct the `FieldType` that we want.  In the case of a text field, there is only one possible `FieldType` and it is `hcj.forms.fieldType.text`.'),
       p('`var fieldType = hcj.forms.fieldType.text;`'),
@@ -1732,7 +1727,7 @@
   var standardLibraryFormExamples = function () {
     return [
       p('These form inputs are all created using `hcj.forms.formComponent` function.'),
-      h2('Text Input'),
+      h1('Text Input'),
       p('The first and only required argument to the `hcj.forms.formComponent` function is the `FieldType` of the desired form input.'),
       hcj.forms.formComponent({
         type: hcj.forms.fieldType.text,
@@ -1740,7 +1735,7 @@
       codeBlock([
         'hcj.forms.formComponent(hcj.forms.fieldType.text)',
       ]),
-      h2('Text Input with Name'),
+      h1('Text Input with Name'),
       p('The second argument that you can pass to `hcj.forms.formComponent` is the "name" attribute of your form input.'),
       hcj.forms.formComponent({
         type: hcj.forms.fieldType.text,
@@ -1749,7 +1744,7 @@
       codeBlock([
         'hcj.forms.formComponent(hcj.forms.fieldType.text, "name")'
       ]),
-      h2('Text Input with Name and Value Stream'),
+      h1('Text Input with Name and Value Stream'),
       p('The third argument to `hcj.forms.formComponent` is a value stream.  This stream is updated when the input\'s value changes, and vice versa.'),
       hcj.forms.formComponent({
         type: hcj.forms.fieldType.text,
@@ -1761,7 +1756,7 @@
         '&nbsp;',
         'return hcj.forms.formComponent(hcj.forms.fieldType.text, "name", textValueS);'
       ]),
-      h2('Checkbox'),
+      h1('Checkbox'),
       p('A checkbox that controls a text element.'),
       (function (s) {
         var checkedStream = hcj.stream.once(false);
@@ -1790,7 +1785,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Date'),
+      h1('Date'),
       p('Date input that controls a text element.'),
       (function () {
         var dateStream = hcj.stream.once(null);
@@ -1820,7 +1815,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Dropdown'),
+      h1('Dropdown'),
       p('Text element shows currently selected option'),
       (function () {
         var dropdownStream = hcj.stream.once('a');
@@ -1862,7 +1857,7 @@
         '  })),',
         ']);',
       ]),
-      h2('File'),
+      h1('File'),
       p('File with accept="image/*".'),
       (function () {
         var filesStream = hcj.stream.once(null);
@@ -1931,7 +1926,7 @@
         '  hcj.component.componentStream(previewComponentStream),',
         ']);',
       ]),
-      h2('Number'),
+      h1('Number'),
       p('Text element shows number currently entered into the input.'),
       (function (s) {
         var numberStream = hcj.stream.once(null);
@@ -1961,7 +1956,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Password'),
+      h1('Password'),
       p('Text element shows an asterisk for each character of the password.'),
       (function () {
         var passwordStream = hcj.stream.once(null);
@@ -2003,7 +1998,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Radios'),
+      h1('Radios'),
       p('Takes an arrary of strings giving the buttons\' unique values.  `hcj.forms.formComponent` returns an array of radio button components, not a single component.'),
       (function () {
         var valueStream = hcj.stream.once(null);
@@ -2033,7 +2028,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Text'),
+      h1('Text'),
       (function () {
         var valueStream = hcj.stream.once(null);
         
@@ -2062,7 +2057,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Textarea'),
+      h1('Textarea'),
       p('Displays content of a textarea.  Double-newline for paragraph break.'),
       (function (s) {
         var valueStream = hcj.stream.once(null);
@@ -2096,7 +2091,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Time'),
+      h1('Time'),
       p('Text element shows the value of the time input.'),
       (function () {
         var valueStream = hcj.stream.once(null);
@@ -2130,7 +2125,7 @@
 
   var standardLibraryFormFor = function () {
     return [
-      h2('formStyle'),
+      h1('formStyle'),
       p('`formStyle.text : (String, String, Stream, FieldType) -> (Component -> Component)`'),
       p("The `window.hcj.forms.formStyle` object has exactly the same keys as `window.hcj.forms.fieldType`.  Its values are functions that take four paramaters: a field name, the name/id attribute, a stream, and an optional form type.  They return styles that should be applied to the `formComponent` output values."),
       p("Note: the `window.hcj.formStyle.radios` function returns not a style, but a layout taking the entire array of radio buttons."),
@@ -2150,7 +2145,7 @@
       //   },
       // }),
 
-      h2('formFor'),
+      h1('formFor'),
       p("The `formFor` is a large curried function for generating forms.  It takes multiple parameters, and then returns a component."),
       p("First, it takes a `submitButtonFormTypeF` argument and a `formComponent` argument.  The `submitButtonFormTypeF` argument is a function that, when called, returns a form type to use for the submit button.  You can pass in `hcj.forms.fieldType.button` and `hcj.forms.formComponent`, or you can add additional properties to those objects corresponding to your form types first."),
       p("Second, `types` the data model and optionally `names` the field names.  The first parameter `types` is an object whose values are form types.  The second parameter `names` is an object whose values are strings - except for `radio`, in which case the value must be an object with a String `name` property and a [String] `options` property."),
@@ -2244,11 +2239,11 @@
       }]),
 
       p('The following functions are found in `window.hcj.color`:'),
-      h2('Color'),
+      h1('Color'),
       p('`color :: {r: Number?, g: Number?, b: Number?, a: Number?} -> Color`'),
       p('`Color` constructor.  `r`, `g`, and `b` values default to 0, and `a` value defaults to 1.'),
 
-      h2('ColorString'),
+      h1('ColorString'),
       p('`colorString :: Color -> String`'),
       p('`Color` destructor.  Takes a color, returns string using rgba format.'),
     ];
@@ -2262,25 +2257,25 @@
       p("The Jso language is very basic.  It does not have a syntax.  You write Jso expression trees in a language of your choice, such as JSON."),
       p("In other words (and ignore this bit if it does not make sense), when you point to a file and say that it is a Jso program, you must have a Jso interpreter in mind that can read the file as Jso and execute it."),
       p("The key innovation of Jso is that a Jso program has two sets of semantics simultaneously, i.e. two interpretations.  It has both server side semantics and client side semantics.  Any new kind of Jso functionality that you add, you must implement twice: once on the server and once on the client."),
-      h2("Jso Types"),
+      h1("Jso Types"),
       p("Jso is a dynamically typed language; types are not declared in Jso programs.  However, types are as core a concept as in any language.  A Jso type can be `atomic`, a `tagged product`, a `tagged sum`, an `array`, a `promise`, a `stream`, or a `function`."),
-      h3("Atomic Types"),
+      h2("Atomic Types"),
       p("Jso's atomic types are `string`, `number`, `date`, and `boolean`."),
       p("These correspond to string, double, date, and boolean types that you will find in most programming languages.  We take the liberty of not specifying these types any further.  Use your native language's features.  Marshalling between C# dates in the C# jso evaluator and Javascript dates in the Javascript jso evaluator should not be a problem."),
-      h3("Tagged Products"),
+      h2("Tagged Products"),
       p("A tagged product type is a logical `and`.  Specifically it is set of key-type pairs, where the keys are strings.  Values of product types are sets of key-value pairs, where all of the values have the correspoinding types."),
       p("Jso exhibits row polymorphism.  If a program has a certain sum or product type, it will also have any sum or product type with strictly more properties.  However, using this fact is not recommended due to the logical nature of sum and product types."),
-      h3("Tagged Sums"),
+      h2("Tagged Sums"),
       p("A tagged sum is a logical `or`.  Like a tagged product, a tagged sum is a set of key-type pairs.  A value of a sum types is a single key-value pair chosen from the set."),
-      h3("Arrays"),
+      h2("Arrays"),
       p("A Jso array is a javascript array, see MDN."),
-      h3("Promises"),
+      h2("Promises"),
       p("A Jso promise is a type that has different semantics server side than it does client side.  Client side, a promise is a standard promise, see MDN.  Server side, the server must simply carry out the action as it renders the page, and the Jso value is the resulting value."),
-      h3("Streams"),
+      h2("Streams"),
       p("Streams also have different semantics server side than they do client side.  Client side, a stream value is an HCJ stream.  Server side, a stream value is the initial value on page load."),
-      h3("Etc"),
+      h2("Etc"),
       p("It is easy to define additional types.  All you have to do is specify both client side representations and server side representations, and implement any core functions to the type both client side and server side."),
-      h2("Jso Terms"),
+      h1("Jso Terms"),
       p(""),
       p("The server side is more diverse than the client side, so that is what we will discuss here."),
       p("A jso term can be a `literal`, a `function application`, or an `identifier`."),
@@ -2323,7 +2318,7 @@
         'var h1m = c.text({size: \'40px\', measureWidth: true});',
       ]),
 
-      h2("Display all kinds of text"),
+      h1("Display all kinds of text"),
       c.text({
         size: 50 + 'px',
       }, "big text"),
@@ -2456,7 +2451,7 @@
         '  }),',
         '}, "secret text");',
       ]),
-      h2("Display images"),
+      h1("Display images"),
       c.all([
         c.keepAspectRatio,
         c.alignHLeft,
@@ -2473,7 +2468,7 @@
         '  minWidth: 300,',
         '}));',
       ]),
-      h2("Separate items horizontally and vertically"),
+      h1("Separate items horizontally and vertically"),
       c.stack([
         c.sideBySide([
           pm('TEXT'),
@@ -2502,7 +2497,7 @@
         '  ]),',
         ']);',
       ]),
-      h2("Align items horizontally and vertically"),
+      h1("Align items horizontally and vertically"),
       c.alignH({
         l: pm('LEFT'),
         r: pm('RIGHT'),
@@ -2571,7 +2566,7 @@
         '  ])(c.bar.v(200)),',
         ']);',
       ]),
-      h2('Show a stream of components.  Text is changed each time you press the button'),
+      h1('Show a stream of components.  Text is changed each time you press the button'),
       c.scope(function () {
         var generateRandomLetters = function (count) {
           var result = '';
@@ -2618,7 +2613,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Show a grid of components'),
+      h1('Show a grid of components'),
       c.grid({
         padding: 20,
         surplusWidth: hcj.funcs.surplusWidth.evenlySplitCenter,
@@ -2691,7 +2686,7 @@
         '  pm(\'GRID TEXT\'),',
         ']);',
       ]),
-      h2('Maintain aspect ratio even in adverse conditions, both by "covering" and by "containing"'),
+      h1('Maintain aspect ratio even in adverse conditions, both by "covering" and by "containing"'),
       c.sideBySide([
         c.all([
           c.keepAspectRatio(),
@@ -2738,7 +2733,7 @@
         '  })),',
         ']);',
       ]),
-      h2('Choose the largest component that fits in the display area'),
+      h1('Choose the largest component that fits in the display area'),
       c.all([
         c.minWidth(0),
       ])(c.largestWidthThatFits([
@@ -2767,7 +2762,7 @@
         '  pm(\'iiiiiiiiiiiii\'),',
         ']));',
       ]),
-      h2('Display things on top of each other'),
+      h1('Display things on top of each other'),
       c.overlays([
         h1('Some text'),
         h1('Hello'),
@@ -2800,7 +2795,7 @@
         '  ]),',
         ']);',
       ]),
-      h2('Load content asynchoronusly'),
+      h1('Load content asynchoronusly'),
       c.scope(function () {
         var stuffS = stream.once(c.nothing);
         var buttonTextS = stream.once('load stuff');
@@ -2861,7 +2856,7 @@
         '  c.componentStream(stuffS),',
         ']);',
       ]),
-      h2('Display components side by side and in a stack'),
+      h1('Display components side by side and in a stack'),
       c.sideBySide([
         h1m('A'),
         h1m('B'),
@@ -2886,7 +2881,7 @@
         '  h1(\'C\'),',
         ']);',
       ]),
-      h2('Apply font and background colors'),
+      h1('Apply font and background colors'),
       c.all([
         c.backgroundColor({
           background: color.lightGray,
@@ -2903,7 +2898,7 @@
         '  }),',
         '])(h1(\'MERRY CHRISTMAS\'));',
       ]),
-      h2('Add margins and borders'),
+      h1('Add margins and borders'),
       c.all([
         c.margin(20),
       ])(h1m('HCJ')),
@@ -2922,7 +2917,7 @@
         '  c.alignHLeft,',
         '])(h1m(\'HCJ\'));',
       ]),
-      h2('Crop components'),
+      h1('Crop components'),
       c.all([
         c.crop({
           top: 0.4,
@@ -2943,7 +2938,7 @@
         '  c.alignHLeft,',
         '])(h1m(\'HALP\'));',
       ]),
-      h2('Link to google'),
+      h1('Link to google'),
       c.all([
         c.linkTo({
           href: 'https://google.com/',
@@ -2958,7 +2953,7 @@
         '  }),',
         '])(p(\'knowledge awaits\'));',
       ]),
-      h2('Arbitrarily position components and specify their widths and heights'),
+      h1('Arbitrarily position components and specify their widths and heights'),
       c.sideBySide([
         c.all([
           c.minWidth(20),
@@ -2993,7 +2988,7 @@
         '  ]),',
         ']);',
       ]),
-      h2('Handle events'),
+      h1('Handle events'),
       c.all([
         c.clickThis(function () {
           var name = prompt("What's your name?");
