@@ -1425,9 +1425,13 @@
       p('`once :: a -> Stream a`'),
       p('Creates a stream with an initial value.'),
 
+      h2('OnNextValue'),
+      p('`onNextValue :: (Stream a , a -> () , (a -> Bool)?) -> ()'),
+      p('Takes three parameters: a stream, a function, and an optional boolean predicate.  If the stream currently contains a value satisfying the predicate, applies the function to that value.  Otherwise, applies the function to the next value of the stream satisfying the predicate.  Predicate defaults to the identity function.'),
+
       h2('OnValue'),
-      p('`onValue :: (Stream a , a -> ()) -> ()'),
-      p('Like `map` but does not return a stream.'),
+      p('`onValue :: (Stream a , a -> ()) -> (() -> ())'),
+      p('Applies a function to each value of a stream.  Returns an unsubscribe function.'),
 
       h2('Prop'),
       p('`prop :: (Stream {x: a, ...} , "x") -> Stream a`'),

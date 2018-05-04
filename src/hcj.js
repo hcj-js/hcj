@@ -437,6 +437,20 @@
         return args[index];
       });
     },
+    onNextValue: function (s, f, predicate) {
+      predicate = predicate || id;
+      var i = s.listeners.length;
+      var stopListening = function () {
+        delete s.listeners[i];
+      };
+      s.listeners.push(function (v) {
+        if (predicate(v)) {
+          f(v);
+          stopListening();
+        }
+      });
+      return stopListening();
+    },
   };
 
 

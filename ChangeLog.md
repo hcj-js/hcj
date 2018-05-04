@@ -1,3 +1,8 @@
+# Changes in Latest #
+
+* Add stream.onNextValue function.
+
+
 # Changes in v0.3.1 #
 
 * Add official pre-render script.
