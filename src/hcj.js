@@ -5440,6 +5440,7 @@
     var renderForm = function (mkOnSubmit, fields, f) {
       var fieldStreams = {};
       var fieldInputs = {};
+      var validSs = [];
       Object.keys(fields).map(function (name) {
         var field = fields[name];
         field.name = name;
@@ -5455,7 +5456,6 @@
           }
           return validate;
         });
-        stream.push(field.validationMessageS, '');
         field.isValidS = stream.map(field.validateS, function (validate) {
           if (!validate) {
             return true;
@@ -5465,10 +5465,21 @@
           }
           return validate.length === 0;
         });
-        stream.push(field.isValidS, true);
+        validSs.push(field.isValidS);
         fieldInputs[name] = style(field)(formComponent[field.type.kind](field));
       });
-      var disabledS = stream.once(false);
+      var allFieldsValidS = stream.map(stream.all(validSs), function (vs) {
+        return vs.reduce(function (a, v) {
+          return a && v;
+        }, true);
+      });
+      var submittingS = stream.once(false);
+      var disabledS = stream.combine([
+        allFieldsValidS,
+        submittingS,
+      ], function (allFieldsValid, submitting) {
+        return !allFieldsValid || submitting;
+      });
       var submitComponentF = customSubmitComponentF ? function (name) {
         return customSubmitComponentF(name, disabledS);
       } :  function (name) {
@@ -5485,33 +5496,16 @@
           str: name,
         }));
       };
-      var allFieldsValid = function () {
-        var allValid = true;
-        Object.keys(fields).map(function (name) {
-          if (!fields[name].isValidS.lastValue) {
-            allValid = false;
-          }
-        });
-        return allValid;
-      };
-      var disable = function () {
-        stream.push(disabledS, true);
+      var submitting = function () {
+        stream.push(submittingS, true);
         return function () {
-          stream.push(disabledS, false);
+          stream.push(submittingS, false);
         };
       };
       if (typeof mkOnSubmit === 'function') {
         var setupFormSubmit = function (el) {
           el.addEventListener('submit', function (ev) {
-            if (disabledS.lastValue) {
-              ev.preventDefault();
-              return;
-            }
-            if (!allFieldsValid()) {
-              ev.preventDefault();
-              return;
-            }
-            mkOnSubmit(ev, disable(), fieldStreams);
+            mkOnSubmit(ev, submitting(), fieldStreams);
           });
         };
       }
@@ -5519,13 +5513,6 @@
         var setupFormSubmit = function (el) {
           el.method = mkOnSubmit.method;
           el.action = mkOnSubmit.action;
-          el.addEventListener('submit', function (ev) {
-            if (!allFieldsValid()) {
-              console.log('not all valid');
-              ev.preventDefault();
-              return;
-            }
-          });
         };
       }
       return layout('form', function (el, ctx, c) {
@@ -5535,7 +5522,7 @@
           minWidth: i.minWidth,
           minHeight: i.minHeight,
         };
-      })(f(fieldInputs, submitComponentF, fieldStreams, disable));
+      })(f(fieldInputs, submitComponentF, fieldStreams));
     };
     return function (mkOnSubmit, fields, f) {
       if (!f) {

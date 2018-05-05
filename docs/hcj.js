@@ -285,10 +285,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
   var streamDeferFunc = createDeferFuncContext();
   var stream = {
-    create: function (v) {
+    create: function () {
       return {
         listeners: [],
-        lastValue: v,
+        lastValue: undefined,
+        hasValue: false,
       };
     },
     next: streamDeferFunc.next,
@@ -299,11 +300,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
         v.hasOwnProperty('lastValue');
     },
     once: function (v) {
-      return stream.create(v);
+      var s = stream.create();
+      s.lastValue = v;
+      s.hasValue = true;
+      return s;
     },
     push: function (s, v) {
-      if (s.lastValue !== v) {
+      if (s.lastValue !== v || !s.hasValue) {
         s.lastValue = v;
+        s.hasValue = true;
         for (var i = 0; i < s.listeners.length; i++) {
           if (s.listeners[i]) {
             s.listeners[i](v);
@@ -313,7 +318,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     map: function (s, f) {
       var out = stream.create();
-      if (s.lastValue !== undefined) {
+      if (s.hasValue) {
         stream.push(out, f(s.lastValue));
       }
       s.listeners.push(function (v) {
@@ -341,7 +346,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       s.listeners.push(function (v) {
         f(v);
       });
-      if (s.lastValue !== undefined) {
+      if (s.hasValue) {
         f(s.lastValue);
       }
       var index = s.listeners.length - 1;
@@ -381,7 +386,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return out;
     },
     pushAll: function (source, target) {
-      if (source.lastValue !== undefined) {
+      if (source.hasValue) {
         stream.push(target, source.lastValue);
       }
       return stream.onValue(source, function (v) {
@@ -5512,6 +5517,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     var renderForm = function (mkOnSubmit, fields, f) {
       var fieldStreams = {};
       var fieldInputs = {};
+      var validSs = [];
       Object.keys(fields).map(function (name) {
         var field = fields[name];
         field.name = name;
@@ -5527,7 +5533,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
           return validate;
         });
-        stream.push(field.validationMessageS, '');
         field.isValidS = stream.map(field.validateS, function (validate) {
           if (!validate) {
             return true;
@@ -5537,10 +5542,21 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
           return validate.length === 0;
         });
-        stream.push(field.isValidS, true);
+        validSs.push(field.isValidS);
         fieldInputs[name] = style(field)(formComponent[field.type.kind](field));
       });
-      var disabledS = stream.once(false);
+      var allFieldsValidS = stream.map(stream.all(validSs), function (vs) {
+        return vs.reduce(function (a, v) {
+          return a && v;
+        }, true);
+      });
+      var submittingS = stream.once(false);
+      var disabledS = stream.combine([
+        allFieldsValidS,
+        submittingS,
+      ], function (allFieldsValid, submitting) {
+        return !allFieldsValid || submitting;
+      });
       var submitComponentF = customSubmitComponentF ? function (name) {
         return customSubmitComponentF(name, disabledS);
       } :  function (name) {
@@ -5557,33 +5573,16 @@ function waitForWebfonts(fonts, callback, maxTime) {
           str: name,
         }));
       };
-      var allFieldsValid = function () {
-        var allValid = true;
-        Object.keys(fields).map(function (name) {
-          if (!fields[name].isValidS.lastValue) {
-            allValid = false;
-          }
-        });
-        return allValid;
-      };
-      var disable = function () {
-        stream.push(disabledS, true);
+      var submitting = function () {
+        stream.push(submittingS, true);
         return function () {
-          stream.push(disabledS, false);
+          stream.push(submittingS, false);
         };
       };
       if (typeof mkOnSubmit === 'function') {
         var setupFormSubmit = function (el) {
           el.addEventListener('submit', function (ev) {
-            if (disabledS.lastValue) {
-              ev.preventDefault();
-              return;
-            }
-            if (!allFieldsValid()) {
-              ev.preventDefault();
-              return;
-            }
-            mkOnSubmit(ev, disable(), fieldStreams);
+            mkOnSubmit(ev, submitting(), fieldStreams);
           });
         };
       }
@@ -5591,13 +5590,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         var setupFormSubmit = function (el) {
           el.method = mkOnSubmit.method;
           el.action = mkOnSubmit.action;
-          el.addEventListener('submit', function (ev) {
-            if (!allFieldsValid()) {
-              console.log('not all valid');
-              ev.preventDefault();
-              return;
-            }
-          });
         };
       }
       return layout('form', function (el, ctx, c) {
@@ -5607,7 +5599,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           minWidth: i.minWidth,
           minHeight: i.minHeight,
         };
-      })(f(fieldInputs, submitComponentF, fieldStreams, disable));
+      })(f(fieldInputs, submitComponentF, fieldStreams));
     };
     return function (mkOnSubmit, fields, f) {
       if (!f) {
