@@ -208,10 +208,11 @@
 
   var streamDeferFunc = createDeferFuncContext();
   var stream = {
-    create: function (v) {
+    create: function () {
       return {
         listeners: [],
-        lastValue: v,
+        lastValue: undefined,
+        hasValue: false,
       };
     },
     next: streamDeferFunc.next,
@@ -222,11 +223,15 @@
         v.hasOwnProperty('lastValue');
     },
     once: function (v) {
-      return stream.create(v);
+      var s = stream.create();
+      s.lastValue = v;
+      s.hasValue = true;
+      return s;
     },
     push: function (s, v) {
-      if (s.lastValue !== v) {
+      if (s.lastValue !== v || !s.hasValue) {
         s.lastValue = v;
+        s.hasValue = true;
         for (var i = 0; i < s.listeners.length; i++) {
           if (s.listeners[i]) {
             s.listeners[i](v);
@@ -236,7 +241,7 @@
     },
     map: function (s, f) {
       var out = stream.create();
-      if (s.lastValue !== undefined) {
+      if (s.hasValue) {
         stream.push(out, f(s.lastValue));
       }
       s.listeners.push(function (v) {
@@ -264,7 +269,7 @@
       s.listeners.push(function (v) {
         f(v);
       });
-      if (s.lastValue !== undefined) {
+      if (s.hasValue) {
         f(s.lastValue);
       }
       var index = s.listeners.length - 1;
@@ -304,7 +309,7 @@
       return out;
     },
     pushAll: function (source, target) {
-      if (source.lastValue !== undefined) {
+      if (source.hasValue) {
         stream.push(target, source.lastValue);
       }
       return stream.onValue(source, function (v) {

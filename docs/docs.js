@@ -1367,16 +1367,6 @@
   var standardLibraryStreams = function () {
     return [
       p("HCJ provides a stream library used to pass dimensions from parents to children and minimum dimensions from children to parents."),
-      p("A `Stream T` is defined as an object with two properties:"),
-      objectDefinition([{
-        name: 'lastValue',
-        type: 'T',
-        description: 'The most recent data point.',
-      }, {
-        name: 'listeners',
-        type: '[T -> ()]',
-        description: 'Functions that are run whenever there is a new data point.',
-      }]),
       p('Broadly speaking, there are two ways to define HCJ streams.  The first is with `stream.create` or `stream.once`.  Streams created with these methods receive new data points whenever you push to them (see `stream.push` and `stream.pushAll`).'),
       p('The second way is to apply an operation to existing streams.  `stream.map` and `stream.reduce` are the most common such operations.  Streams defined this way generally receive new values whenever their input streams receive new values.'),
       p('HCJ streams are optimized for communicating dimensions between parents and children, not for aggregating data.  If you push a value through a stream multiple times, it is only guaranteed to be handled the first time.  If you push multiple values through a stream synchronously, only the last one is guaranteed to be handled.'),

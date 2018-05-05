@@ -1,6 +1,7 @@
 # Changes in Latest #
 
 * Add stream.onNextValue function.
+* Streams can carry undefined, like any other value.
 
 
 # Changes in v0.3.1 #
