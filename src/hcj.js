@@ -1217,6 +1217,12 @@
     });
   };
 
+  var andTransition = function (prop, value) {
+    return and(function (i) {
+      return transition(i, prop, value);
+    });
+  };
+
   var useMinWidth = function (ctx, i) {
     return stream.pushAll(i.minWidth, ctx.width);
   };
@@ -5636,6 +5642,7 @@
       tabs: tabs,
       text: text,
       toggleHeight: toggleHeight,
+      transition: andTransition,
       wrap: wrap,
     },
     displayedS: displayedS,

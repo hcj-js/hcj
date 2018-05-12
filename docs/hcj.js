@@ -521,6 +521,10 @@ function waitForWebfonts(fonts, callback, maxTime) {
     },
     onNextValue: function (s, f, predicate) {
       predicate = predicate || id;
+      if (s.hasValue && predicate(s.lastValue)) {
+        f(s.lastValue);
+        return function () {};
+      }
       var i = s.listeners.length;
       var stopListening = function () {
         delete s.listeners[i];
@@ -1287,6 +1291,12 @@ function waitForWebfonts(fonts, callback, maxTime) {
   var css = function (prop, value) {
     return and(function (i) {
       i.el.style[prop] = value;
+    });
+  };
+
+  var andTransition = function (prop, value) {
+    return and(function (i) {
+      return transition(i, prop, value);
     });
   };
 
@@ -5709,6 +5719,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       tabs: tabs,
       text: text,
       toggleHeight: toggleHeight,
+      transition: andTransition,
       wrap: wrap,
     },
     displayedS: displayedS,
