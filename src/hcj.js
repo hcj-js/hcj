@@ -5163,10 +5163,7 @@
     },
   };
   var formComponent = function (def) {
-    if (def.type.type) {
-      deprecate('fieldType type property.  Now use kind property instead.');
-    }
-    return formComponentObj[def.type.kind || def.type.type](def);
+    return formComponentObj[def.type.kind](def);
   };
   for (var key in formComponentObj) {
     // For backward compatibility between v0.2.1 and v0.2.  Can be
@@ -5243,88 +5240,7 @@
     };
   };
 
-  var formForOld = function (submitButtonFieldTypeF, formComponent) {
-    deprecate('formFor taking a highly curried sequence of arguments.  See documentation.');
-    return function (fields, labels) {
-      labels = labels || {};
-      return function (defaults) {
-        defaults = defaults || {};
-        return function (mkOnSubmit) {
-          return function (style) {
-            style = style || {};
-            var names = Object.keys(fields);
-            return function (f) {
-              var fieldStreams = {};
-              var fieldInputs = {};
-              names.map(function (name) {
-                var defaultValue = defaults[name];
-                var fieldStream = defaultValue ? stream.once(defaultValue) : stream.create();
-                var label = labels[name];
-                var type = fields[name];
-                if (type.type) {
-                  deprecate('fieldType type property.  Now use kind property instead.');
-                }
-                var fieldStyle = (type && style[type.kind || type.type]) || constant(id);
-                fieldStreams[name] = fieldStream;
-                fieldInputs[name] = fieldStyle(label, name, fieldStream, type)(formComponent[type.kind || type.type]({
-                  name: name,
-                  stream: fieldStream,
-                  type: type,
-                }));
-              });
-              var disabledS = stream.once(false);
-              var submit = function (name) {
-                var fieldType = submitButtonFieldTypeF();
-                if (fieldType.type) {
-                  deprecate('fieldType type property.  Now use kind property instead.');
-                }
-                var fieldStyle = style[fieldType.kind || fieldType.type] || constant(id);
-                // TODO: use formComponent[fieldType.type] instead of text
-                return fieldStyle('', stream.create(), fieldType, name)(text({
-                  el: button,
-                  measureWidth: true,
-                }, {
-                  str: name,
-                }), name);
-              };
-              if (typeof mkOnSubmit === 'function') {
-                var onSubmit = mkOnSubmit(fieldStreams, function () {
-                  stream.push(disabledS, true);
-                  return function () {
-                    stream.push(disabledS, false);
-                  };
-                });
-                var setupFormSubmit = function (el) {
-                  el.addEventListener('submit', function (ev) {
-                    if (disabledS.lastValue) {
-                      ev.preventDefault();
-                      return;
-                    }
-                    onSubmit.onSubmit(ev);
-                  });
-                };
-              }
-              else {
-                var setupFormSubmit = function (el) {
-                  el.method = mkOnSubmit.method;
-                  el.action = mkOnSubmit.action;
-                };
-              }
-              return layout('form', function (el, ctx, c) {
-                setupFormSubmit(el);
-                return c();
-              })(f(fieldInputs, submit, fieldStreams, onSubmit && onSubmit.resultS));
-            };
-          };
-        };
-      };
-    };
-  };
-
   var formFor = function (formComponent, style, customSubmitComponentF) {
-    if (typeof style !== 'function') {
-      return formForOld(formComponent, style);
-    }
     var renderForm = function (mkOnSubmit, fields, f) {
       var fieldStreams = {};
       var fieldInputs = {};
