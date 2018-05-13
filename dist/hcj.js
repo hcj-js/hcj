@@ -290,7 +290,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         listeners: [],
         lastValue: undefined,
         hasValue: false,
-        e: new Error(),
       };
     },
     next: streamDeferFunc.next,
@@ -4483,8 +4482,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
     });
   });
 
-
-
   var table = uncurryConfig(function (config) {
     config = config || {};
     config.surplusWidth = config.surplusWidth || ignoreSurplusWidth;
@@ -4679,33 +4676,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         });
       },
     });
-  };
-
-  var tabs = function (list, tabIndexS) {
-    tabIndexS = tabIndexS || stream.once(0);
-    return stack({})([
-      all([
-        minWidth(0),
-        css('overflow-x', 'scroll'),
-        css('overflow-y', 'hidden'),
-      ])(stack()([
-        sideBySide({
-          surplusWidth: centerSurplusWidth,
-        })(list.map(function (item, index) {
-          return alignTBM()({
-            b: all([
-              link,
-              clickThis(function () {
-                stream.push(tabIndexS, index);
-              }),
-            ])(item.tab(tabIndexS, index)),
-          });
-        })),
-        all([
-          minHeight(_scrollbarWidth()) // cheater
-        ])(nothing),
-      ])),
-    ]);
   };
 
   var bar = {
@@ -5652,7 +5622,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
       streams: cStreams,
       submitThis: submitThis,
       table: table,
-      tabs: tabs,
       text: text,
       toggleHeight: toggleHeight,
       transition: andTransition,
