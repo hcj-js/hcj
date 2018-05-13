@@ -2362,10 +2362,7 @@
   var sideBySide = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    if (config.surplusWidthFunc) {
-      deprecate('surplusWidthFunc property of SideBySideConfig.  Now called surplusWidth.')
-    }
-    config.surplusWidth = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
+    config.surplusWidth = config.surplusWidth || ignoreSurplusWidth;
     return layout(function (el, ctx, cs) {
       el.classList.add('sideBySide');
       if (cs.length === 0) {
@@ -2679,10 +2676,7 @@
   var stack = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    if (config.surplusHeightFunc) {
-      deprecate('surplusHeightFunc property of StackConfig.  Now called surplusHeight.')
-    }
-    config.surplusHeight = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeight = config.surplusHeight || ignoreSurplusHeight;
     config.collapsePadding = config.collapsePadding || false;
     config.transition = config.transition || 0;
     return layout(function (el, ctx, cs) {
@@ -2761,10 +2755,7 @@
   var stackStream = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    if (config.surplusHeightFunc) {
-      deprecate('surplusHeightFunc property of StackStreamConfig.  Now called surplusHeight.')
-    }
-    config.surplusHeight = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusHeight = config.surplusHeight || ignoreSurplusHeight;
     config.transition = config.transition || 0;
     return function (actionS) {
       return container(function (el, ctx, append) {
