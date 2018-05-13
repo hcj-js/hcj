@@ -4444,19 +4444,17 @@ function waitForWebfonts(fonts, callback, maxTime) {
         return Math.max(a, ms.w);
       }, 0));
     });
-    return adjustPosition({
-      minSize: function (minSize) {
-        streams.addStream(minSize);
-        return stream.combine([
-          minSize,
-          greatestMinWidth,
-        ], function (ms, gmw) {
-          return {
-            w: gmw,
-            h: ms.h,
-          };
-        });
-      },
+    return adjustPosition(function (minSize) {
+      streams.addStream(minSize);
+      return stream.combine([
+        minSize,
+        greatestMinWidth,
+      ], function (ms, gmw) {
+        return {
+          w: gmw,
+          h: ms.h,
+        };
+      });
     });
   };
 
@@ -4632,7 +4630,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       parseFloat(style.paddingRight) +
       parseFloat(style.borderRightWidth);
   };
-  var applyFormBorder = adjustPosition({}, {
+  var applyFormBorder = adjustPosition(null, {
     width: function (w, el) {
       return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
@@ -4646,7 +4644,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
   });
-  var applyTextareaBorder = adjustPosition({}, {
+  var applyTextareaBorder = adjustPosition(null, {
     width: function (w, el) {
       return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
@@ -4660,7 +4658,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
   });
-  var applyCheckboxBorder = adjustPosition({}, {
+  var applyCheckboxBorder = adjustPosition(null, {
     width: function (w, el) {
       return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
@@ -4674,7 +4672,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       return calc + " - " + (getFormElementMarginTop(el) + getFormElementMarginBottom(el));
     },
   });
-  var applyRadioBorder = adjustPosition({}, {
+  var applyRadioBorder = adjustPosition(null, {
     width: function (w, el) {
       return w - getFormElementMarginLeft(el) - getFormElementMarginRight(el);
     },
