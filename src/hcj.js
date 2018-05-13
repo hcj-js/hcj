@@ -687,13 +687,15 @@
       el: el,
       transitions: {},
     };
+    var initialMinWidth;
+    var initialMinHeight;
     var buildResult = build(el, context, function (config) {
       var w = measureWidth(el, config);
       if (instance.minWidth) {
         stream.push(instance.minWidth, w);
       }
       else {
-        instance.initialMinWidth = w;
+        initialMinWidth = w;
       }
     }, function (config) {
       var h = measureHeight(el, config);
@@ -701,16 +703,16 @@
         stream.push(instance.minHeight, h);
       }
       else {
-        instance.initialMinHeight = h;
+        initialMinHeight = h;
       }
     }) || {};
     instance.minWidth = buildResult.minWidth || stream.create();
     instance.minHeight = buildResult.minHeight || stream.create();
-    if (instance.hasOwnProperty('initialMinWidth')) {
-      stream.push(instance.minWidth, instance.initialMinWidth);
+    if (initialMinWidth !== undefined) {
+      stream.push(instance.minWidth, initialMinWidth);
     }
-    if (instance.hasOwnProperty('initialMinHeight')) {
-      stream.push(instance.minHeight, instance.initialMinHeight);
+    if (initialMinHeight !== undefined) {
+      stream.push(instance.minHeight, initialMinHeight);
     }
 
     instance.remove = function () {
