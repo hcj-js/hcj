@@ -1710,15 +1710,11 @@
   var text = uncurryConfig(function (config) {
     // config2 is present in v0.2.1 for backward compatibility, it may
     // be removed in a future version
-    return function (strs, config2) {
+    return function (strs) {
       strs = strs || '';
       if (!Array.isArray(strs)) {
         strs = [strs];
       }
-      if (config2) {
-        deprecate('hcj.component.text taking TextConfig second.  Optional TextConfig is now the first argument.');
-      }
-      config = config || config2 || {};
       if (Array.isArray(config)) {
         config = config.reduce(extend, {});
       }
