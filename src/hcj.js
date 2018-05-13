@@ -4609,16 +4609,6 @@
       return minHeight(size)(nothing);
     },
   };
-  var barWithDeprecationWarnings = {
-    h: function (size) {
-      deprecate('hcj.component.bar.h: use hcj.component.barH instead');
-      return minWidth(size)(nothing);
-    },
-    v: function (size) {
-      deprecate('hcj.component.bar.v: use hcj.component.barV instead');
-      return minHeight(size)(nothing);
-    },
-  };
   var rectangle = function (size) {
     return all([
       minWidth(size.h || size.x || 0),
@@ -5480,7 +5470,6 @@
       all: all,
       and: and,
       backgroundColor: backgroundColor,
-      bar: barWithDeprecationWarnings,
       barH: bar.h,
       barV: bar.v,
       basicFloat: basicFloat,
