@@ -3811,14 +3811,8 @@
   var grid = uncurryConfig(function (config) {
     config = config || {};
     config.padding = config.padding || 0;
-    if (config.surplusWidthFunc) {
-      deprecate('surplusWidthFunc property of GridConfig.  Now called surplusWidth.')
-    }
-    config.surplusWidth = config.surplusWidth || config.surplusWidthFunc || ignoreSurplusWidth;
-    if (config.surplusHeightFunc) {
-      deprecate('surplusHeightFunc property of GridConfig.  Now called surplusHeight.')
-    }
-    config.surplusHeight = config.surplusHeight || config.surplusHeightFunc || ignoreSurplusHeight;
+    config.surplusWidth = config.surplusWidth || ignoreSurplusWidth;
+    config.surplusHeight = config.surplusHeight || ignoreSurplusHeight;
     config.rowHeight = config.rowHeight || useMaxHeight;
     config.maxPerRow = config.maxPerRow || 0;
     config.rowOrColumn = config.rowOrColumn || false;
