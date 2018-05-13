@@ -1074,11 +1074,11 @@
     ], function (ww, wh, mh) {
       var mhAtWW = mh(ww);
       var mhAtScrollbarWW = mh(ww - scrollbarWidth);
-      var componentMinWidth;
-      var componentMinHeight;
+      var componentWidth;
+      var componentHeight;
       if (mhAtWW > wh) {
-        componentMinWidth = ww - scrollbarWidth;
-        componentMinHeight = mhAtScrollbarWW;
+        componentWidth = ww - scrollbarWidth;
+        componentHeight = mhAtScrollbarWW;
         if (mhAtScrollbarWW > wh) {
           document.body.style.overflowY = 'initial';
         }
@@ -1087,13 +1087,14 @@
         }
       }
       else {
-        componentMinWidth = ww;
-        componentMinHeight = mhAtWW;
+        componentWidth = ww;
+        componentHeight = mhAtWW;
         document.body.style.overflowY = 'initial';
       }
-      stream.push(widthS, componentMinWidth);
-      stream.push(windowWidthMinusScrollbar, componentMinWidth);
-      stream.push(heightS, Math.max(wh, componentMinHeight));
+      componentHeight = Math.max(wh, componentHeight);
+      stream.push(widthS, componentWidth);
+      stream.push(windowWidthMinusScrollbar, componentWidth);
+      stream.push(heightS, componentHeight);
     });
     var i = rootLayout(c)({
       el: document.body,
