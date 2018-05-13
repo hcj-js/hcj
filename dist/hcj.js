@@ -1472,7 +1472,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
   };
 
   var backgroundColor = function (s, arg2, arg3, arg4) {
-    // function may accept four arguments...
+    // function may accept four arguments, or an object...
     if (isColor(s)) {
       s = {
         background: s,
@@ -1482,27 +1482,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
       };
     }
     s = s || {};
-    // or it may accept one object whose properties are either colors or streams...
-    if (stream.isStream(s.background) ||
-        stream.isStream(s.font) ||
-        stream.isStream(s.backgroundHover) ||
-        stream.isStream(s.fontHover)) {
-      deprecate("BackgroundColorConfig 'background', 'font', 'backgroundHover', and 'fontHover' properties as streams.  Your BackgroundColorConfig must instead be a stream of objects.");
-      if (s.background && !stream.isStream(s.background)) {
-        s.background = stream.once(s.background);
-      }
-      if (s.font && !stream.isStream(s.font)) {
-        s.font = stream.once(s.font);
-      }
-      if (s.backgroundHover && !stream.isStream(s.backgroundHover)) {
-        s.backgroundHover = stream.once(s.backgroundHover);
-      }
-      if (s.fontHover && !stream.isStream(s.fontHover)) {
-        s.fontHover = stream.once(s.fontHover);
-      }
-      s = stream.combineObject(s);
-    }
-    // or a stream.
+    // or a stream of objects.
     if (!stream.isStream(s)) {
       s = stream.once(s);
     }
