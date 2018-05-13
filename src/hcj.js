@@ -473,6 +473,10 @@
 
   var onceZeroS = stream.once(0);
   var onceConstantZeroS = stream.once(constant(0));
+  var onceSizeZeroS = stream.once({
+    w: 0,
+    h: constant(0),
+  });
 
   var windowWidth = stream.create();
   var windowHeight = stream.create();
@@ -687,32 +691,22 @@
       el: el,
       transitions: {},
     };
-    var initialMinWidth;
-    var initialMinHeight;
+    var initialMinSize;
     var buildResult = build(el, context, function (config) {
-      var w = measureWidth(el, config);
-      if (instance.minWidth) {
-        stream.push(instance.minWidth, w);
+      var size = {
+        w: measureWidth(el, config),
+        h: measureHeight(el, config),
+      };
+      if (instance.minSize) {
+        stream.push(instance.minSize, size);
       }
       else {
-        initialMinWidth = w;
-      }
-    }, function (config) {
-      var h = measureHeight(el, config);
-      if (instance.minHeight) {
-        stream.push(instance.minHeight, h);
-      }
-      else {
-        initialMinHeight = h;
+        initialMinSize = w;
       }
     }) || {};
-    instance.minWidth = buildResult.minWidth || stream.create();
-    instance.minHeight = buildResult.minHeight || stream.create();
-    if (initialMinWidth !== undefined) {
-      stream.push(instance.minWidth, initialMinWidth);
-    }
-    if (initialMinHeight !== undefined) {
-      stream.push(instance.minHeight, initialMinHeight);
+    instance.minSize = buildResult.minSize || stream.create();
+    if (initialMinSize !== undefined) {
+      stream.push(instance.minSize, initialMinSize);
     }
 
     instance.remove = function () {
@@ -939,7 +933,7 @@
       childInstances.push(i);
     }
     // todo: replace with some isInstance function
-    if (!i || !i.minWidth || !i.minHeight) {
+    if (!i || !i.minSize) {
       console.log('not a component');
       debugger;
     }
@@ -985,8 +979,7 @@
         var i = buildLayout.apply(null, [el, ctx].concat(layoutRecurse(childInstances, el, ctx, args)));
         return {
           el: el,
-          minWidth: i.minWidth,
-          minHeight: i.minHeight,
+          minSize: i.minSize,
           remove: function () {
             childInstances.map(function (i) {
               return i.remove();
@@ -1009,8 +1002,7 @@
       });
       return {
         el: el,
-        minWidth: i.minWidth,
-        minHeight: i.minHeight,
+        minSize: i.minSize,
         remove: function () {
           childInstances.map(function (i) {
             return i.remove();
@@ -1041,8 +1033,7 @@
       stream.push(displayedS, true);
     });
     return {
-      minWidth: i.minWidth,
-      minHeight: i.minHeight,
+      minSize: i.minSize,
     };
   });
 
@@ -1066,12 +1057,13 @@
     var scrollbarWidth = _scrollbarWidth();
     var widthS = stream.create();
     var heightS = stream.create();
-    var minHeight = stream.create();
+    var minSize = stream.create();
     stream.combine([
       windowWidth,
       windowHeight,
-      minHeight,
-    ], function (ww, wh, mh) {
+      minSize,
+    ], function (ww, wh, ms) {
+      var mh = ms.h;
       var mhAtWW = mh(ww);
       var mhAtScrollbarWW = mh(ww - scrollbarWidth);
       var componentWidth;
@@ -1108,7 +1100,7 @@
     i.el.style.left = '0px';
     i.el.classList.add('root-component');
     i.el.classList.add('root-component-' + nthRootComponent);
-    stream.pushAll(i.minHeight, minHeight);
+    stream.pushAll(i.minSize, minSize);
     stream.combine([
       widthS,
       heightS,
@@ -1189,14 +1181,9 @@
     b: 255,
   });
 
-  var mapMinWidths = function (is) {
+  var mapMinSizes = function (is) {
     return stream.all(is.map(function (i) {
-      return i.minWidth;
-    }));
-  };
-  var mapMinHeights = function (is) {
-    return stream.all(is.map(function (i) {
-      return i.minHeight;
+      return i.minSize;
     }));
   };
 
@@ -1227,14 +1214,16 @@
   };
 
   var useMinWidth = function (ctx, i) {
-    return stream.pushAll(i.minWidth, ctx.width);
+    return stream.onValue(i.minSize, function (ms) {
+      stream.push(ctx.width, ms.w);
+    });
   };
   var useMinHeight = function (ctx, i) {
     return stream.combineInto([
       ctx.width,
-      i.minHeight,
-    ], function (w, mh) {
-      return mh(w);
+      i.minSize,
+    ], function (w, ms) {
+      return ms.h(w);
     }, ctx.height);
   };
   var minWidth = function (mw) {
@@ -1242,8 +1231,12 @@
       el.classList.add('minWidth');
       var i = c();
       return {
-        minWidth: stream.once(mw),
-        minHeight: i.minHeight,
+        minSize: stream.map(i.minSize, function (ms) {
+          return {
+            w: mw,
+            h: ms.h,
+          };
+        }),
       };
     });
   };
@@ -1252,8 +1245,12 @@
       el.classList.add('minHeight');
       var i = c();
       return {
-        minWidth: i.minWidth,
-        minHeight: stream.once(constant(mh)),
+        minSize: stream.map(i.minSize, function (ms) {
+          return {
+            w: ms.w,
+            h: constant(mh),
+          };
+        }),
       };
     });
   };
@@ -1262,8 +1259,10 @@
       el.classList.add('withDimensions');
       var i = c();
       return {
-        minWidth: stream.once(mw),
-        minHeight: stream.once(constant(mh)),
+        minSize: stream.once({
+          w: mw,
+          h: constant(mh),
+        }),
       };
     });
   };
@@ -1281,7 +1280,6 @@
   };
 
   var adjustPosition = function (minSize, position) {
-    minSize = minSize || {};
     position = position || {};
     return layout(function (el, ctx, c) {
       el.classList.add('adjust-position');
@@ -1322,8 +1320,7 @@
         });
       }
       return {
-        minWidth: minSize.minWidth ? minSize.minWidth(i.minWidth, el.firstChild) : i.minWidth,
-        minHeight: minSize.minHeight ? minSize.minHeight(i.minHeight, el.firstChild) : i.minHeight,
+        minSize: minSize ? minSize(i.minSize, el.firstChild) : i.minSize,
       };
     });
   };
@@ -1504,14 +1501,10 @@
         width: stream.prop(props, 'width'),
         height: stream.prop(props, 'height'),
       });
-      var minWidth = stream.create();
-      var minHeight = stream.create();
       stream.combineInto([
-        i.minWidth,
-        i.minHeight,
         ctx.width,
         ctx.height,
-      ], function (mw, mh, w, h) {
+      ], function (w, h) {
         var width = w / (1 - left - right);
         var height = h / (1 - top - bottom);
         return {
@@ -1521,18 +1514,15 @@
           height: height,
         };
       }, props);
-      stream.combine([
-        i.minWidth,
-        i.minHeight,
-      ], function (mw, mh) {
-        stream.push(minWidth, mw * (1 - left - right));
-        stream.push(minHeight, function (w) {
-          return mh(mw / (1 - left - right)) * (1 - top - bottom);
-        });
-      });
       return {
-        minWidth: minWidth,
-        minHeight: minHeight,
+        minSize: stream.map(i.minSize, function (ms) {
+          return {
+            w: ms.w * (1 - left - right),
+            h: function (w) {
+              return ms.h(ms.w / (1 - left - right)) * (1 - top - bottom);
+            },
+          };
+        }),
       };
     });
   };
@@ -1557,13 +1547,12 @@
         height: stream.prop(props, 'height'),
       });
       stream.combineInto([
-        i.minWidth,
-        i.minHeight,
+        i.minSize,
         ctx.width,
         ctx.height,
         config.fill,
-      ], function (mw, mh, w, h, fill) {
-        var ar = aspectRatio(mw, mh(mw));
+      ], function (ms, w, h, fill) {
+        var ar = aspectRatio(ms.w, ms.h(ms.w));
         var AR = aspectRatio(w, h);
         // container is wider
         if ((!fill && AR > ar) ||
@@ -1611,29 +1600,27 @@
           };
         }
       }, props);
-      var minWidth = stream.create();
-      var minHeight = stream.create();
-      stream.combine([
-        i.minWidth,
-        i.minHeight,
-      ], function (mw, mh) {
-        if (config.minWidth) {
-          stream.push(minWidth, config.minWidth);
-        }
-        else if (config.minHeight) {
-          var ar = aspectRatio(mw, mh(mw));
-          stream.push(minWidth, config.minHeight * ar);
-        }
-        else {
-          stream.push(minWidth, mw);
-        }
-        stream.push(minHeight, function (w) {
-          return w / aspectRatio(mw, mh(mw));
-        });
-      });
       return {
-        minWidth: minWidth,
-        minHeight: minHeight,
+        minSize: stream.map(i.minSize, function (ms) {
+          var mw;
+          if (config.minWidth) {
+            mw = config.minWidth;
+          }
+          else if (config.minHeight) {
+            var ar = aspectRatio(ms.w, ms.h(ms.w));
+            mw = config.minHeight * ar;
+          }
+          else {
+            mw = ms.w;
+          }
+          var mh = function (w) {
+            return w / aspectRatio(ms.w, ms.h(ms.w));
+          };
+          return {
+            w: mw,
+            h: mh,
+          };
+        }),
       };
     });
   });
@@ -1641,8 +1628,7 @@
   var image = function (config) {
     var srcStream = stream.isStream(config.src) ? config.src : stream.once(config.src);
     return img(function (el, ctx) {
-      var minWidth = stream.create();
-      var minHeight = stream.create();
+      var minSize = stream.create();
       stream.onValue(srcStream, function (src) {
         el.src = src;
       });
@@ -1654,14 +1640,15 @@
         if (config.minWidth === 0 || config.minHeight === 0) {
           mw = 0;
         }
-        stream.push(minWidth, mw);
-        stream.push(minHeight, function (w) {
-          return w / aspectRatio;
+        stream.push(minSize, {
+          w: mw,
+          h: function (w) {
+            return w / aspectRatio;
+          },
         });
       });
       return {
-        minWidth: minWidth,
-        minHeight: minHeight,
+        minSize: minSize,
       };
     });
   };
@@ -1688,8 +1675,7 @@
     return component(el, function (el, ctx) {
       el.classList.add('empty');
       return {
-        minWidth: onceZeroS,
-        minHeight: onceConstantZeroS,
+        minSize: onceSizeZeroS,
       };
     });
   };
@@ -1930,8 +1916,15 @@
         pushDimensions();
 
         return {
-          minWidth: mwS,
-          minHeight: mhS,
+          minSize: stream.combine([
+            mwS,
+            mhS,
+          ], function (mw, mh) {
+            return {
+              w: mw,
+              h: mh,
+            };
+          }),
           remove: function () {
             removed = true;
           },
@@ -2213,11 +2206,10 @@
         return modulo(Math.floor((index + cs.length) / cs.length), 3);
       };
 
-      var allMinWidths = mapMinWidths(is);
-      var allMinHeights = mapMinHeights(is);
+      var allMinSizes = mapMinSizes(is);
 
-      var computePositions = function (selected, width, mws, mhs, warpIndex) {
-        return mws.map(function (mw, index) {
+      var computePositions = function (selected, width, mss, warpIndex) {
+        return mss.map(function (ms, index) {
           var thisSegment = Math.floor(index / cs.length);
           var thisSegmentIndex = segmentOrder.indexOf(thisSegment);
           var offset = modulo(index, cs.length) - modulo(selected, cs.length);
@@ -2246,51 +2238,52 @@
       var selectedIndexS = stream.reduce(config.moveS, function (a, b) {
         return a + b.amount;
       }, 0);
-      var minHeight = stream.combine([
-        selectedIndexS,
-        ctx.width,
-        allMinWidths,
-        allMinHeights,
-      ], function (selectedIndex, width, mws, mhs) {
-        var selectedIndexModuloCs = modulo(selectedIndex, cs.length);
-        var targetSegment = findSegment(selectedIndex);
-        var targetSegmentIndex = segmentOrder.indexOf(targetSegment);
-        var positions;
-        switch (targetSegmentIndex) {
-        case 0:
-          segmentOrder = [
-            segmentOrder[2],
-            segmentOrder[0],
-            segmentOrder[1],
-          ];
-          positions = computePositions(selectedIndexModuloCs + cs.length, width, mws, mhs, 0);
-          moveSlideshow(positions, selectedIndexModuloCs + cs.length);
-          break;
-        case 1:
-          positions = computePositions(selectedIndexModuloCs + cs.length, width, mws, mhs);
-          moveSlideshow(positions, selectedIndexModuloCs + cs.length);
-          break;
-        case 2:
-          segmentOrder = [
-            segmentOrder[1],
-            segmentOrder[2],
-            segmentOrder[0],
-          ];
-          positions = computePositions(selectedIndexModuloCs + cs.length, width, mws, mhs, 2);
-          moveSlideshow(positions, selectedIndexModuloCs + cs.length);
-          break;
-        }
-        return constant(mhs.map(function (mh, i) {
-          return mh(width);
-        }).reduce(mathMax, 0));
-      });
-      stream.push(minHeight, constant(0));
 
+      var widthS = stream.once(0);
+      stream.pushAll(ctx.width, widthS);
       return {
-        minWidth: stream.map(allMinWidths, function (mws) {
-          return mws.reduce(add, config.padding * (is.length - 1));
+        minSize: stream.combine([
+          selectedIndexS,
+          widthS,
+          allMinSizes,
+        ], function (selectedIndex, width, mss) {
+          var selectedIndexModuloCs = modulo(selectedIndex, cs.length);
+          var targetSegment = findSegment(selectedIndex);
+          var targetSegmentIndex = segmentOrder.indexOf(targetSegment);
+          var positions;
+          switch (targetSegmentIndex) {
+          case 0:
+            segmentOrder = [
+              segmentOrder[2],
+              segmentOrder[0],
+              segmentOrder[1],
+            ];
+            positions = computePositions(selectedIndexModuloCs + cs.length, width, mss, 0);
+            moveSlideshow(positions, selectedIndexModuloCs + cs.length);
+            break;
+          case 1:
+            positions = computePositions(selectedIndexModuloCs + cs.length, width, mss);
+            moveSlideshow(positions, selectedIndexModuloCs + cs.length);
+            break;
+          case 2:
+            segmentOrder = [
+              segmentOrder[1],
+              segmentOrder[2],
+              segmentOrder[0],
+            ];
+            positions = computePositions(selectedIndexModuloCs + cs.length, width, mss, 2);
+            moveSlideshow(positions, selectedIndexModuloCs + cs.length);
+            break;
+          }
+          return {
+            w: mss.reduce(function (a, ms) {
+              return a + ms.w;
+            }, config.padding * (is.length - 1)),
+            h: constant(mhs.map(function (mh, i) {
+              return mh(width);
+            }).reduce(mathMax, 0)),
+          };
         }),
-        minHeight: minHeight,
       };
     });
   });
@@ -2381,8 +2374,7 @@
       el.classList.add('sideBySide');
       if (cs.length === 0) {
         return {
-          minWidth: onceZeroS,
-          minHeight: onceConstantZeroS,
+          minSize: onceSizeZeroS,
         };
       }
       var contexts = [];
@@ -2394,13 +2386,11 @@
         contexts.push(context);
         return c(context);
       });
-      var allMinWidths = mapMinWidths(is, ctx);
-      var allMinHeights = mapMinHeights(is, ctx);
-      var minHeightStreams = [allMinHeights];
-      var computePositions = function (width, mws) {
+      var allMinSizes = mapMinSizes(is, ctx);
+      var computePositions = function (width, mss) {
         var left = 0;
-        var positions = mws.map(function (mw, index) {
-          var w = Math.min(width, mw);
+        var positions = mss.map(function (ms, index) {
+          var w = Math.min(width, ms.w);
           var position = {
             left: left + config.padding * index,
             width: w,
@@ -2413,11 +2403,10 @@
       };
       stream.combine([
         ctx.width,
-        allMinWidths,
-        allMinHeights,
+        allMinSizes,
         config.sourcePositionsS || stream.once([]),
-      ], function (width, mws, mhs, sourcePositions) {
-        var positions = computePositions(width, mws);
+      ], function (width, mss, sourcePositions) {
+        var positions = computePositions(width, mss);
         if (config.targetPositionsS) {
           stream.push(config.targetPositionsS, positions);
         }
@@ -2431,18 +2420,17 @@
         });
       });
       return {
-        minWidth: stream.map(allMinWidths, function (mws) {
-          return mws.reduce(add, config.padding * (is.length - 1));
-        }),
-        minHeight: stream.combine([
-          allMinWidths,
-          allMinHeights,
-        ], function (mws, mhs) {
-          return function (w) {
-            var positions = computePositions(w, mws);
-            return positions.map(function (position, i) {
-              return mhs[i](positions[i].width);
-            }).reduce(mathMax, 0);
+        minSize: stream.map(allMinSizes, function (mss) {
+          return {
+            w: mss.reduce(function (a, ms) {
+              return a + ms.w;
+            }, config.padding * (is.length - 1)),
+            h: function (w) {
+              var positions = computePositions(w, mss);
+              return positions.map(function (position, i) {
+                return mss[i].h(positions[i].width);
+              }).reduce(mathMax, 0);
+            },
           };
         }),
       };
@@ -2476,8 +2464,7 @@
         }
       });
       return {
-        minWidth: i.minWidth,
-        minHeight: i.minHeight,
+        minSize: i.minSize,
       };
     });
   });
@@ -2507,8 +2494,7 @@
         }
       });
       return {
-        minWidth: i.minWidth,
-        minHeight: i.minHeight,
+        minSize: i.minSize,
       };
     });
   });
@@ -2531,23 +2517,22 @@
       el.style.overflowX = 'hidden';
       el.style.cursor = 'move';
 
-      var allMinWidths = stream.create();
-      var allMinHeights = stream.create();
+      var allMinSizes = stream.create();
 
       var leftS = stream.combine([
         ctx.width,
-        allMinWidths,
+        allMinSizes,
         stateS,
         grabbedS
-      ], function (width, mws, state, grabbed) {
+      ], function (width, mss, state, grabbed) {
         // configure left to be the left parameter of the first article in the slider
         var left = state.edge === 'left' ? 0 : width; // would love to case split
-        mws.map(function (mw, index) {
+        mss.map(function (ms, index) {
           if (index < state.index) {
-            left -= mw;
+            left -= ms.w;
           }
           if (state.edge === 'right' && index === state.index) {
-            left -= mw;
+            left -= ms.w;
           }
         });
         if (grabbed !== false) {
@@ -2557,12 +2542,12 @@
       });
 
       var leftsS = stream.combine([
-        allMinWidths,
+        allMinSizes,
         leftS,
-      ], function (mws, left) {
-        return mws.reduce(function (acc, v) {
+      ], function (mss, left) {
+        return mss.reduce(function (acc, ms) {
           acc.arr.push(acc.lastValue);
-          acc.lastValue += v;
+          acc.lastValue += ms.w;
           return acc;
         }, {
           arr: [],
@@ -2582,14 +2567,17 @@
       });
       var is = cs.map(function (c, index) {
         var i = c(ctxs[index]);
-        stream.pushAll(i.minWidth, ctxs[index].width);
+        stream.onValue(i.minSize, function (ms) {
+          stream.push(ctxs[index].width, ms.w);
+        });
         return i;
       });
-      stream.pushAll(mapMinWidths(is, ctx), allMinWidths);
-      stream.pushAll(mapMinHeights(is, ctx), allMinHeights);
+      stream.pushAll(mapMinSizes(is, ctx), allMinSizes);
 
-      var totalMinWidthS = stream.map(allMinWidths, function (mws) {
-        return mws.reduce(add, 0);
+      var totalMinWidthS = stream.onValue(allMinSizes, function (mss) {
+        return mss.reduce(function (a, ms) {
+          return a + ms.w;
+        }, 0);
       });
 
       el.style.userSelect = 'none';
@@ -2605,7 +2593,7 @@
         is.map(function (i) {
           transition(i, 'left ', config.leftTransition);
         });
-        var mws = allMinWidths.lastValue;
+        var mss = allMinSizes.lastValue;
         var width = ctx.width.lastValue;
         var grabbed = grabbedS.lastValue;
         if (!grabbed) {
@@ -2613,9 +2601,9 @@
         }
         var left = leftS.lastValue;
         // array of sums of min widths
-        var edgeScrollPoints = mws.reduce(function (a, mw) {
+        var edgeScrollPoints = mss.reduce(function (a, ms) {
           var last = a[a.length - 1];
-          a.push(last - mw);
+          a.push(last - ms.w);
           return a;
         }, [0]);
         var closest = edgeScrollPoints.reduce(function (a, scrollPoint, index) {
@@ -2678,16 +2666,15 @@
       });
 
       return {
-        minWidth: stream.map(allMinWidths, function (mws) {
-          return mws.reduce(mathMax, 0);
-        }),
-        minHeight: stream.combine([
-          allMinWidths,
-          allMinHeights,
-        ], function (mws, mhs) {
-          return constant(mhs.map(function (mh, i) {
-            return mh(mws[i]);
-          }).reduce(mathMax, 0));
+        minSize: stream.map(allMinSizes, function (mss) {
+          return {
+            w: mss.reduce(function (a, ms)  {
+              return a + ms.w;
+            }),
+            h: constant(mss.map(function (ms) {
+              return ms.h(ms.w);
+            }).reduce(mathMax, 0)),
+          }
         }),
       };
     });
@@ -2706,8 +2693,7 @@
       el.classList.add('stack');
       if (cs.length === 0) {
         return {
-          minWidth: onceZeroS,
-          minHeight: onceConstantZeroS,
+          minSize: onceSizeZeroS,
         };
       }
       var contexts = [];
@@ -2726,16 +2712,15 @@
           transition(i, 'top', config.transition + 's');
         });
       }
-      var allMinWidths = mapMinWidths(is);
-      var allMinHeights = mapMinHeights(is);
+      var allMinSizes = mapMinSizes(is);
       stream.combine([
         ctx.width,
         ctx.height,
-        allMinHeights,
-      ], function (width, height, mhs) {
+        allMinSizes,
+      ], function (width, height, mss) {
         var top = 0;
-        var positions = mhs.map(function (mh, index) {
-          var minHeight = mh(width);
+        var positions = mss.map(function (ms, index) {
+          var minHeight = ms.h(width);
           var position = {
             top: top,
             height: minHeight,
@@ -2758,15 +2743,19 @@
         });
       });
       return {
-        minWidth: stream.map(allMinWidths, function (mws) {
-          return mws.reduce(mathMax, 0);
-        }),
-        minHeight: stream.map(allMinHeights, function (mhs) {
-          return function (w) {
-            var minHeights = mhs.map(apply(w));
-            return minHeights.reduce(add, config.padding * (minHeights.filter(function (x) {
-              return !config.collapsePadding || x > 0;
-            }).length - 1));
+        minSize: stream.map(allMinSizes, function (mss) {
+          return {
+            w: mss.reduce(function (a, ms) {
+              return Math.max(a, ms.w);
+            }, 0),
+            h: function (w) {
+              var mhs = mss.map(function (ms) {
+                return ms.h(w);
+              });
+              return mhs.reduce(add, config.padding * (mhs.filter(function (x) {
+                return !config.collapsePadding || x > 0;
+              }).length - 1));
+            },
           };
         }),
       };
@@ -2787,26 +2776,27 @@
         var mh = stream.once(constant(0));
         var contexts = [];
         var is = [];
-        var mwDeleteListeners = [];
-        var mhDeleteListeners = [];
+        var msDeleteListeners = [];
         var tryPushContexts = function () {
           var width = ctx.width.lastValue;
           var height = ctx.height.lastValue;
-          var mws = [];
-          var mhs = [];
+          var mss = [];
           is.map(function (i, index) {
-            mws[index] = i.minWidth.lastValue;
-            mhs[index] = i.minHeight.lastValue;
+            mss[index] = i.minSize.lastValue;
           });
-          // if children have all provided mws and mhs, then provide mw and mh
-          if (!mws.concat(mhs).reduce(function (a, b) {
+          // if children have all provided mss, then provide mw and mh
+          if (!mss.reduce(function (a, b) {
             return a && b !== undefined;
           }, true)) {
             return;
           }
-          stream.push(mw, mws.reduce(mathMax, 0));
+          stream.push(mw, mss.reduce(function (a, ms) {
+            return a + ms.w;
+          }, 0));
           stream.push(mh, function (w) {
-            return mhs.map(apply(w)).reduce(add, config.padding * (is.length - 1));
+            return mss.map(function (ms) {
+              return ms.h(w);
+            }).reduce(add, config.padding * (is.length - 1));
           });
           // if width and height from context, then position children
           if (width === undefined) {
@@ -2817,9 +2807,9 @@
           }
           var top = 0;
           var idx = -1;
-          var positions = mhs.map(function (mh) {
+          var positions = mss.map(function (ms) {
             idx += 1;
-            var minHeight = mh(width);
+            var minHeight = ms.h(width);
             var position = {
               top: top + config.padding * idx,
               height: minHeight,
@@ -2842,8 +2832,7 @@
         var insert = function (c, idx) {
           for (var ii = cs.length; ii > idx; ii--) {
             cs[ii+1] = cs[ii];
-            mwDeleteListeners[ii+1] = mwDeleteListeners[ii];
-            mhDeleteListeners[ii+1] = mhDeleteListeners[ii];
+            msDeleteListeners[ii+1] = msDeleteListeners[ii];
             contexts[ii+1] = contexts[ii];
             is[ii+1] = is[ii];
           }
@@ -2855,8 +2844,7 @@
           var i = append(c, context);
 
           cs[index] = c;
-          mwDeleteListeners[index] = stream.map(i.minWidth, tryPushContexts);
-          mhDeleteListeners[index] = stream.map(i.minHeight, tryPushContexts);
+          msDeleteListeners[index] = stream.map(i.minSize, tryPushContexts);
           contexts[index] = context;
           is[index] = i;
 
@@ -2865,8 +2853,7 @@
         var remove = function (c) {
           var index = cs.indexOf(c);
           is[index].remove();
-          mwDeleteListeners[index]();
-          mhDeleteListeners[index]();
+          msDeleteListeners[index]();
           delete cs[index];
           delete mwDeleteListeners[index];
           delete mhDeleteListeners[index];
@@ -2884,8 +2871,15 @@
           }, action);
         });
         return {
-          minWidth: mw,
-          minHeight: mh,
+          minSize: stream.combine([
+            mw,
+            mh,
+          ], function (mw, mh) {
+            return {
+              w: mw,
+              h: mh,
+            }
+          }),
         };
       });
     };
@@ -2917,36 +2911,42 @@
           minWidth = stream.once(config.minWidth);
         }
         if (typeof config.minWidth === 'function') {
-          minWidth = stream.map(i.minWidth, config.minWidth);
+          minWidth = stream.map(stream.prop(i.minSize, 'w'), config.minWidth);
         }
       }
       else {
-        minWidth = i.minWidth;
+        minWidth = stream.prop(i.minSize, 'w');
       }
       stream.combine([
-        i.minWidth,
+        i.minSize,
         ctx.width,
         ctx.height,
-      ], function (mw, ctxW, ctxH) {
-        stream.push(widthS, Math.max(mw, ctxW));
-        stream.push(heightS, ctxH - (mw > ctxW ? _scrollbarWidth() : 0));
+      ], function (ms, ctxW, ctxH) {
+        stream.push(widthS, Math.max(ms.w, ctxW));
+        stream.push(heightS, ctxH - (ms.w > ctxW ? _scrollbarWidth() : 0));
       });
       var minHeight = stream.combine([
-        i.minHeight,
-        i.minWidth,
-      ], function (mh, mw) {
+        i.minSize,
+      ], function (ms) {
         return function (w) {
-          if (mw > w) {
-            return mh(w) + _scrollbarWidth();
+          if (ms.w > w) {
+            return ms.h(w) + _scrollbarWidth();
           }
           else {
-            return mh(w);
+            return ms.h(w);
           }
         };
       });
       return {
-        minWidth: minWidth,
-        minHeight: minHeight,
+        minSize: stream.combine([
+          minWidth,
+          minHeight,
+        ], function (mw, mh) {
+          return {
+            w: mw,
+            h: mh,
+          };
+        }),
       };
     });
   });
@@ -2967,27 +2967,34 @@
           minHeight = stream.once(constant(config.minHeight));
         }
         if (typeof config.minHeight === 'function') {
-          minHeight = stream.map(i.minHeight, config.minHeight);
+          minHeight = stream.map(stream.prop(i.minSize, 'h'), config.minHeight);
         }
       }
       else {
-        minHeight = i.minHeight;
+        minHeight = stream.prop(i.minSize, 'h');
       }
       stream.combine([
-        i.minHeight,
+        i.minSize,
         ctx.width,
         ctx.height,
-      ], function (mhF, ctxW, ctxH) {
-        var mh = mhF(ctxW);
+      ], function (ms, ctxW, ctxH) {
+        var mh = ms.h(ctxW);
         stream.push(widthS, ctxW - (mh > ctxH ? _scrollbarWidth() : 0));
         stream.push(heightS, Math.max(mh, ctxH));
       });
-      var minWidth = stream.map(i.minWidth, function (mw) {
+      var minWidth = stream.map(i.minSize, function (ms) {
         return mw + _scrollbarWidth();
       });
       return {
-        minWidth: minWidth,
-        minHeight: minHeight,
+        minSize: stream.combine([
+          minWidth,
+          minHeight,
+        ], function (mw, mh) {
+          return {
+            w: mw,
+            h: mh,
+          };
+        }),
       };
     });
   });
@@ -3040,12 +3047,12 @@
         heightCalc: stream.once('100% - ' + px(top + bottom)),
       });
       return {
-        minWidth: stream.map(i.minWidth, function (mw) {
-          return mw + left + right;
-        }),
-        minHeight: stream.map(i.minHeight, function (mh) {
-          return function (w) {
-            return mh(w - left - right) + top + bottom;
+        minSize: stream.map(i.minSize, function (ms) {
+          return {
+            w: ms.w + left + right,
+            h: function (w) {
+              return ms.h(w - left - right) + top + bottom;
+            },
           };
         }),
       };
@@ -3114,20 +3121,18 @@
         }),
       });
       return {
-        minWidth: stream.combine([
-          i.minWidth,
+        minSize: stream.combine([
+          i.minSize,
           leftS,
           rightS,
-        ], function (mw, l, r) {
-          return mw + l + r;
-        }),
-        minHeight: stream.combine([
-          i.minHeight,
           topS,
           bottomS,
-        ], function (mh, t, b) {
-          return function (w) {
-            return mh(w) + t + b;
+        ], function (ms, l, r, t, b) {
+          return {
+            w: ms.w + l + r,
+            h: function (w) {
+              return ms.h(w) + t + b;
+            },
           };
         }),
       };
@@ -3153,38 +3158,37 @@
       var rI = r(rCtx);
       var mI = m(mCtx);
       stream.combine([
-        lI.minWidth,
-        rI.minWidth,
-        mI.minWidth,
+        lI.minSize,
+        rI.minSize,
+        mI.minSize,
         ctx.width,
-      ], function (lmw, rmw, mmw, w) {
-        stream.push(lCtx.width, Math.min(w, lmw));
-        stream.push(rCtx.width, Math.min(w, rmw));
-        stream.push(mCtx.width, Math.min(w, mmw));
-        stream.push(rCtx.left, w - Math.min(w, rmw));
-        stream.push(mCtx.left, (w - Math.min(w, mmw)) / 2);
+      ], function (lms, rms, mms, w) {
+        stream.push(lCtx.width, Math.min(w, lms.w));
+        stream.push(rCtx.width, Math.min(w, rms.w));
+        stream.push(mCtx.width, Math.min(w, mms.w));
+        stream.push(rCtx.left, w - Math.min(w, rms.w));
+        stream.push(mCtx.left, (w - Math.min(w, mms.w)) / 2);
       });
       return {
-        minWidth: stream.combine([
-          lI.minWidth,
-          rI.minWidth,
-          mI.minWidth,
-        ], function (l, r, m) {
-          return (m > 0) ?
-            Math.max(m + 2 * l, m + 2 * r) :
-            l + r;
-        }),
-        minHeight: stream.combine([
-          lI.minWidth,
-          rI.minWidth,
-          mI.minWidth,
-          lI.minHeight,
-          rI.minHeight,
-          mI.minHeight,
-        ], function (lw, rw, mw, lh, rh, mh) {
-          return function (w) {
-            return [lh(Math.min(w, lw)), rh(Math.min(w, rw)), mh(Math.min(w, mw))].reduce(mathMax);
-          };
+        minSize: stream.combine([
+          lI.minSize,
+          rI.minSize,
+          mI.minSize,
+        ], function (lms, rms, mms) {
+          var lmw = lms.w;
+          var rmw = rms.w;
+          var mmw = mms.w;
+          var lmh = lms.h;
+          var rmh = rms.h;
+          var mmh = mms.h;
+          return {
+            w: (mmw > 0) ?
+              mmw + 2 * Math.max(lmw, rmw) :
+              lmw + rmw,
+            h: function (w) {
+              return [lmh(Math.min(w, lmw)), rmh(Math.min(w, rmw)), mmh(Math.min(w, mmw))].reduce(mathMax);
+            },
+          }
         }),
       };
     })(lrm.l || nothing, lrm.r || nothing, lrm.m || lrm.c || nothing);
@@ -3226,38 +3230,34 @@
       var bI = b(bCtx);
       var mI = m(mCtx);
       stream.combine([
-        tI.minHeight,
-        bI.minHeight,
-        mI.minHeight,
+        tI.minSize,
+        bI.minSize,
+        mI.minSize,
         ctx.width,
         ctx.height,
-      ], function (lmh, rmh, mmh, w, h) {
-        stream.push(tCtx.height, Math.min(h, lmh(w)));
-        stream.push(bCtx.height, Math.min(h, rmh(w)));
-        stream.push(mCtx.height, Math.min(h, mmh(w)));
-        stream.push(bCtx.top, Math.max(0, h - Math.min(h, rmh(w))));
-        stream.push(mCtx.top, Math.max(0, (h - Math.min(h, mmh(w))) / 2));
+      ], function (lms, rms, mms, w, h) {
+        stream.push(tCtx.height, Math.min(h, lms.h(w)));
+        stream.push(bCtx.height, Math.min(h, rms.h(w)));
+        stream.push(mCtx.height, Math.min(h, mms.h(w)));
+        stream.push(bCtx.top, Math.max(0, h - Math.min(h, rms.h(w))));
+        stream.push(mCtx.top, Math.max(0, (h - Math.min(h, mms.h(w))) / 2));
       });
       return {
-        minWidth: stream.combine([
-          tI.minWidth,
-          bI.minWidth,
-          mI.minWidth,
-        ], function (t, b, m) {
-          return [t, b, m].reduce(mathMax);
-        }),
-        minHeight: stream.combine([
-          tI.minHeight,
-          bI.minHeight,
-          mI.minHeight,
-        ], function (tH, bH, mH) {
-          return function (w) {
-            var t = tH(w);
-            var b = bH(w);
-            var m = mH(w);
-            return (m > 0) ?
-              Math.max(m + 2 * t, m + 2 * b) :
-              t + b;
+        minSize: stream.combine([
+          tI.minSize,
+          bI.minSize,
+          mI.minSize,
+        ], function (tms, bms, mms) {
+          return {
+            w: [tms.w, bms.w, mms.w].reduce(mathMax),
+            h: function (w) {
+              var tmh = tms.h(w);
+              var bmh = bms.h(w);
+              var mmh = mms.h(w);
+              return (mmh > 0) ?
+                mmh + 2 * Math.max(tmh, bmh) :
+                tmh + bmh;
+            },
           };
         }),
       };
@@ -3365,19 +3365,19 @@
         el.style.borderBottom = px(bottom) + ' ' + style + ' ' + colorString;
       });
       return {
-        minWidth: stream.map(i.minWidth, function (mw) {
-          return mw + left + right;
-        }),
-        minHeight: stream.map(i.minHeight, function (mh) {
-          return function (w) {
-            return mh(w - left - right) + top + bottom;
+        minSize: stream.map(i.minSize, function (ms) {
+          return {
+            w: ms.w + left + right,
+            h: function (w) {
+              return ms.h(w - left - right) + top + bottom;
+            },
           };
         }),
       };
     });
     return function (c) {
       return all([
-        adjustPosition({}, {
+        adjustPosition(null, {
           width: function (w, el) {
             return w - left - right;
           },
@@ -3399,19 +3399,14 @@
     return container(function (el, ctx, append) {
       el.classList.add('componentStream');
       var i;
-      var unpushMW;
-      var unpushMH;
-      var minWidth = stream.create();
-      var minHeight = stream.create();
+      var unpushMS;
+      var minSize = stream.create();
       var iStream = stream.onValue(cStream, function (c) {
         if (i) {
           i.remove();
         }
-        if (unpushMW) {
-          unpushMW();
-        }
-        if (unpushMH) {
-          unpushMH();
+        if (unpushMS) {
+          unpushMS();
         }
         i = append(c, {
           widthCalc: stream.once('100%'),
@@ -3419,13 +3414,11 @@
         }, {
           noRemove: true,
         });
-        unpushMW = stream.pushAll(i.minWidth, minWidth);
-        unpushMH = stream.pushAll(i.minHeight, minHeight);
+        unpushMS = stream.pushAll(i.minSize, minSize);
         return i;
       });
       return {
-        minWidth: minWidth,
-        minHeight: minHeight,
+        minSize: minSize,
         remove: function () {
           if (i) {
             i.remove();
@@ -3449,8 +3442,7 @@
       el.classList.add('component-stream-with-exit');
       var localCStream = stream.create();
       stream.pushAll(cStream, localCStream);
-      var minWidthS = stream.create();
-      var minHeightS = stream.create();
+      var minSizeS = stream.create();
       var instanceC = function (c) {
         if (i) {
           (function (i) {
@@ -3471,8 +3463,7 @@
         i.el.style.transition = 'inherit';
         i.el.style.display = 'none';
         el.prepend(i.el);
-        stream.pushAll(i.minWidth, minWidthS);
-        stream.pushAll(i.minHeight, minHeightS);
+        stream.pushAll(i.minSize, minSizeS);
         stream.defer(function () {
           i.el.style.display = '';
           if (entrance) {
@@ -3484,8 +3475,7 @@
         instanceC(c);
       });
       return {
-        minWidth: minWidthS,
-        minHeight: minHeightS,
+        minSize: minSizeS,
         remove: function () {
           stream.end(localCStream);
           if (i) {
@@ -3560,8 +3550,7 @@
         });
 
         return {
-          minWidth: onceZeroS,
-          minHeight: onceConstantZeroS,
+          minSize: onceSizeZeroS,
         };
       })(c);
     };
@@ -3576,21 +3565,23 @@
       };
       var i = c(context);
       stream.pushAll(stream.combine([
-        i.minHeight,
+        i.minSize,
         ctx.width,
         ctx.height,
-      ], function (mh, w, h) {
-        return Math.max(h, mh(w));
+      ], function (ms, w, h) {
+        return Math.max(h, ms.h(w));
       }), context.height);
       return {
-        minWidth: i.minWidth,
-        minHeight: stream.combine([
-          i.minHeight,
+        minSize: stream.combine([
+          i.minSize,
           open,
-        ], function (mh, onOff) {
-          return function (w) {
-            return onOff ? mh(w) : 0;
-          };
+        ], function (ms, onOff) {
+          return {
+            w: ms.w,
+            h: function (w) {
+              return onOff ? ms.h(w) : 0;
+            },
+          }
         }),
       };
     });
@@ -3613,13 +3604,15 @@
       useMinHeight(panelCtx, panelI);
       stream.pushAll(ctx.height, panelCtx.top);
       return {
-        minWidth: stream.map(stream.combine([
-          panelI.minWidth,
-          sourceI.minWidth,
-        ], Math.max), function (mw) {
-          return mw;
+        minSize: stream.combine([
+          panelI.minSize,
+          sourceI.minSize,
+        ], function (pms, sms) {
+          return {
+            w: Math.max(pms.w, sms.w),
+            h: sms.h,
+          };
         }),
-        minHeight: sourceI.minHeight,
       };
     })(source, layout(function (el, ctx, panel) {
       var context = {
@@ -3636,8 +3629,7 @@
       var i = panel(context);
       transition(i, 'top ', config.transition + 's');
       return {
-        minWidth: i.minWidth,
-        minHeight: i.minHeight,
+        minSize: i.minSize,
       };
     })(panel));
   };
@@ -3660,26 +3652,27 @@
       stream.combineInto([
         ctx.height,
         windowHeight,
-        panelI.minWidth,
-        panelI.minHeight,
-      ], function (sh, wh, mw, mh) {
-        return Math.max(wh - sh, mh(mw));
+        panelI.minSize,
+      ], function (sh, wh, ms) {
+        return Math.max(wh - sh, ms.h(ms.w));
       }, panelCtx.height);
       stream.pushAll(ctx.height, panelCtx.top);
       stream.combineInto([
         ctx.width,
-        panelI.minWidth,
-      ], function (w, mw) {
-        return w - mw;
+        panelI.minSize,
+      ], function (w, ms) {
+        return w - ms.w;
       }, panelCtx.left);
       return {
-        minWidth: stream.map(stream.combine([
-          panelI.minWidth,
-          sourceI.minWidth,
-        ], add), function (mw) {
-          return mw;
+        minSize: stream.combine([
+          panelI.minSize,
+          sourceI.minSize,
+        ], function (pms, sms) {
+          return {
+            w: pms.w + sms.w,
+            h: sms.h,
+          };
         }),
-        minHeight: sourceI.minHeight,
       };
     })(source, layout(function (el, ctx, panel) {
       var i = panel({
@@ -3692,8 +3685,7 @@
       });
       transition(i, 'left ', config.transition + 's');
       return {
-        minWidth: i.minWidth,
-        minHeight: i.minHeight,
+        minSize: i.minSize,
       };
     })(panel));
   };
@@ -3723,9 +3715,9 @@
       stream.combine([
         ctx.width,
         ctx.height,
-        headerI.minHeight,
-      ], function (w, h, mh) {
-        var headerHeight = mh(w);
+        headerI.minSize,
+      ], function (w, h, ms) {
+        var headerHeight = ms.h(w);
         stream.push(headerHeightS, headerHeight);
         stream.push(bodyHeightS, h - headerHeight);
       });
@@ -3739,16 +3731,15 @@
       });
 
       return {
-        minWidth: stream.combine([bodyI, headerI].map(function (i) {
-          return i.minWidth;
-        }), function (hw, bw) {
-          return hw + bw;
-        }),
-        minHeight: stream.combine([bodyI, headerI].map(function (i) {
-          return i.minHeight;
-        }), function (hh, bh) {
-          return function (w) {
-            return hh(w) + bh(w);
+        minSize: stream.combine([
+          bodyI.minSize,
+          headerI.minSize,
+        ], function (bms, hms) {
+          return {
+            w: bms.w + hms.w,
+            h: function (w) {
+              return bms.h(w) + hms.h(w);
+            },
           };
         }),
       };
@@ -3786,8 +3777,7 @@
         });
       });
       return {
-        minWidth: i.minWidth,
-        minHeight: i.minHeight,
+        minSize: i.minSize,
       };
     });
   }, function (c) {
@@ -3795,14 +3785,14 @@
   });
 
   var useNthMinHeight = function (n) {
-    return function (cells, mhs) {
+    return function (cells, mss) {
       var index = Math.min(n, cells.length - 1);
-      return mhs[index](cells[index].width);
+      return mss[index].h(cells[index].width);
     };
   };
-  var useMaxHeight = function (cells, mhs) {
+  var useMaxHeight = function (cells, mss) {
     return cells.reduce(function (a, cell, i) {
-      return Math.max(a, mhs[i](cell.width));
+      return Math.max(a, mss[i].h(cell.width));
     }, 0);
   };
 
@@ -3886,11 +3876,12 @@
             return splitVEl;
           });
         }
-        var minWidth = stream.create();
-        var minHeight = stream.create();
+        var minSize = stream.create();
         if (cs.length === 0) {
-          stream.push(minWidth, 0);
-          stream.push(minHeight, constant(0));
+          stream.push(minSize, {
+            w: 0,
+            h: constant(0),
+          });
         }
         var cContexts = [];
         var is = cs.map(function (c) {
@@ -3933,31 +3924,16 @@
           });
         }
 
-        var cMinWidthsS = stream.combine(is.map(function (i) {
-          return i.minWidth;
-        }), function () {
-          return Array.prototype.slice.call(arguments);
-        });
-        var cMinHeightsS = stream.combine(is.map(function (i) {
-          return i.minHeight;
-        }), function () {
-          return Array.prototype.slice.call(arguments);
-        });
+        var cMinSizesS = stream.all(is.map(function (i) {
+          return i.minSize;
+        }));
+        var dMinSizesS = stream.all(js.map(function (j) {
+          return j ? j.minSize : onceSizeZeroS;
+        }));
 
-        var dMinWidthsS = stream.combine(js.map(function (j) {
-          return j ? j.minWidth : stream.once(0);
-        }), function () {
-          return Array.prototype.slice.call(arguments);
-        });
-        var dMinHeightsS = stream.combine(js.map(function (j) {
-          return j ? j.minHeight : onceConstantZeroS;
-        }), function () {
-          return Array.prototype.slice.call(arguments);
-        });
-
-        var computeRows = function (gridWidth, cmws, dmws) {
-          var mws = cmws.map(function (cmw, i) {
-            return Math.max(cmw, dmws[i]);
+        var computeRows = function (gridWidth, cmss, dmss) {
+          var mws = cmss.map(function (cms, i) {
+            return Math.max(cms.w, dmss[i].w);
           });
           if (config.allSameWidth) {
             var maxMW = mws.reduce(mathMax, 0);
@@ -4038,47 +4014,37 @@
         };
 
         // todo: fix interaction of allSameWidth and useFullWidth
-        stream.pushAll(stream.combine([
-          cMinWidthsS,
-          dMinWidthsS,
-        ], function (cmws, dmws) {
-          if (config.useFullWidth) {
-            return cmws.reduce(function (a, mw, i) {
-              return a + Math.max(mw, dmws[i]) + totalPaddingH;
-            }, -totalPaddingH);
-          }
-          return cmws.reduce(function (a, mw, i) {
-            return Math.max(a, Math.max(mw, dmws[i]));
-          }, 0);
-        }), minWidth);
         stream.combineInto([
-          cMinWidthsS,
-          cMinHeightsS,
-          dMinWidthsS,
-          dMinHeightsS,
-        ], function (cmws, cmhs, dmws, dmhs) {
-          return function (w) {
-            var rows = computeRows(w, cmws, dmws);
-            var index = 0;
-            var h = rows.map(function (row) {
-              var ch = config.rowHeight(row.cells, cmhs.slice(index, index + row.cells.length));
-              var dh = config.rowHeight(row.cells, dmhs.slice(index, index + row.cells.length));
-              index += row.cells.length;
-              return ch + dh + totalPaddingV;
-            }).reduce(add, -totalPaddingV);
-            return h;
+          cMinSizesS,
+          dMinSizesS,
+        ], function (cmss, dmss) {
+          return {
+            w: config.useFullWidth ? cmss.reduce(function (a, ms, i) {
+              return a + Math.max(ms.w, dmss[i].w) + totalPaddingH;
+            }, -totalPaddingH) : cmss.reduce(function (a, ms, i) {
+              return Math.max(a, Math.max(ms.w, dmss[i].w));
+            }, 0),
+            h: function (w) {
+              var rows = computeRows(w, cmss, dmss);
+              var index = 0;
+              var h = rows.map(function (row) {
+                var ch = config.rowHeight(row.cells, cmss.slice(index, index + row.cells.length));
+                var dh = config.rowHeight(row.cells, dmss.slice(index, index + row.cells.length));
+                index += row.cells.length;
+                return ch + dh + totalPaddingV;
+              }).reduce(add, -totalPaddingV);
+              return h;
+            },
           };
-        }, minHeight);
+        }, minSize);
 
         stream.combine([
           ctx.width,
           ctx.height,
-          cMinWidthsS,
-          cMinHeightsS,
-          dMinWidthsS,
-          dMinHeightsS,
-        ], function (gridWidth, gridHeight, cmws, cmhs, dmws, dmhs) {
-          var rows = computeRows(gridWidth, cmws, dmws);
+          cMinSizesS,
+          dMinSizesS,
+        ], function (gridWidth, gridHeight, cmss, dmss) {
+          var rows = computeRows(gridWidth, cmss, dmss);
           var index = 0;
           var top = 0;
           if (config.splitH) {
@@ -4092,9 +4058,9 @@
             });
           }
           rows.map(function (row) {
-            var cHeight = config.rowHeight(row.cells, cmhs.slice(index, index + row.cells.length));
-            row.dHeights = dmhs.slice(index, index + row.cells.length).map(function (dmh, i) {
-              return dmh(row.cells[i].width);
+            var cHeight = config.rowHeight(row.cells, cmss.slice(index, index + row.cells.length));
+            row.dHeights = dmss.slice(index, index + row.cells.length).map(function (dms, i) {
+              return dms.h(row.cells[i].width);
             });
             var dHeight = row.dHeights.reduce(mathMax, 0);
             row.height = cHeight + dHeight;
@@ -4156,8 +4122,7 @@
         });
 
         return {
-          minWidth: minWidth,
-          minHeight: minHeight,
+          minSize: minSize,
         };
       })(cs);
     };
@@ -4180,17 +4145,14 @@
       var iis = ccs.map(function (c, index) {
         return c(contexts[index]);
       });
-      var allMinWidths = mapMinWidths(iis);
-      var allMinHeights = mapMinHeights(iis);
-      var positionItems = function (w, mws, mhs) {
-        mws = mws.slice(0);
-        mhs = mhs.slice(0);
-        // shift off min-dimensions of floating element
-        var mw = mws.shift();
-        var mh = mhs.shift();
+      var allMinSizes = mapMinSizes(iis);
+      var positionItems = function (w, mss) {
+        mss = mss.slice(0);
+        // shift off min size of floating element
+        var ms = mss.shift();
         // size of floating element
-        var floatWidth = (!mws[0] || mws[0] > w - mw - 2 * config.padding) ? w : mw;
-        var floatHeight = mh(floatWidth);
+        var floatWidth = (mss[0].w > w - ms.w - 2 * config.padding) ? w : ms.w;
+        var floatHeight = ms.h(floatWidth);
         var dims = [{
           left: config.float === 'right' ? (w - floatWidth) : 0,
           top: 0,
@@ -4201,23 +4163,22 @@
         var topBelowFloat = floatHeight + config.padding;
         // compute dimensions of the rest of the items
         var top = 0;
-        for (var i = 0; i < mws.length; i++) {
-          var mwi = mws[i];
-          var mhi = mhs[i];
+        for (var i = 0; i < mss.length; i++) {
+          var msi = mss[i];
           // clear the float if there is not enough width available
-          if (top < topBelowFloat && mwi > w - (floatWidth + 2 * config.padding)) {
+          if (top < topBelowFloat && msi.w > w - floatWidth - 2 * config.padding) {
             top = topBelowFloat;
           }
           var dimLeft = top < topBelowFloat ? (config.float === 'right' ? config.padding : floatWidth + config.padding) : config.padding;
           var dimTop = top;
-          var dimWidth = top < topBelowFloat ? w - (floatWidth + 2 * config.padding) : w - 2 * config.padding;
-          var dimHeight = mhi(dimWidth);
-          if (config.clearHanging && top < topBelowFloat && top + dimHeight + config.padding > topBelowFloat) {
+          var dimWidth = top < topBelowFloat ? w - floatWidth - 2 * config.padding : w - 2 * config.padding;
+          var dimHeight = msi.h(dimWidth);
+          if (config.clearHanging && top < topBelowFloat && top + dimHeight > topBelowFloat) {
             top = topBelowFloat;
             dimLeft = config.padding;
             dimTop = top;
             dimWidth = w - 2 * config.padding;
-            dimHeight = mhi(dimWidth);
+            dimHeight = msi.h(dimWidth);
           }
           dims.push({
             left: dimLeft,
@@ -4232,23 +4193,11 @@
           totalHeight: Math.max(floatHeight, top),
         };
       };
-      var minWidth = stream.map(allMinWidths, function (mws) {
-        return mws.reduce(mathMax, 0);
-      }, minWidth);
-      var minHeight = stream.combine([
-        allMinWidths,
-        allMinHeights,
-      ], function (mws, mhs) {
-        return function (w) {
-          return positionItems(w, mws, mhs).totalHeight;
-        };
-      });
       stream.combine([
         ctx.width,
-        allMinWidths,
-        allMinHeights,
-      ], function (w, mws, mhs) {
-        positionItems(w, mws, mhs).dims.map(function (dim, i) {
+        allMinSizes,
+      ], function (w, mss) {
+        positionItems(w, mss).dims.map(function (dim, i) {
           var context = contexts[i];
           stream.push(context.left, dim.left);
           stream.push(context.top, dim.top);
@@ -4257,8 +4206,16 @@
         });
       });
       return {
-        minWidth: minWidth,
-        minHeight: minHeight,
+        minSize: stream.map(allMinSizes, function (mss) {
+          return {
+            w: mss.reduce(function (a, ms) {
+              return Math.max(a, ms.w);
+            }, 0),
+            h: function (w) {
+              return positionItems(w, mss).totalHeight;
+            },
+          };
+        }),
       };
     });
   });
@@ -4271,8 +4228,15 @@
       el.classList.add('withMinWidthStream');
       var i = c();
       return {
-        minWidth: typeof getMinWidthStream === 'function' ? getMinWidthStream(i, ctx) : getMinWidthStream,
-        minHeight: i.minHeight,
+        minSize: stream.combine([
+          i.minSize,
+          typeof getMinWidthStream === 'function' ? getMinWidthStream(i, ctx) : getMinWidthStream,
+        ], function (ms, mw) {
+          return {
+            w: mw,
+            h: ms.h,
+          };
+        })
       };
     });
   };
@@ -4282,9 +4246,11 @@
     }
     return withMinWidthStream(function (i) {
       return stream.combine([
-        i.minWidth,
+        i.minSize,
         number,
-      ], mathMax);
+      ], function (ms, x) {
+        return Math.max(ms.w, x);
+      });
     });
   };
   var withMinHeightStream = function (getMinHeightStream) {
@@ -4294,10 +4260,16 @@
     return layout(function (el, ctx, c) {
       el.classList.add('withMinHeightStream');
       var i = c();
-      var minHeightS = typeof getMinHeightStream === 'function' ? getMinHeightStream(i, ctx) : getMinHeightStream;
       return {
-        minWidth: i.minWidth,
-        minHeight: minHeightS,
+        minSize: stream.combine([
+          i.minSize,
+          typeof getMinHeightStream === 'function' ? getMinHeightStream(i, ctx) : getMinHeightStream,
+        ], function (ms, mh) {
+          return {
+            w: ms.w,
+            h: mh,
+          }
+        }),
       };
     });
   };
@@ -4307,11 +4279,11 @@
     }
     return withMinHeightStream(function (i) {
       return stream.combine([
-        i.minHeight,
+        i.minSize,
         number,
-      ], function (mh, number) {
+      ], function (ms, number) {
         return function (w) {
-          return Math.max(mh(w), number);
+          return Math.max(ms.h(w), number);
         };
       });
     });
@@ -4325,11 +4297,11 @@
       };
       var i = c(context);
       stream.pushAll(stream.combine([
-        i.minHeight,
+        i.minSize,
         ctx.width,
         ctx.height,
-      ], function (mh, w, h) {
-        return Math.max(h, mh(w));
+      ], function (ms, w, h) {
+        return Math.max(h, ms.h(w));
       }), context.height);
 
       var lastScroll = windowScroll.lastValue;
@@ -4353,13 +4325,15 @@
       stream.pushAll(scrollTargetS, context.top);
 
       return {
-        minWidth: i.minWidth,
-        minHeight: stream.combine([
+        minSize: stream.combine([
           heightS,
-          i.minHeight,
-        ], function (maxHeight, mh) {
-          return function (w) {
-            return Math.min(maxHeight, mh(w));
+          i.minSize,
+        ], function (maxHeight, ms) {
+          return {
+            w: ms.w,
+            h: function (w) {
+              return Math.min(maxHeight, mh(w));
+            },
           };
         }),
       };
@@ -4372,12 +4346,11 @@
       var is = cs.map(function (c) {
         return c();
       });
-      var allMinWidths = mapMinWidths(is);
-      var allMinHeights = mapMinHeights(is);
-      var chooseIndex = function (w, mws) {
-        var index = mws.reduce(function (a, mw, index) {
-          return (a === null || a.mw > w && a.mw > mw || a.mw < mw && mw < w) ? {
-            mw: mw,
+      var allMinSizes = mapMinSizes(is);
+      var chooseIndex = function (w, mss) {
+        var index = mss.reduce(function (a, ms, index) {
+          return (a === null || a.mw > w && a.mw > ms.w || a.mw < ms.w && ms.w < w) ? {
+            mw: ms.w,
             index: index,
           } : a;
         }, null).index;
@@ -4385,24 +4358,23 @@
       };
       stream.combine([
         ctx.width,
-        allMinWidths,
-      ], function (w, mws) {
-        var i = chooseIndex(w, mws);
+        allMinSizes,
+      ], function (w, mss) {
+        var i = chooseIndex(w, mss);
         is.map(function (instance, index) {
           instance.el.style.display = index === i ? '' : 'none';
         });
       });
       return {
-        minWidth: stream.map(allMinWidths, function (mws) {
-          return mws.reduce(mathMax, 0);
-        }),
-        minHeight: stream.combine([
-          allMinWidths,
-          allMinHeights,
-        ], function (mws, mhs) {
-          return function (w) {
-            var i = chooseIndex(w, mws);
-            return mhs[i](w);
+        minSize: stream.map(allMinSizes, function (mss) {
+          return {
+            w: mss.reduce(function (a, ms) {
+              return Math.max(a, ms.w);
+            }, 0),
+            h: function (w) {
+              var i = chooseIndex(w, mss);
+              return mss[i].h(w);
+            },
           };
         }),
       };
@@ -4415,26 +4387,19 @@
       var is = cs.map(function (c) {
         return c();
       });
-      var chooseLargest = function (streams) {
-        return stream.combine(streams, function () {
-          var args = Array.prototype.slice.call(arguments);
-          return args.reduce(mathMax, 0);
-        });
-      };
+      var minSizesS = mapMinSizes(is);
       return {
-        minWidth: stream.combine(is.map(function (i) {
-          return i.minWidth;
-        }), function () {
-          var args = Array.prototype.slice.call(arguments);
-          return args.reduce(mathMax, 0);
-        }),
-        minHeight: stream.combine(is.map(function (i) {
-          return i.minHeight;
-        }), function () {
-          var args = Array.prototype.slice.call(arguments);
-          return function (w) {
-            return args.map(apply(w)).reduce(mathMax, 0);
-          };
+        minSize: stream.map(minSizesS, function (mss) {
+          return {
+            w: mss.reduce(function (a, ms) {
+              return Math.max(a, ms.w);
+            }, 0),
+            h: function (w) {
+              return mss.reduce(function (a, ms) {
+                return Math.max(a, ms.h(w));
+              }, 0);
+            },
+          }
         }),
       };
     });
@@ -4456,10 +4421,7 @@
       el.classList.add('table');
 
       if (css.length === 0 || css[0].length === 0) {
-        return {
-          minWidth: onceZeroS,
-          minHeight: onceConstantZeroS,
-        };
+        return onceSizeZeroS;
       }
 
       var wholeRowContexts = [];
@@ -4492,45 +4454,36 @@
 
       // we blindly assume all rows have the same number of columns
 
-      var mwssS = stream.all(iss.map(function (is) {
-        return stream.all(is.map(function (i) {
-          return i.minWidth;
-        }));
-      }));
-      var mhssS = stream.all(iss.map(function (is) {
-        return stream.all(is.map(function (i) {
-          return i.minHeight;
-        }));
+      var msssS = stream.all(iss.map(function (is) {
+        return mapMinSizes(is);
       }));
 
-      var wholeRowMWs = stream.all(wholeRowIs.map(function (i) {
-        return i.minWidth;
-      }));
-      var wholeRowMHs = stream.all(wholeRowIs.map(function (i) {
-        return i.minHeight;
+      var wholeRowMSs = stream.all(wholeRowIs.map(function (i) {
+        return i.minSize;
       }));
 
       // forms a single row from multiple rows by taking the max of
       // each column
-      var findBaseWidths = function (mwss) {
-        var MWs = mwss[0].slice();
-        for (var i = 1; i < mwss.length; i++) {
-          var mws = mwss[i];
-          for (var j = 0; j < mws.length; j++) {
-            MWs[j] = Math.max(MWs[j], mws[j]);
+      var findBaseWidths = function (msss) {
+        var MWs = msss[0].slice().map(function (ms) {
+          return ms.w;
+        });
+        for (var i = 1; i < msss.length; i++) {
+          var mss = msss[i];
+          for (var j = 0; j < mss.length; j++) {
+            MWs[j] = Math.max(MWs[j], mss[j].w);
           }
         }
         return MWs;
       };
 
       stream.combine([
-        mwssS,
-        mhssS,
+        msssS,
         ctx.width,
         ctx.height,
-        config.wholeRowIndex > -1 ? wholeRowMHs : onceZeroS,
-      ], function (mwss, mhss, width, height, wholeRowMHs) {
-        var mws = findBaseWidths(mwss);
+        config.wholeRowIndex > -1 ? wholeRowMSs : onceZeroS,
+      ], function (msss, width, height, wholeRowMSs) {
+        var mws = findBaseWidths(msss);
         var positionsH = [];
         mws.reduce(function (a, mw) {
           positionsH.push({
@@ -4542,12 +4495,12 @@
         positionsH = config.surplusWidth(width - config.colPadding * (mws.length - 1), [positionsH])[0];
 
         var positionsV = [];
-        mhss.reduce(function (a, mhs, i) {
-          var height = mhs.reduce(function (a, mh, i) {
-            return Math.max(a, mh(positionsH[i].width));
+        msss.reduce(function (a, mss, i) {
+          var height = mss.reduce(function (a, ms, i) {
+            return Math.max(a, ms.h(positionsH[i].width));
           }, 0);
           if (config.wholeRowIndex > -1) {
-            height = Math.max(height, wholeRowMHs[i](width) - config.rowPadding);
+            height = Math.max(height, wholeRowMSs[i].h(width) - config.rowPadding);
           }
           positionsV.push({
             top: a,
@@ -4574,76 +4527,78 @@
         };
       });
 
-      var tableMinWidthS = stream.map(mwssS, function (mwss) {
-          return mwss.reduce(function (a, mws) {
-            return Math.max(a, mws.reduce(function (a, mw) {
-              return a + mw;
+      var tableMinSizeS = stream.map(msssS, function (msss) {
+        return {
+          w: msss.reduce(function (a, mss) {
+            return Math.max(a, mss.reduce(function (a, ms) {
+              return a + ms.w;
             }, 0));
-          }, 0);
-      });
-      var tableMinHeightS = stream.combine([
-        mwssS,
-        mhssS,
-      ], function (mwss, mhss) {
-        return function (w) {
-          var mws = findBaseWidths(mwss);
-          var positionsH = [];
-          mws.reduce(function (a, mw) {
-            positionsH.push({
-              left: a,
-              width: mw,
-            });
-            return a + mw;
-          }, 0);
-          positionsH = config.surplusWidth(w - config.colPadding * (mws.length - 1), [positionsH])[0];
-
-          return mhss.reduce(function (a, mhs) {
-            var height = mhs.reduce(function (a, mh, i) {
-              return Math.max(a, mh(positionsH[i].width));
+          }, 0),
+          h: function (w) {
+            var mws = findBaseWidths(msss);
+            var positionsH = [];
+            mws.reduce(function (a, mw) {
+              positionsH.push({
+                left: a,
+                width: mw,
+              });
+              return a + mw;
             }, 0);
-            return a + height;
-          }, 0) + config.rowPadding * mhss.length;
+            positionsH = config.surplusWidth(w - config.colPadding * (mws.length - 1), [positionsH])[0];
+
+            return msss.reduce(function (a, mss) {
+              var height = mss.reduce(function (a, ms, i) {
+                return Math.max(a, ms.h(positionsH[i].width));
+              }, 0);
+              return a + height;
+            }, 0) + config.rowPadding * msss.length;
+          },
         };
       });
 
       if (config.wholeRowIndex > -1) {
-        tableMinWidthS = stream.combine([
-          tableMinWidthS,
-          wholeRowMWs,
-        ], function (mw, mws) {
-          return mws.reduce(function (a, mw) {
-            return Math.max(a, mw);
-          }, mw);
-        });
-
-        tableMinHeightS = stream.combine([
-          tableMinHeightS,
-          wholeRowMHs,
-        ], function (mh, mhs) {
-          return function (w) {
-            return Math.max(mh(w), mhs.reduce(function (a, mh) {
-              return a + mh(w);
-            }, 0));
+        tableMinSizeS = stream.combine([
+          tableMinSizeS,
+          wholeRowMSs,
+        ], function (ms, mss) {
+          return {
+            w: mss.reduce(function (a, ms) {
+              return Math.max(a, ms.w);
+            }, ms.w),
+            h: function (w) {
+              return Math.max(ms.h(w), mss.reduce(function (a, ms) {
+                return a + ms.h(w);
+              }, 0));
+            }
           };
         });
       }
 
       return {
-        minWidth: tableMinWidthS,
-        minHeight: tableMinHeightS,
+        minWidth: tableMinSizeS,
       };
     });
   });
 
   var shareMinWidths = function () {
     var greatestMinWidth = stream.create();
-    var streams = stream.combineMany(function (mws) {
-      stream.push(greatestMinWidth, mws.reduce(mathMax, 0));
+    var streams = stream.combineMany(function (mss) {
+      stream.push(greatestMinWidth, mss.reduce(function (a, ms) {
+        return Math.max(a, ms.w);
+      }, 0));
     });
     return adjustPosition({
-      minWidth: function (minWidth) {
-        streams.addStream(minWidth);
-        return greatestMinWidth;
+      minSize: function (minSize) {
+        streams.addStream(minSize);
+        return stream.combine([
+          minSize,
+          greatestMinWidth,
+        ], function (ms, gmw) {
+          return {
+            w: gmw,
+            h: ms.h,
+          };
+        });
       },
     });
   };
@@ -4947,7 +4902,7 @@
       var s = def.stream || stream.create();
       return all([
         applyCheckboxBorder,
-      ])(input(function (el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw) {
         el.id = k;
         el.name = k;
         el.type = 'checkbox';
@@ -4962,7 +4917,6 @@
           stream.push(s, el.checked);
         });
         mw();
-        mh();
       }));
     },
     date: function (def) {
@@ -4970,9 +4924,8 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function (el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw) {
         mw();
-        mh();
         el.name = k;
         el.type = 'date';
         stream.onValue(s, function (v) {
@@ -4997,7 +4950,7 @@
       var k = def.name;
       var type = def.type;
       var s = def.stream || stream.create();
-      return select(function (el, ctx, mw, mh) {
+      return select(function (el, ctx, mw) {
         el.name = k;
         type.options.map(function (option) {
           if ('string' === typeof option) {
@@ -5027,17 +4980,15 @@
           stream.push(s, el.value);
         });
         mw();
-        mh();
       });
     },
     file: function (def) {
       var k = def.name;
       var s = def.stream || stream.create();
-      return input(function (el, ctx, mw, mh) {
+      return input(function (el, ctx, mw) {
         el.name = k;
         el.type = 'file';
         mw();
-        mh();
         el.addEventListener('change', function (ev) {
           mw();
           stream.push(s, ev.target.files);
@@ -5062,12 +5013,11 @@
     image: function (def) {
       var k = def.name;
       var s = def.stream || stream.create();
-      return input(function (el, ctx, mw, mh) {
+      return input(function (el, ctx, mw) {
         el.name = k;
         el.type = 'file';
         el.accept = 'image/*';
         mw();
-        mh();
         el.addEventListener('change', function (ev) {
           mw();
           var file = ev.target.files.length > 0 && ev.target.files[0];
@@ -5086,9 +5036,8 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function (el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw) {
         mw();
-        mh();
         if (def.hasOwnProperty('step')) {
           el.step = def.step;
         }
@@ -5116,9 +5065,8 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function (el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw) {
         mw();
-        mh();
         el.name = k;
         el.type = 'password';
         stream.onValue(s, function (v) {
@@ -5145,7 +5093,7 @@
       return type.options.map(function (option) {
         return all([
           applyRadioBorder,
-        ])(input(function (el, ctx, mw, mh) {
+        ])(input(function (el, ctx, mw) {
           el.id = option;
           el.value = option;
           el.name = k;
@@ -5159,7 +5107,6 @@
             }
           });
           mw();
-          mh();
         }));
       });
     },
@@ -5168,9 +5115,8 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function (el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw) {
         mw();
-        mh();
         el.name = k;
         stream.onValue(s, function (v) {
           if (v !== el.value) {
@@ -5213,8 +5159,10 @@
         });
         var lastOuterWidth = outerWidth(el);
         var lastOuterHeight = outerHeight(el);
-        var mw = stream.once(lastOuterWidth);
-        var mh = stream.once(constant(lastOuterHeight));
+        var ms = stream.once({
+          w: lastOuterWidth,
+          h: constant(lastOuterHeight),
+        });
         var afterTextareaResize = function () {
           stream.defer(function () {
             el.style.width = 'calc(' + (ctx.widthCalc ? ctx.widthCalc.lastValue : px(ctx.width.lastValue)) + ')';
@@ -5224,12 +5172,12 @@
         var onTextareaResize = function () {
           var currentOuterWidth = outerWidth(el);
           var currentOuterHeight = outerHeight(el);
-          if (lastOuterWidth !== currentOuterWidth) {
-            stream.push(mw, currentOuterWidth);
+          if (lastOuterWidth !== currentOuterWidth || lastOuterHeight !== currentOuterHeight) {
+            stream.push(ms, {
+              w: currentOuterWidth,
+              h: constant(currentOuterHeight)
+            });
             lastOuterWidth = currentOuterWidth;
-          }
-          if (lastOuterHeight !== currentOuterHeight) {
-            stream.push(mh, constant(currentOuterHeight));
             lastOuterHeight = currentOuterHeight;
           }
         };
@@ -5237,8 +5185,7 @@
         document.body.addEventListener('mouseup', afterTextareaResize);
         el.addEventListener('click', onTextareaResize);
         return {
-          minWidth: mw,
-          minHeight: mh,
+          minSize: ms,
           remove: function () {
             document.body.removeEventListener('mousemove', onTextareaResize);
             document.body.removeEventListener('mouseup', afterTextareaResize);
@@ -5251,9 +5198,8 @@
       var s = def.stream || stream.create();
       return all([
         applyFormBorder,
-      ])(input(function (el, ctx, mw, mh) {
+      ])(input(function (el, ctx, mw) {
         mw();
-        mh();
         el.name = k;
         el.type = 'time';
         stream.onValue(s, function (v) {
@@ -5519,8 +5465,7 @@
         setupFormSubmit(el);
         var i = c();
         return {
-          minWidth: i.minWidth,
-          minHeight: i.minHeight,
+          minSize: i.minSize,
         };
       })(f(fieldInputs, submitComponentF, fieldStreams));
     };

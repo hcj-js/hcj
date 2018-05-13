@@ -19,25 +19,22 @@
 
   var headerHeightS = stream.create();
 
-  var mapMinWidths = function (is) {
+  var mapMinSizes = function (is) {
     return stream.all(is.map(function (i) {
-      return i.minWidth;
-    }));
-  };
-  var mapMinHeights = function (is) {
-    return stream.all(is.map(function (i) {
-      return i.minHeight;
+      return i.minSize;
     }));
   };
   var useMinWidth = function (ctx, i) {
-    return stream.pushAll(i.minWidth, ctx.width);
+    return stream.onValue(i.minSize, function (ms) {
+      stream.push(ctx.width, ms.w);
+    });
   };
   var useMinHeight = function (ctx, i) {
     return stream.combineInto([
       ctx.width,
-      i.minHeight,
-    ], function (w, mh) {
-      return mh(w);
+      i.minSize,
+    ], function (w, ms) {
+      return ms.h(w);
     }, ctx.height);
   };
   var dropdownPanels = function (items, config) {
@@ -78,10 +75,8 @@
         panelIs.push(panelI);
         sourceIs.push(sourceI);
       }
-      var panelMinWidths = mapMinWidths(panelIs);
-      var panelMinHeights = mapMinHeights(panelIs);
-      var sourceMinWidths = mapMinWidths(sourceIs);
-      var sourceMinHeights = mapMinHeights(sourceIs);
+      var panelMinSizes = mapMinSizes(panelIs);
+      var sourceMinSizes = mapMinSizes(sourceIs);
       var loopStart;
       var loopInc;
       switch (config.align) {
@@ -98,9 +93,9 @@
         ctx.width,
         ctx.left,
         hcj.viewport.widthS,
-        sourceMinWidths,
-        panelMinWidths,
-      ], function (w, lo, ww, sourceMWs, panelMWs) {
+        sourceMinSizes,
+        panelMinSizes,
+      ], function (w, lo, ww, sourceMSs, panelMSs) {
         var left;
         switch (config.align) {
         case 'left':
@@ -114,42 +109,38 @@
           switch (config.align) {
           case 'left':
             stream.push(sourceCtxs[i].left, left);
-            if (lo + left + panelMWs[i] <= ww) {
+            if (lo + left + panelMSs[i].w <= ww) {
               stream.push(panelCtxs[i].left, left);
             }
             else {
-              stream.push(panelCtxs[i].left, ww - lo - panelMWs[i]);
+              stream.push(panelCtxs[i].left, ww - lo - panelMSs[i].w);
             }
-            left += sourceMWs[i];
+            left += sourceMSs[i].w;
             break;
           case 'right':
-            stream.push(sourceCtxs[i].left, left - sourceMWs[i]);
-            if (lo + left >= panelMWs[i]) {
-              stream.push(panelCtxs[i].left, left - panelMWs[i]);
+            stream.push(sourceCtxs[i].left, left - sourceMSs[i].w);
+            if (lo + left >= panelMSs[i].w) {
+              stream.push(panelCtxs[i].left, left - panelMSs[i].w);
             }
             else {
               stream.push(panelCtxs[i].left, -lo);
             }
-            left -= sourceMWs[i];
+            left -= sourceMSs[i].w;
             break;
           }
         }
       });
       return {
-        minWidth: stream.combine([
-          sourceMinWidths,
-        ], function (mws) {
-          return mws.reduce(function (a, mw) {
-            return a + mw;
-          }, 0);
-        }),
-        minHeight: stream.combine([
-          sourceMinHeights,
-        ], function (mhs) {
-          return function (w) {
-            return mhs.reduce(function (a, mh) {
-              return Math.max(a, mh(w));
-            }, 0);
+        minSize: stream.map(sourceMinSizes, function (mss) {
+          return {
+            w: mss.reduce(function (a, ms) {
+              return a + ms.w;
+            }, 0),
+            h: function (w) {
+              return mss.reduce(function (a, ms) {
+                return Math.max(a, ms.h(w));
+              }, 0);
+            },
           };
         }),
       };
@@ -277,10 +268,10 @@
         left: 40,
       }),
     ])(stack(strs.map(function (str) {
-      return c.text(str.split(' ').join('&nbsp;'), [font.code, {
+      return c.text([font.code, {
         measureWidth: true,
         oneLine: true,
-      }]);
+      }], str.split(' ').join('&nbsp;'));
     })));
   };
   var showCodeBlock = function (strs) {
@@ -412,23 +403,23 @@
       ]),
       docStack2([
         p('An `instance` is an object with all of the following properties:'),
-        objectDefinition([{
-          name: 'el',
-          type: 'Node',
-          description: 'Root element of the instance, appended to the `el` node of the context.',
-        }, {
-          name: 'minWidth',
-          type: 'Stream Number',
-          description: 'Minimum width of the instance.',
-        }, {
-          name: 'minHeight',
-          type: 'Stream (Number -> Number)',
-          description: 'Minimum height of the instance.',
-        }, {
-          name: 'remove',
-          type: 'Function',
-          description: 'Removes the instance from the page.',
-        }]),
+        // objectDefinition([{
+        //   name: 'el',
+        //   type: 'Node',
+        //   description: 'Root element of the instance, appended to the `el` node of the context.',
+        // }, {
+        //   name: 'minWidth',
+        //   type: 'Stream Number',
+        //   description: 'Minimum width of the instance.',
+        // }, {
+        //   name: 'minHeight',
+        //   type: 'Stream (Number -> Number)',
+        //   description: 'Minimum height of the instance.',
+        // }, {
+        //   name: 'remove',
+        //   type: 'Function',
+        //   description: 'Removes the instance from the page.',
+        // }]),
       ]),
       p('A component must create a DOM node, append it to the `el` node of the passed-in context, and return it as the `el` property of the instance, each time it is rendered.'),
       p('Whenever you render a component, you must inform it of its width, height, page-relative top, and page-relative left positions via the context it is passed.  This way, it can display itself in a mobile- (and more generally container-) responsive way.'),
@@ -2466,13 +2457,13 @@
       c.stack([
         c.sideBySide([
           pm('TEXT'),
-          c.bar.h(20),
+          c.barH(20),
           pm('TEXT'),
         ]),
-        c.bar.v(20),
+        c.barV(20),
         c.sideBySide([
           pm('TEXT'),
-          c.bar.h(20),
+          c.barH(20),
           pm('TEXT'),
         ]),
       ]),
@@ -2480,13 +2471,13 @@
         'c.stack([',
         '  c.sideBySide([',
         '    pm(\'TEXT\'),',
-        '    c.bar.h(20),',
+        '    c.barH(20),',
         '    pm(\'TEXT\'),',
         '  ]),',
-        '  c.bar.v(20),',
+        '  c.barV(20),',
         '  c.sideBySide([',
         '    pm(\'TEXT\'),',
-        '    c.bar.h(20),',
+        '    c.barH(20),',
         '    pm(\'TEXT\'),',
         '  ]),',
         ']);',
@@ -2529,7 +2520,7 @@
             b: 10,
           })),
           c.minWidth(20),
-        ])(c.bar.v(200)),
+        ])(c.barV(200)),
       ]),
       showCodeBlock([
         'c.sideBySide({',
@@ -2557,7 +2548,7 @@
         '      b: 10,',
         '    })),',
         '    c.minWidth(20),',
-        '  ])(c.bar.v(200)),',
+        '  ])(c.barV(200)),',
         ']);',
       ]),
       h1('Show a stream of components.  Text is changed each time you press the button'),
