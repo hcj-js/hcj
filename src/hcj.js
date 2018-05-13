@@ -1328,19 +1328,6 @@
     });
   };
 
-  var adjustMinSize = uncurryConfig(function (config) {
-    return layout(function (el, ctx, c) {
-      var i = c();
-      return {
-        minWidth: stream.map(i.minWidth, function (mw) {
-          return config.mw(mw);
-        }),
-        minHeight: stream.map(i.minHeight, function (mh) {
-          return config.mh(mh);
-        }),
-      };
-    });
-  });
   var link = all([
     css('cursor', 'pointer'),
   ]);
