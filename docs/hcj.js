@@ -778,7 +778,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
         stream.push(instance.minSize, size);
       }
       else {
-        initialMinSize = w;
+        initialMinSize = size;
       }
     }) || {};
     instance.minSize = buildResult.minSize || stream.create();
