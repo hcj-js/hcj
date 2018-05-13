@@ -239,7 +239,7 @@
   };
   var text = function (font) {
     return function (str) {
-      return c.text(processBackticks(str), font);
+      return c.text(font, processBackticks(str));
     };
   };
   var h1 = text(font.h1);
