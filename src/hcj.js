@@ -1688,8 +1688,7 @@
     ['lineHeight', 'lineHeight'],
   ];
   var text = uncurryConfig(function (config) {
-    // config2 is present in v0.2.1 for backward compatibility, it may
-    // be removed in a future version
+    config = config || {};
     return function (strs) {
       strs = strs || '';
       if (!Array.isArray(strs)) {
