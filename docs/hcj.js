@@ -1361,6 +1361,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
     return layout(function (el, ctx, c) {
       el.classList.add('adjust-position');
       var adjustedCtx = extend({}, ctx, {
+        el: el,
         top: position.top ? stream.create() : onceZeroS,
         left: position.left ? stream.create() : onceZeroS,
         width: position.width ? stream.create() : ctx.width,
@@ -3394,18 +3395,31 @@ function waitForWebfonts(fonts, callback, maxTime) {
 
     var colorStringS = stream.map(colorS, colorString);
 
-    var borderLayout = layout(function (el, ctx, c) {
-      el.classList.add('border');
-      // overflow hidden is necessary to prevent cutting off corners
-      // of border if there is a border radius
-      var i = c();
-      el.style.borderRadius = px(radius);
-      stream.map(colorStringS, function (colorString) {
-        el.style.borderLeft = px(left) + ' ' + style + ' ' + colorString;
-        el.style.borderRight = px(right) + ' ' + style + ' ' + colorString;
-        el.style.borderTop = px(top) + ' ' + style + ' ' + colorString;
-        el.style.borderBottom = px(bottom) + ' ' + style + ' ' + colorString;
+    return layout(function (el, ctx, c) {
+      var i = c({
+        width: stream.map(ctx.width, function (w) {
+          return w - left - right;
+        }),
+        widthCalc: stream.once('100% - ' + px(left + right)),
+        height: stream.map(ctx.height, function (h) {
+          return h - top - bottom;
+        }),
+        heightCalc: stream.once('100% - ' + px(top + bottom)),
+        left: stream.once(left),
+        top: stream.once(top),
       });
+      var borderEl = document.createElement('div');
+      el.append(borderEl);
+      borderEl.style.borderRadius = px(radius);
+      stream.map(colorStringS, function (colorString) {
+        borderEl.style.borderLeft = px(left) + ' ' + style + ' ' + colorString;
+        borderEl.style.borderRight = px(right) + ' ' + style + ' ' + colorString;
+        borderEl.style.borderTop = px(top) + ' ' + style + ' ' + colorString;
+        borderEl.style.borderBottom = px(bottom) + ' ' + style + ' ' + colorString;
+      });
+      borderEl.style.position = 'absolute';
+      borderEl.style.width = 'calc(100% - ' + px(left + right) + ')';
+      borderEl.style.height = 'calc(100% - ' + px(top + bottom) + ')';
       return {
         minSize: stream.map(i.minSize, function (ms) {
           return {
@@ -3417,24 +3431,6 @@ function waitForWebfonts(fonts, callback, maxTime) {
         }),
       };
     });
-    return function (c) {
-      return all([
-        adjustPosition(null, {
-          width: function (w, el) {
-            return w - left - right;
-          },
-          height: function (h, el) {
-            return h - top - bottom;
-          },
-          widthCalc: function (calc, el) {
-            return calc + " - " + (left + right);
-          },
-          heightCalc: function (calc, el) {
-            return calc + " - " + (top + bottom);
-          },
-        }),
-      ])(borderLayout(c));
-    };
   };
 
   var componentStream = function (cStream) {
