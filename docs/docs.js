@@ -403,23 +403,23 @@
       ]),
       docStack2([
         p('An `instance` is an object with all of the following properties:'),
-        // objectDefinition([{
-        //   name: 'el',
-        //   type: 'Node',
-        //   description: 'Root element of the instance, appended to the `el` node of the context.',
-        // }, {
-        //   name: 'minWidth',
-        //   type: 'Stream Number',
-        //   description: 'Minimum width of the instance.',
-        // }, {
-        //   name: 'minHeight',
-        //   type: 'Stream (Number -> Number)',
-        //   description: 'Minimum height of the instance.',
-        // }, {
-        //   name: 'remove',
-        //   type: 'Function',
-        //   description: 'Removes the instance from the page.',
-        // }]),
+        objectDefinition([{
+          name: 'el',
+          type: 'Node',
+          description: 'Root element of the instance, appended to the `el` node of the context.',
+        }, {
+          name: 'minWidth',
+          type: 'Stream Number',
+          description: 'Minimum width of the instance.',
+        }, {
+          name: 'minHeight',
+          type: 'Stream (Number -> Number)',
+          description: 'Minimum height of the instance.',
+        }, {
+          name: 'remove',
+          type: 'Function',
+          description: 'Removes the instance from the page.',
+        }]),
       ]),
       p('A component must create a DOM node, append it to the `el` node of the passed-in context, and return it as the `el` property of the instance, each time it is rendered.'),
       p('Whenever you render a component, you must inform it of its width, height, page-relative top, and page-relative left positions via the context it is passed.  This way, it can display itself in a mobile- (and more generally container-) responsive way.'),
