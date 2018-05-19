@@ -4823,8 +4823,7 @@ function waitForWebfonts(fonts, callback, maxTime) {
           el.value = v;
         });
         return {
-          minWidth: onceZeroS,
-          minHeight: onceConstantZeroS,
+          minSize: onceSizeZeroS,
         };
       });
     },

@@ -4746,8 +4746,7 @@
           el.value = v;
         });
         return {
-          minWidth: onceZeroS,
-          minHeight: onceConstantZeroS,
+          minSize: onceSizeZeroS,
         };
       });
     },
