@@ -2,6 +2,7 @@
 
 * Add stream.onNextValue function.
 * Streams can carry undefined, like any other value.
+* Text component now accepts TextConfig objects until the first SpanConfig is passed.
 
 
 # Changes in v0.3.1 #

@@ -1764,226 +1764,221 @@ function waitForWebfonts(fonts, callback, maxTime) {
     ['verticalAlign', 'verticalAlign'],
     ['lineHeight', 'lineHeight'],
   ];
-  var text = uncurryConfig(function (config) {
-    config = config || {};
-    return function (strs) {
-      strs = strs || '';
-      if (!Array.isArray(strs)) {
-        strs = [strs];
-      }
-      if (Array.isArray(config)) {
-        config = config.reduce(extend, {});
-      }
+  var textComponent = function (config, strs) {
+    strs = strs || '';
+    if (!Array.isArray(strs)) {
+      strs = [strs];
+    }
 
-      return (config.el || div)(function (el, ctx) {
-        el.classList.add('text');
-        var removed = false;
-        var mwS = (config.hasOwnProperty('minWidth') ||
-                   config.measureWidth)
-            ? stream.create()
-            : once300S;
-        var mhS = stream.create();
-        var spanStreams = [];
-        var pushingDimensions = false;
-        var pushDimensions = function () {
-          if (pushingDimensions) {
+    return (config.el || div)(function (el, ctx) {
+      el.classList.add('text');
+      var removed = false;
+      var mwS = (config.hasOwnProperty('minWidth') ||
+                 config.measureWidth)
+          ? stream.create()
+          : once300S;
+      var mhS = stream.create();
+      var spanStreams = [];
+      var pushingDimensions = false;
+      var pushDimensions = function () {
+        if (pushingDimensions) {
+          return;
+        }
+        pushingDimensions = true;
+        stream.next(function () {
+          if (removed) {
             return;
           }
-          pushingDimensions = true;
-          stream.next(function () {
-            if (removed) {
-              return;
+          pushingDimensions = false;
+          var mw = null;
+          if (config.hasOwnProperty('minWidth')) {
+            mw = config.minWidth;
+          }
+          else if (config.measureWidth) {
+            // mw = strs.reduce(function (a, c, index) {
+            //   var width = measureTextWidth(c.str, c.font);
+            //   return a + width;
+            // }, 0);
+            mw = measureWidth(el);
+          }
+          if (mw !== null) {
+            stream.push(mwS, mw);
+          }
+          if (config.oneLine || config.approximateHeight) {
+            var elStyle = getComputedStyle(el);
+            var lineHeightCss = elStyle.lineHeight;
+            var fontSize = config.size || parseInt(elStyle.fontSize);
+            var lineHeightPx = config.lineHeight && config.lineHeight * fontSize || (lineHeightCss.indexOf('px') !== -1 && parseFloat(lineHeightCss));
+            var mh;
+            if (config.oneLine) {
+              mh = constant(lineHeightPx);
             }
-            pushingDimensions = false;
-            var mw = null;
-            if (config.hasOwnProperty('minWidth')) {
-              mw = config.minWidth;
+            else if (config.approximateHeight) {
+              mh = function (w) {
+                // TODO: loop over spans
+                var str = el.textContent;
+                return Math.ceil(lineHeightPx * str.length * 0.5 / w) * lineHeightPx;
+              };
             }
-            else if (config.measureWidth) {
-              // mw = strs.reduce(function (a, c, index) {
-              //   var width = measureTextWidth(c.str, c.font);
-              //   return a + width;
-              // }, 0);
-              mw = measureWidth(el);
-            }
-            if (mw !== null) {
-              stream.push(mwS, mw);
-            }
-            if (config.oneLine || config.approximateHeight) {
-              var elStyle = getComputedStyle(el);
-              var lineHeightCss = elStyle.lineHeight;
-              var fontSize = config.size || parseInt(elStyle.fontSize);
-              var lineHeightPx = config.lineHeight && config.lineHeight * fontSize || (lineHeightCss.indexOf('px') !== -1 && parseFloat(lineHeightCss));
-              var mh;
-              if (config.oneLine) {
-                mh = constant(lineHeightPx);
-              }
-              else if (config.approximateHeight) {
-                mh = function (w) {
-                  // TODO: loop over spans
-                  var str = el.textContent;
-                  return Math.ceil(lineHeightPx * str.length * 0.5 / w) * lineHeightPx;
-                };
-              }
-              stream.push(mhS, mh);
-            }
-            if (!config.oneLine) {
-              stream.defer(function () {
+            stream.push(mhS, mh);
+          }
+          if (!config.oneLine) {
+            stream.defer(function () {
               var mh = config.hasOwnProperty('minHeight') ? constant(config.minHeight) : measureHeight(el);
-                // measureTextHeight(strs.map(function (c) {
-                //   return {
-                //     words: c.words.slice(0),
-                //     font: c.font,
-                //     size: c.size || config.size,
-                //   };
-                // }), config.lineHeight);
-                stream.push(mhS, mh);
-              });
-            }
-          });
-        };
-        strs.map(function (c, index) {
-          if (typeof c === 'string') {
-            c = {
-              str: c,
-            };
-            strs[index] = c;
-          }
-          var updateStr = function (str) {
-            if (index === strs.length - 1) {
-              str = str + ' ';
-            }
-            span.innerHTML = str;
-            c.words = str.split(' ');
-          };
-          var span = document.createElement('span');
-          if (stream.isStream(c.str)) {
-            span = document.createElement('span');
-            spanStreams.push(stream.map(c.str, function (x) {
-              updateStr(x);
-              pushDimensions();
-            }));
-          }
-          else {
-            span.innerHTML = c.str;
-          }
-
-          // for measuring span size via html5 canvas:
-          // var fontStyle = 'normal';
-          // var fontVariant = 'normal';
-          // var fontWeight = c.weight || config.weight || 'normal';
-          // var fontSize = c.size || config.size || bodyFontSize;
-          // var lineHeight = c.lineHeight || config.lineHeight || bodyLineHeight;
-          // var fontFamily = c.family || config.family || bodyFontFamily;
-
-          // c.font = [
-          //   fontStyle,
-          //   fontVariant,
-          //   fontWeight,
-          //   fontSize + '/' + lineHeight,
-          //   fontFamily,
-          // ].join(' ');
-
-          if (c.color) {
-            if (stream.isStream(c.color)) {
-              c.color = stream.map(c.color, colorString);
-            }
-            else {
-              c.color = colorString(c.color);
-            }
-          }
-
-          spanConfigProperties.map(function (property) {
-            var value = c[property[0]];
-            if (value) {
-              if (stream.isStream(value)) {
-                spanStreams.push(value);
-                stream.onValue(value, function (x) {
-                  span.style[property[1]] = x;
-                  return x;
-                });
-              }
-              else {
-                span.style[property[1]] = value;
-              }
-            }
-          });
-
-          if (c.spanCSS) {
-            c.spanCSS.map(function (css) {
-              span.style[css.name] = css.value;
+              // measureTextHeight(strs.map(function (c) {
+              //   return {
+              //     words: c.words.slice(0),
+              //     font: c.font,
+              //     size: c.size || config.size,
+              //   };
+              // }), config.lineHeight);
+              stream.push(mhS, mh);
             });
           }
-
-          if (c.linkTo) {
-            var a = document.createElement('a');
-            if (c.linkToNoStyle) {
-              a.classList.add('no-style');
-            }
-            a.href = c.linkTo;
-            el.appendChild(a);
-            a.appendChild(span);
-          }
-          else {
-            el.appendChild(span);
-          }
         });
+      };
+      strs.map(function (c, index) {
+        if (typeof c === 'string') {
+          c = {
+            str: c,
+          };
+          strs[index] = c;
+        }
+        var updateStr = function (str) {
+          if (index === strs.length - 1) {
+            str = str + ' ';
+          }
+          span.innerHTML = str;
+          c.words = str.split(' ');
+        };
+        var span = document.createElement('span');
+        if (stream.isStream(c.str)) {
+          span = document.createElement('span');
+          spanStreams.push(stream.map(c.str, function (x) {
+            updateStr(x);
+            pushDimensions();
+          }));
+        }
+        else {
+          span.innerHTML = c.str;
+        }
 
-        if (config.color) {
-          if (stream.isStream(config.color)) {
-            config.color = stream.map(config.color, colorString);
+        // for measuring span size via html5 canvas:
+        // var fontStyle = 'normal';
+        // var fontVariant = 'normal';
+        // var fontWeight = c.weight || config.weight || 'normal';
+        // var fontSize = c.size || config.size || bodyFontSize;
+        // var lineHeight = c.lineHeight || config.lineHeight || bodyLineHeight;
+        // var fontFamily = c.family || config.family || bodyFontFamily;
+
+        // c.font = [
+        //   fontStyle,
+        //   fontVariant,
+        //   fontWeight,
+        //   fontSize + '/' + lineHeight,
+        //   fontFamily,
+        // ].join(' ');
+
+        if (c.color) {
+          if (stream.isStream(c.color)) {
+            c.color = stream.map(c.color, colorString);
           }
           else {
-            config.color = colorString(config.color);
+            c.color = colorString(c.color);
           }
         }
 
-        textConfigProperties.map(function (property) {
-          var value = config[property[0]];
+        spanConfigProperties.map(function (property) {
+          var value = c[property[0]];
           if (value) {
             if (stream.isStream(value)) {
               spanStreams.push(value);
               stream.onValue(value, function (x) {
-                el.style[property[1]] = x;
+                span.style[property[1]] = x;
                 return x;
               });
             }
             else {
-              el.style[property[1]] = value;
+              span.style[property[1]] = value;
             }
           }
         });
 
-        if (config.spanCSS) {
-          config.spanCSS.map(function (css) {
-            el.style[css.name] = css.value;
+        if (c.spanCSS) {
+          c.spanCSS.map(function (css) {
+            span.style[css.name] = css.value;
           });
         }
 
-        if (spanStreams.length > 0) {
-          stream.combine(spanStreams, function () {
-            pushDimensions();
-          });
+        if (c.linkTo) {
+          var a = document.createElement('a');
+          if (c.linkToNoStyle) {
+            a.classList.add('no-style');
+          }
+          a.href = c.linkTo;
+          el.appendChild(a);
+          a.appendChild(span);
         }
-        pushDimensions();
-
-        return {
-          minSize: stream.combine([
-            mwS,
-            mhS,
-          ], function (mw, mh) {
-            return {
-              w: mw,
-              h: mh,
-            };
-          }),
-          remove: function () {
-            removed = true;
-          },
-        };
+        else {
+          el.appendChild(span);
+        }
       });
-    };
-  }, function (obj) {
+
+      if (config.color) {
+        if (stream.isStream(config.color)) {
+          config.color = stream.map(config.color, colorString);
+        }
+        else {
+          config.color = colorString(config.color);
+        }
+      }
+
+      textConfigProperties.map(function (property) {
+        var value = config[property[0]];
+        if (value) {
+          if (stream.isStream(value)) {
+            spanStreams.push(value);
+            stream.onValue(value, function (x) {
+              el.style[property[1]] = x;
+              return x;
+            });
+          }
+          else {
+            el.style[property[1]] = value;
+          }
+        }
+      });
+
+      if (config.spanCSS) {
+        config.spanCSS.map(function (css) {
+          el.style[css.name] = css.value;
+        });
+      }
+
+      if (spanStreams.length > 0) {
+        stream.combine(spanStreams, function () {
+          pushDimensions();
+        });
+      }
+      pushDimensions();
+
+      return {
+        minSize: stream.combine([
+          mwS,
+          mhS,
+        ], function (mw, mh) {
+          return {
+            w: mw,
+            h: mh,
+          };
+        }),
+        remove: function () {
+          removed = true;
+        },
+      };
+    });
+  };
+  var text_valueIsNotConfig = function (obj) {
     if (Array.isArray(obj)) {
       if (obj.length === 0) {
         return true;
@@ -1991,7 +1986,25 @@ function waitForWebfonts(fonts, callback, maxTime) {
       obj = obj[0];
     }
     return typeof obj === 'string' || (obj && obj.hasOwnProperty('str'));
-  });
+  };
+  var textContinue = function (config) {
+    return function (val) {
+      if (text_valueIsNotConfig(val)) {
+        return textComponent(config, val);
+      }
+      if (Array.isArray(val)) {
+        val = val.reduce(extend, {});
+      }
+      return textContinue(extend({}, config, val));
+    };
+  };
+  var text = uncurryConfig(function (config) {
+    config = config || {};
+    if (Array.isArray(config)) {
+      config = config.reduce(extend, {});
+    }
+    return textContinue(config);
+  }, text_valueIsNotConfig);
 
   var mapSurplusWidthFunc = function (f) {
     return function (width, rows) {
