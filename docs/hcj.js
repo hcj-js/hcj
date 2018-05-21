@@ -1780,6 +1780,15 @@ function waitForWebfonts(fonts, callback, maxTime) {
       var mhS = stream.create();
       var spanStreams = [];
       var pushingDimensions = false;
+      var innerEl;
+      if (config.underline || config.overline || config.lineThrough) {
+        innerEl = document.createElement('div');
+        innerEl.style.height = '100%';
+        el.appendChild(innerEl);
+      }
+      else {
+        innerEl = el;
+      }
       var pushDimensions = function () {
         if (pushingDimensions) {
           return;
@@ -1916,11 +1925,11 @@ function waitForWebfonts(fonts, callback, maxTime) {
             a.classList.add('no-style');
           }
           a.href = c.linkTo;
-          el.appendChild(a);
+          innerEl.appendChild(a);
           a.appendChild(span);
         }
         else {
-          el.appendChild(span);
+          innerEl.appendChild(span);
         }
       });
 
@@ -1948,6 +1957,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
         }
       });
+
+      if (config.underline || config.overline || config.lineThrough) {
+        var underlineStyle = config.underline;
+        if (underlineStyle === true) {
+          underlineStyle = 'solid';
+        }
+        innerEl.style.textDecoration = underlineStyle + ' underline';
+      }
 
       if (config.spanCSS) {
         config.spanCSS.map(function (css) {
