@@ -3171,6 +3171,15 @@
     onOffS: narrowOnOffS,
   }]));
 
+  var hcjTextC = c.all([
+    c.alignVM,
+    c.alignHM
+  ])(c.text({
+    size: '30px',
+    family: 'sans-serif',
+    measureWidth: true,
+  }, 'HCJ.JS'));
+
   var header = c.all([
     c.backgroundColor({
       background: darkPurple,
@@ -3184,32 +3193,17 @@
       surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
     }, [
       logoC,
-      c.all([
-        c.alignVM,
-        c.alignHM
-      ])(c.text({
-        size: '30px',
-        family: 'sans-serif',
-        measureWidth: true,
-      }, 'HCJ.JS')),
+      hcjTextC,
       linksWideC
     ]),
     c.sideBySide({
       surplusWidth: hcj.funcs.surplusWidth.giveToNth(1),
     }, [
       logoC,
-      c.all([
-        c.alignVM,
-        c.alignHM
-      ])(c.text({
-        size: '30px',
-        family: 'sans-serif',
-        measureWidth: true,
-      }, 'HCJ.JS')),
+      hcjTextC,
       linksNarrowC,
     ]),
   ]));
-  var body = c.text('body');
 
   window.docsPage = function (page) {
     return c.all([
