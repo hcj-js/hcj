@@ -1913,6 +1913,14 @@ function waitForWebfonts(fonts, callback, maxTime) {
           }
         });
 
+        if (c.underline || c.overline || c.lineThrough) {
+          var underlineStyle = c.underline;
+          if (underlineStyle === true) {
+            underlineStyle = 'solid';
+          }
+          span.style.textDecoration = underlineStyle + ' underline';
+        }
+
         if (c.spanCSS) {
           c.spanCSS.map(function (css) {
             span.style[css.name] = css.value;
