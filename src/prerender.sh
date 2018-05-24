@@ -31,6 +31,9 @@ Options:
     -d
 	Root directory (defaults to .).
 
+    -g
+	Do not append SEO content to <body> section.  Instead, create a new file containing only SEO content.
+
     -i
 	Overwrite input files, instead of creating .prerender files.
 
@@ -38,7 +41,7 @@ Options:
 	Display this message.
 "
 
-while getopts "sp:n:u:d:ih" o; do
+while getopts "sp:n:u:d:igh" o; do
     case "$o" in
 	s)
 	    static_serve=true
@@ -59,6 +62,9 @@ while getopts "sp:n:u:d:ih" o; do
 	    ;;
 	i)
 	    in_place=true
+	    ;;
+	g)
+	    only_seo_content=true
 	    ;;
 	h)
 	    echo "$usage"
@@ -200,7 +206,10 @@ for i in "$@"; do
     fi
 
     prerender_content=$(phantomjs -platform offscreen build.js "$host_url$i")
-    existing_content=$(cat "$source_file" | sed "/HCJ_PRERENDER_START/,/HCJ_PRERENDER_END/d")
-    echo "$existing_content" | sed "/<body>/s/.*/&\n<!-- HCJ_PRERENDER_START -->\n<div style=\"display:none\">${prerender_content//\//\\\/}<\\/div>\n<!-- HCJ_PRERENDER_END -->/" > "$target_file"
+    if [ "$only_seo_content" = true ]; then
+	echo "$prerender_content" > "$target_file"
+    else
+	existing_content=$(cat "$source_file" | sed "/HCJ_PRERENDER_START/,/HCJ_PRERENDER_END/d")
+	echo "$existing_content" | sed "/<body>/s/.*/&\n<!-- HCJ_PRERENDER_START -->\n<div style=\"display:none\">${prerender_content//\//\\\/}<\\/div>\n<!-- HCJ_PRERENDER_END -->/" > "$target_file"
+    fi
 done
-
